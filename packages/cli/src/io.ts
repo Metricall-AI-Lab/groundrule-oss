@@ -7,6 +7,16 @@ export interface IO {
   env: NodeJS.ProcessEnv;
   stdout: { write(text: string): void; isTTY?: boolean };
   stderr: { write(text: string): void; isTTY?: boolean };
+  /** Network access to the Groundrule platform. Defaults to global fetch. */
+  fetch?: typeof fetch;
+  /** Open a URL in the browser; resolves false if it couldn't. */
+  openUrl?: (url: string) => Promise<boolean>;
+  /** Wait between polls. */
+  sleep?: (ms: number) => Promise<void>;
+  /** Shown to the person approving `groundrule login`. Defaults to the OS hostname. */
+  hostname?: string;
+  /** Where credentials live. Defaults to $XDG_CONFIG_HOME/groundrule or ~/.config/groundrule. */
+  configDir?: string;
 }
 
 export const EXIT = { ok: 0, failed: 1, usage: 2 } as const;

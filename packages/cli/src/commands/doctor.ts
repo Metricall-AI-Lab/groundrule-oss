@@ -36,11 +36,17 @@ export async function doctor(io: IO): Promise<number> {
       "`groundrule check` will audit every file instead of your changes.",
     );
 
-  const workspace = await openWorkspace(io);
+  const workspace = await openWorkspace(io, { use: "agents" });
   if (!workspace) {
     fail("Configuration has errors (see above)");
     println(io);
     return EXIT.failed;
+  }
+  if (workspace.platform) {
+    const { org, target } = workspace.platform.rulebook;
+    ok(
+      `Connected to ${org.name} on ${workspace.platform.url}${target.repository ? ` as ${target.repository.name}` : ""}`,
+    );
   }
   const repo = await inspectRepository(workspace);
   const effective = effectiveStandards(workspace).filter((l) =>

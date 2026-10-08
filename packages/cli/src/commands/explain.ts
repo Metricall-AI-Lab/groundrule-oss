@@ -19,7 +19,7 @@ const SOURCES: Record<string, string> = {
 };
 
 export async function explain(io: IO, id: string): Promise<number> {
-  const workspace = await openWorkspace(io);
+  const workspace = await openWorkspace(io, { use: "all" });
   if (!workspace) return EXIT.usage;
   const wanted = id.toUpperCase();
   const loaded = workspace.standards.find((l) => l.standard.metadata.id === wanted);

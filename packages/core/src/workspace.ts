@@ -7,6 +7,7 @@ import {
   isExceptionActive,
   type Pack,
   parseSourceRef,
+  type RolloutStage,
   type Severity,
   type Standard,
 } from "@groundrule/spec";
@@ -32,6 +33,8 @@ export interface LoadedStandard {
   /** Severity before overrides, when an override changed it. */
   originalSeverity?: Severity;
   overrideReason?: string;
+  /** For standards from the platform: the rollout stage the organization chose. */
+  stage?: RolloutStage;
 }
 
 export interface Workspace {

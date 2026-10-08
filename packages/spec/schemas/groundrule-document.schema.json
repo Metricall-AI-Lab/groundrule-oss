@@ -738,6 +738,33 @@
             },
             "additionalProperties": false
           }
+        },
+        "platform": {
+          "description": "Take standards from your organization on the Groundrule platform instead of `extends`.",
+          "type": "object",
+          "properties": {
+            "org": {
+              "type": "string",
+              "maxLength": 48,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "description": "The organization's URL name on the platform, e.g. acme."
+            },
+            "url": {
+              "description": "Platform address. Defaults to https://app.groundrule.dev.",
+              "type": "string",
+              "format": "uri"
+            },
+            "repository": {
+              "description": "Name registered in Groundrule, e.g. acme/payments-api. Defaults to the git remote.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "required": [
+            "org"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

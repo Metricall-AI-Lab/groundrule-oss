@@ -11,11 +11,42 @@ import {
 } from "@groundrule/core";
 import { AGENT_TARGETS, type AgentTarget } from "@groundrule/spec";
 import { EXIT, eprintln, type IO, println, style } from "../io.js";
+import { call, PlatformError, platformUrl, tokenFor } from "../platform.js";
 
 export interface InitOptions {
   targets?: AgentTarget[];
   packs?: string[];
   force?: boolean;
+  /** Connect to this organization on the platform instead of listing packs. */
+  org?: string;
+  url?: string;
+}
+
+/** The coding agents an organization told Groundrule it uses, as agent targets. */
+const AGENT_TARGET: Record<string, AgentTarget> = {
+  claude_code: "claude-code",
+  cursor: "cursor",
+  copilot: "copilot",
+};
+
+async function platformTargets(io: IO, org: string, url: string): Promise<AgentTarget[] | null> {
+  const auth = await tokenFor(io, url, org);
+  if (!auth) return null;
+  try {
+    const book = await call<{ org: { slug: string; codingAgents: string[] } }>(
+      io,
+      url,
+      "/v1/cli/rulebook",
+      { token: auth.token },
+    );
+    if (book.org.slug !== org) return null;
+    return book.org.codingAgents
+      .map((a) => AGENT_TARGET[a])
+      .filter((t): t is AgentTarget => t !== undefined);
+  } catch (error) {
+    if (error instanceof PlatformError) return null;
+    throw error;
+  }
 }
 
 const TARGET_FILES: Record<AgentTarget, string[]> = {
@@ -54,30 +85,65 @@ export async function init(io: IO, options: InitOptions): Promise<number> {
       ),
     )
   ).filter((t): t is AgentTarget => t !== undefined);
+  const org = options.org?.toLowerCase();
+  if (org && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(org)) {
+    eprintln(
+      io,
+      `✕ "${options.org}" isn't an organization URL name. Use the part after groundrule.dev/, e.g. acme.`,
+    );
+    return EXIT.usage;
+  }
+  let url: string | undefined;
+  if (org) {
+    try {
+      url = platformUrl(io, options.url);
+    } catch (error) {
+      if (!(error instanceof PlatformError)) throw error;
+      eprintln(io, `✕ ${error.message}`);
+      return EXIT.usage;
+    }
+  }
+  const fromPlatform = org && url ? await platformTargets(io, org, url) : null;
   const targets = options.targets ?? [
     ...new Set<AgentTarget>([
       "agents-md",
       ...detected,
-      ...(detected.length ? [] : ["claude-code" as const]),
+      ...(fromPlatform ?? []),
+      ...(detected.length || fromPlatform?.length ? [] : ["claude-code" as const]),
     ]),
   ];
 
-  const packs = options.packs ?? [
-    "security-baseline",
-    ...(languages.some((l) => l === "typescript" || l === "javascript") ? ["typescript-node"] : []),
-    ...(languages.includes("java") ? ["java-spring"] : []),
-  ];
+  const packs = org
+    ? []
+    : (options.packs ?? [
+        "security-baseline",
+        ...(languages.some((l) => l === "typescript" || l === "javascript")
+          ? ["typescript-node"]
+          : []),
+        ...(languages.includes("java") ? ["java-spring"] : []),
+      ]);
 
   const config = [
     "# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/config.schema.json",
     "apiVersion: groundrule.dev/v1alpha1",
     "kind: Config",
     "",
-    "# Shared standards this repository inherits. Add your organization's pack, e.g.",
-    "#   - github:your-org/engineering-standards//packs/backend@v1",
-    "extends:",
-    ...packs.map((p) => `  - groundrule:packs/${p}`),
-    "",
+    ...(org
+      ? [
+          "# Standards come from your organization on Groundrule: the packs it adopted,",
+          "# its own rules, and every customization, at each rule's rollout stage.",
+          "platform:",
+          `  org: ${org}`,
+          ...(url && url !== "https://app.groundrule.dev" ? [`  url: ${url}`] : []),
+          "",
+        ]
+      : [
+          "# Shared standards this repository inherits. Add your organization's pack, e.g.",
+          "#   - github:your-org/engineering-standards//packs/backend@v1",
+          "extends:",
+          ...packs.map((p) => `  - groundrule:packs/${p}`),
+          "",
+        ]),
     "# Tags that standards can target with scope.tags, e.g. backend, multi-tenant.",
     "tags: []",
     "",
@@ -99,11 +165,17 @@ export async function init(io: IO, options: InitOptions): Promise<number> {
 
   println(io);
   println(io, ` ${s.green("✓")} Created ${s.bold(`${CONFIG_DIR}/${CONFIG_FILE}`)}`);
-  println(io, `   ${s.dim("Packs")}    ${packs.join(", ") || "none"}`);
+  if (org) println(io, `   ${s.dim("Platform")} ${org}${url ? ` on ${url}` : ""}`);
+  else println(io, `   ${s.dim("Packs")}    ${packs.join(", ") || "none"}`);
   println(io, `   ${s.dim("Agents")}   ${targets.map((t) => TARGET_OUTPUT[t]).join(", ")}`);
   if (languages.length) println(io, `   ${s.dim("Detected")} ${languages.slice(0, 4).join(", ")}`);
   println(io);
   println(io, ` ${s.bold("Next")}`);
+  if (org && fromPlatform === null)
+    println(
+      io,
+      `   0. ${s.bold("groundrule login")}    sign in to ${org} (CI: set GROUNDRULE_TOKEN)`,
+    );
   println(io, `   1. ${s.bold("groundrule sync")}     write instructions for your coding agents`);
   println(io, `   2. ${s.bold("groundrule check")}    check your current changes`);
   println(

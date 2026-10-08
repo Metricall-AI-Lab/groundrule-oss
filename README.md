@@ -68,8 +68,22 @@ More in [`examples/foundation`](examples/foundation/.groundrule/standards).
 | `groundrule explain <ID>` | Why a standard exists, examples, how to comply, exceptions |
 | `groundrule doctor` | Check configuration, tools, and agent files |
 | `groundrule packs` | List bundled packs |
+| `groundrule login` | Sign in to your organization on the Groundrule platform (browser approval) |
+| `groundrule whoami` / `logout` | Show or remove (and revoke) your saved sign-in |
 
 Exit codes: `0` passed, `1` failed, `2` configuration or usage error.
+
+## Using the Groundrule platform (optional)
+
+Everything above works offline. If your organization manages its standards on the Groundrule platform, connect a repository instead of listing packs:
+
+```bash
+npx @groundrule/cli login               # approve this computer in your browser
+npx @groundrule/cli init --org acme     # writes platform: { org: acme } to .groundrule/config.yaml
+npx @groundrule/cli sync                # your organization's rules, with every customization
+```
+
+What each command takes from the platform depends on the rule's rollout stage: `sync` writes rules at Teach, Advise, and Enforce into your agent files; `check` runs Enforce rules as set and Advise rules as warnings. Rules your repository defines in `.groundrule/standards/` still apply. In CI, set `GROUNDRULE_TOKEN` to a token from Settings → API tokens. Sign-ins are saved in `~/.config/groundrule/credentials.json`, readable only by you.
 
 ## Checks
 
@@ -84,7 +98,7 @@ Exit codes: `0` passed, `1` failed, `2` configuration or usage error.
 
 ## Packs
 
-`groundrule:packs/security-baseline`, `groundrule:packs/typescript-node`, `groundrule:packs/java-spring`. Your organization's own packs work the same way: `github:your-org/engineering-standards//packs/backend@v1`.
+`groundrule packs` lists the bundled packs (security, TypeScript/Node, React, Python, Java/Spring, Go, Docker, Kubernetes, Terraform, GitHub Actions, HTTP APIs, testing, AI agent hygiene). Your organization's own packs work the same way: `github:your-org/engineering-standards//packs/backend@v1`.
 
 ## GitHub
 

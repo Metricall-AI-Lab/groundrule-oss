@@ -7,7 +7,7 @@ export async function sync(
   io: IO,
   options: { check?: boolean; refresh?: boolean },
 ): Promise<number> {
-  const workspace = await openWorkspace(io, options);
+  const workspace = await openWorkspace(io, { ...options, use: "agents" });
   if (!workspace) return EXIT.usage;
   const s = style(io);
 
@@ -39,6 +39,16 @@ export async function sync(
     io,
     ` ${s.bold("groundrule sync")} ${s.dim(`· ${delivered} standards → ${workspace.config.targets.join(", ")}`)}`,
   );
+  if (workspace.platform) {
+    const { org, target } = workspace.platform.rulebook;
+    const where = target.repository
+      ? `${target.repository.name}${target.team ? `, team ${target.team.name}` : ""}`
+      : "organization rules";
+    println(
+      io,
+      `   ${s.dim(`From ${org.name} on Groundrule (${where}): rules at Teach, Advise, and Enforce`)}`,
+    );
+  }
   println(io);
   const icon = {
     created: s.green("+"),

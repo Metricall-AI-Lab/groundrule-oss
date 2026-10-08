@@ -4,7 +4,7 @@ import { EXIT, type IO, println, style } from "../io.js";
 import { openWorkspace } from "../workspace.js";
 
 export async function standards(io: IO, options: { json?: boolean }): Promise<number> {
-  const workspace = await openWorkspace(io);
+  const workspace = await openWorkspace(io, { use: "all" });
   if (!workspace) return EXIT.usage;
   const repo = await inspectRepository(workspace);
   const rows = workspace.standards
@@ -17,6 +17,7 @@ export async function standards(io: IO, options: { json?: boolean }): Promise<nu
       checks: l.standard.spec.checks.map((c) => c.evaluator),
       paths: l.standard.spec.scope.paths ?? [],
       origin: l.origin,
+      ...(l.stage ? { stage: l.stage } : {}),
       file: displayPath(workspace.root, l.file),
     }))
     .sort((a, b) => compareSeverity(b.severity, a.severity) || a.id.localeCompare(b.id));
@@ -54,7 +55,7 @@ export async function standards(io: IO, options: { json?: boolean }): Promise<nu
     println(io, inactive ? s.dim(line) : line);
     println(
       io,
-      ` ${" ".repeat(width)}  ${" ".repeat(8)}  ${s.dim(`${checks}${r.paths.length ? ` · ${r.paths.join(", ")}` : ""} · ${r.origin}`)}`,
+      ` ${" ".repeat(width)}  ${" ".repeat(8)}  ${s.dim(`${checks}${r.paths.length ? ` · ${r.paths.join(", ")}` : ""} · ${r.origin}${r.stage ? ` · ${r.stage}` : ""}`)}`,
     );
   }
   println(io);

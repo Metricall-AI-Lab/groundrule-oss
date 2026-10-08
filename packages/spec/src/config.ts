@@ -30,6 +30,26 @@ export const StandardOverride = z.strictObject({
 });
 export type StandardOverride = z.infer<typeof StandardOverride>;
 
+/** Connects a repository to an organization on the Groundrule platform. */
+export const Platform = z.strictObject({
+  org: z
+    .string()
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Use the organization's URL name, e.g. acme")
+    .max(48)
+    .describe("The organization's URL name on the platform, e.g. acme."),
+  url: z
+    .url({ protocol: /^https?$/ })
+    .optional()
+    .describe("Platform address. Defaults to https://app.groundrule.dev."),
+  repository: z
+    .string()
+    .min(1)
+    .max(200)
+    .optional()
+    .describe("Name registered in Groundrule, e.g. acme/payments-api. Defaults to the git remote."),
+});
+export type Platform = z.infer<typeof Platform>;
+
 export const Config = z
   .strictObject({
     apiVersion: ApiVersion,
@@ -57,6 +77,9 @@ export const Config = z
       failOn: "blocker",
     }),
     overrides: z.record(StandardId, StandardOverride).default({}),
+    platform: Platform.optional().describe(
+      "Take standards from your organization on the Groundrule platform instead of `extends`.",
+    ),
   })
   .describe("Repository configuration, stored at .groundrule/config.yaml.");
 export type Config = z.infer<typeof Config>;

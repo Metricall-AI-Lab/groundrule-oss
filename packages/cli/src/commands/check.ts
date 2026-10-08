@@ -26,7 +26,8 @@ export interface CheckOptions {
 }
 
 export async function check(io: IO, options: CheckOptions): Promise<number> {
-  const workspace = await openWorkspace(io);
+  // From the platform: Enforce rules as set, Advise rules as warnings, Teach rules not checked.
+  const workspace = await openWorkspace(io, { use: "checks" });
   if (!workspace) return EXIT.usage;
   if (options.failOn) workspace.config.enforcement.failOn = options.failOn;
 
