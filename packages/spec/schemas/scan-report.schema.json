@@ -332,6 +332,265 @@
         "additionalProperties": false
       }
     },
+    "imports": {
+      "description": "Existing instructions, tool settings, and owners, as proposals (RFC 0004). Omitted with --no-import.",
+      "type": "object",
+      "properties": {
+        "instructions": {
+          "maxItems": 500,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "section": {
+                "description": "Heading path, e.g. Testing › Mocks.",
+                "type": "string",
+                "maxLength": 200
+              },
+              "strength": {
+                "type": "string",
+                "enum": [
+                  "must",
+                  "should",
+                  "info"
+                ]
+              },
+              "scope": {
+                "description": "From Cursor globs or Copilot applyTo.",
+                "type": "object",
+                "properties": {
+                  "paths": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  }
+                },
+                "required": [
+                  "paths"
+                ],
+                "additionalProperties": false
+              },
+              "sources": {
+                "minItems": 1,
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400,
+                      "description": "Repository-relative POSIX path."
+                    },
+                    "startLine": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "endLine": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "file",
+                    "startLine"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "similar": {
+                "default": [],
+                "description": "Catalog rules with similar wording (keyword match, not AI).",
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+                      "description": "Unique, stable standard identifier, e.g. AUTH-017."
+                    },
+                    "score": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "score"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "Hash of the normalized text."
+              }
+            },
+            "required": [
+              "text",
+              "strength",
+              "sources",
+              "fingerprint"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "toolSettings": {
+          "maxItems": 300,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "maxLength": 40,
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+              },
+              "setting": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "description": "e.g. no-console, T201, strict."
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 60,
+                "description": "As configured, e.g. error, warn, off, true."
+              },
+              "stance": {
+                "type": "string",
+                "enum": [
+                  "enforced",
+                  "warned",
+                  "disabled"
+                ]
+              },
+              "standardId": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+                "description": "Unique, stable standard identifier, e.g. AUTH-017."
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400,
+                    "description": "Repository-relative POSIX path."
+                  },
+                  "line": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "tool",
+              "setting",
+              "value",
+              "stance",
+              "standardId",
+              "source"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "owners": {
+          "maxItems": 200,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "owners": {
+                "minItems": 1,
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              },
+              "category": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "repositoryDefault": {
+                "type": "boolean",
+                "description": "The catch-all entry (*), i.e. who owns the repository."
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400,
+                    "description": "Repository-relative POSIX path."
+                  },
+                  "startLine": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "endLine": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "file",
+                  "startLine"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "pattern",
+              "owners",
+              "repositoryDefault",
+              "source"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "instructions",
+        "toolSettings",
+        "owners"
+      ],
+      "additionalProperties": false
+    },
     "summary": {
       "type": "object",
       "properties": {

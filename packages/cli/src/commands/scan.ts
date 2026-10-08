@@ -8,7 +8,7 @@ import {
   scanRepository,
 } from "@groundrule/core";
 import { builtinEvaluators } from "@groundrule/evaluators";
-import { CATALOG_DIR, listPacks } from "@groundrule/packs";
+import { CATALOG_DIR, listPacks, TOOL_MAPPING } from "@groundrule/packs";
 import type { Config, ScanReport, ScanRule } from "@groundrule/spec";
 import { EXIT, eprintln, type IO, println, style, VERSION } from "../io.js";
 import { call, detectRepository, PlatformError, platformUrl, tokenFor } from "../platform.js";
@@ -18,6 +18,7 @@ export interface ScanOptions {
   output?: string;
   upload?: boolean;
   snippets?: boolean;
+  import?: boolean;
   repository?: string;
   org?: string;
   url?: string;
@@ -94,6 +95,7 @@ export async function scan(io: IO, options: ScanOptions): Promise<number> {
     snippets: options.snippets !== false,
     repositoryName,
     tags: config?.tags ?? [],
+    imports: options.import === false ? false : { mapping: TOOL_MAPPING },
   });
 
   const json = `${JSON.stringify(report, null, 2)}\n`;
@@ -225,11 +227,24 @@ function printSummary(io: IO, report: ScanReport, options: ScanOptions) {
   ].sort();
   println(io);
   println(io, ` ${label("Packs")}${list(packs, "none")} ${s.dim("apply to this repository")}`);
-  println(io);
+  if (report.imports) {
+    const { instructions, toolSettings, owners } = report.imports;
+    println(
+      io,
+      ` ${label("Imports")}${instructions.length} instructions from agent files · ${toolSettings.length} tool settings that match catalog rules · ${owners.length} CODEOWNERS entries`,
+    );
+    const enforced = toolSettings.filter((t) => t.stance === "enforced");
+    if (enforced.length)
+      println(
+        io,
+        ` ${" ".repeat(12)}${s.dim(`Already enforced by your tools: ${[...new Set(enforced.map((t) => t.standardId))].slice(0, 8).join(", ")}`)}`,
+      );
+    println(io);
+  }
   if (!options.upload) {
     println(
       io,
-      ` ${s.dim("Nothing left this computer.")} Run ${s.bold("groundrule scan --upload")} to share it with your organization, or ${s.bold("--json")} to see exactly what would be sent.`,
+      ` ${s.dim("Nothing left this computer.")} Run ${s.bold("groundrule scan --upload")} to share it with your organization, or ${s.bold("--json")} to see exactly what would be sent.${report.imports?.instructions.length ? ` Uploads include your agent files' instructions (redacted); ${s.bold("--no-import")} leaves them out.` : ""}`,
     );
     println(io);
   }

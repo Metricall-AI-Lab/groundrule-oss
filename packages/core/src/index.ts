@@ -5,6 +5,7 @@ export * from "./frameworks.js";
 export * from "./fs.js";
 export * from "./generated.js";
 export * from "./git.js";
+export * from "./importers.js";
 export * from "./languages.js";
 export * from "./load.js";
 export * from "./repository.js";

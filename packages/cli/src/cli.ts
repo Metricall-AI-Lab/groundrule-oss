@@ -88,6 +88,10 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     .option("-o, --output <file>", "also write the report to a file")
     .option("--upload", "share the report with your organization on Groundrule")
     .option("--no-snippets", "leave code snippets out of the report")
+    .option(
+      "--no-import",
+      "leave out instructions, tool settings, and owners found in the repository",
+    )
     .option("--repository <name>", "repository name, e.g. acme/api (default: from the git remote)")
     .option("--org <slug>", "organization to upload to")
     .option("--url <url>", "Groundrule platform address")
@@ -97,6 +101,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
         output?: string;
         upload?: boolean;
         snippets?: boolean;
+        import?: boolean;
         repository?: string;
         org?: string;
         url?: string;

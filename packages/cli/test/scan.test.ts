@@ -30,7 +30,10 @@ const APP = {
   "package.json": '{ "name": "web", "dependencies": { "react": "^19.0.0" } }\n',
   "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
   "tsconfig.json": '{ "compilerOptions": { "strict": true } }\n',
-  "AGENTS.md": "# How we work\n\n- Small changes\n",
+  "AGENTS.md": "# How we work\n\n- Small changes\n- Never log tokens or personal data.\n",
+  "CLAUDE.md": "@AGENTS.md\n",
+  "eslint.config.mjs": 'export default [{ rules: { "no-console": "error" } }];\n',
+  ".github/CODEOWNERS": "* @acme/web\n/.github/workflows/ @acme/devex\n",
   "src/app.ts": 'export const run = () => console.log("started");\n',
 };
 
@@ -101,8 +104,12 @@ describe("groundrule scan", () => {
     const r = await cli(root, ["scan"], platform.fetch);
     expect(r.code).toBe(0);
     expect(r.stdout).toContain("groundrule scan · acme/web");
-    expect(r.stdout).toMatch(/Stack\s+TypeScript, react/);
-    expect(r.stdout).toMatch(/Agent files AGENTS\.md \(4 lines\)/);
+    expect(r.stdout).toMatch(/Stack\s+JavaScript, TypeScript, react/);
+    expect(r.stdout).toMatch(/Agent files .*AGENTS\.md \(5 lines\)/);
+    expect(r.stdout).toMatch(
+      /Imports\s+2 instructions from agent files · 2 tool settings that match catalog rules · 2 CODEOWNERS entries/,
+    );
+    expect(r.stdout).toContain("Already enforced by your tools: TS-001, TS-007");
     expect(r.stdout).toContain("typescript (strict)");
     expect(r.stdout).toMatch(/! \d+ with findings/);
     expect(r.stdout).toContain("TS-001");
@@ -116,7 +123,24 @@ describe("groundrule scan", () => {
     const r = await cli(root, ["scan", "--json", "-o", "report.json"]);
     const report = ScanReport.parse(JSON.parse(r.stdout));
     expect(report.repository).toMatchObject({ name: "acme/web", branch: "main" });
-    expect(report.agentFiles.map((f) => f.path)).toEqual(["AGENTS.md"]);
+    expect(report.agentFiles.map((f) => f.path)).toEqual(
+      [".github/CODEOWNERS", "AGENTS.md", "CLAUDE.md"].filter((p) => p !== ".github/CODEOWNERS"),
+    );
+    expect(report.imports?.instructions.map((i) => i.text)).toEqual([
+      "Small changes",
+      "Never log tokens or personal data.",
+    ]);
+    expect(report.imports?.instructions[1]?.similar[0]?.id).toBe("SEC-006");
+    expect(report.imports?.toolSettings.map((t) => [t.setting, t.standardId, t.stance])).toEqual(
+      expect.arrayContaining([
+        ["no-console", "TS-001", "enforced"],
+        ["strict", "TS-007", "enforced"],
+      ]),
+    );
+    expect(report.imports?.owners.map((o) => [o.pattern, o.category ?? null])).toEqual([
+      ["*", null],
+      ["/.github/workflows/", "ci"],
+    ]);
     expect(report.rules.find((x) => x.id === "TS-001")).toMatchObject({
       outcome: "violations",
       examples: [
@@ -128,6 +152,13 @@ describe("groundrule scan", () => {
       ],
     });
     expect(JSON.parse(await readFile(join(root, "report.json"), "utf8"))).toEqual(report);
+  });
+
+  it("leaves imports out with --no-import", async () => {
+    const root = await repo(APP);
+    const report = JSON.parse((await cli(root, ["scan", "--json", "--no-import"])).stdout);
+    expect(report.imports).toBeUndefined();
+    expect(JSON.stringify(report)).not.toContain("personal data");
   });
 
   it("leaves code out with --no-snippets", async () => {

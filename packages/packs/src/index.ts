@@ -64,3 +64,5 @@ const KNOWN = new Set([
   "testing",
   "agent-hygiene",
 ]);
+
+export * from "./mappings.js";

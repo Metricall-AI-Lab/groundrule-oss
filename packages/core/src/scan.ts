@@ -22,6 +22,13 @@ import {
 import picomatch from "picomatch";
 import type { Evaluator } from "./evaluator.js";
 import { MANAGED_BEGIN } from "./generated.js";
+import {
+  importInstructions,
+  importOwners,
+  importToolSettings,
+  indexStandards,
+  type ToolMapping,
+} from "./importers.js";
 import { inspectRepository } from "./repository.js";
 import { runChecks } from "./runner.js";
 import { matchesScope } from "./scope.js";
@@ -250,6 +257,8 @@ export interface ScanOptions {
   snippets: boolean;
   repositoryName?: string;
   tags?: string[];
+  /** Also import instructions, tool settings, and owners as proposals (B2). */
+  imports?: { mapping: ToolMapping } | false;
   files?: readonly string[];
   now?: Date;
 }
@@ -403,6 +412,7 @@ export async function scanRepository(options: ScanOptions): Promise<ScanReport> 
   }
   rules.sort((a, b) => a.id.localeCompare(b.id));
 
+  const agentFiles = await detectAgentFiles(root, repo.files);
   const commit = await gitValue(root, ["rev-parse", "HEAD"]);
   // symbolic-ref also works before the first commit; detached HEADs have no branch.
   const branch = await gitValue(root, ["symbolic-ref", "--quiet", "--short", "HEAD"]);
@@ -423,9 +433,23 @@ export async function scanRepository(options: ScanOptions): Promise<ScanReport> 
       files: repo.files.length,
     },
     stack: { languages: repo.languages.slice(0, 40), frameworks: repo.frameworks.slice(0, 40) },
-    agentFiles: await detectAgentFiles(root, repo.files),
+    agentFiles,
     tools: await detectTools(root, repo.files),
     rules,
+    ...(options.imports
+      ? {
+          imports: {
+            instructions: await importInstructions(
+              root,
+              agentFiles.filter((f) => !f.managed || f.lines > 0),
+              indexStandards(options.standards),
+              redactSecrets,
+            ),
+            toolSettings: await importToolSettings(root, repo.files, options.imports.mapping),
+            owners: await importOwners(root, repo.files),
+          },
+        }
+      : {}),
     summary: {
       rules: rules.length,
       clean: count("clean"),

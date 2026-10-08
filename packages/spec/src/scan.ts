@@ -91,6 +91,72 @@ export const ScanRule = z.strictObject({
 });
 export type ScanRule = z.infer<typeof ScanRule>;
 
+const SourceLine = z.strictObject({
+  file: RelPath,
+  startLine: z.number().int().positive(),
+  endLine: z.number().int().positive().optional(),
+});
+
+/** How firmly an instruction is worded: "must/never", "should/prefer", or neither. */
+export const INSTRUCTION_STRENGTHS = ["must", "should", "info"] as const;
+
+/**
+ * One instruction found in an agent file (a bullet, numbered item, or directive
+ * paragraph), as a candidate rule. Its text leaves the machine, redacted, unless the scan
+ * runs with --no-import.
+ */
+export const ImportedInstruction = z.strictObject({
+  text: z.string().min(1).max(1000),
+  section: z.string().max(200).optional().describe("Heading path, e.g. Testing › Mocks."),
+  strength: z.enum(INSTRUCTION_STRENGTHS),
+  scope: z
+    .strictObject({ paths: z.array(z.string().min(1).max(200)).max(20) })
+    .optional()
+    .describe("From Cursor globs or Copilot applyTo."),
+  sources: z.array(SourceLine).min(1).max(10),
+  similar: z
+    .array(z.strictObject({ id: StandardId, score: z.number().min(0).max(1) }))
+    .max(3)
+    .default([])
+    .describe("Catalog rules with similar wording (keyword match, not AI)."),
+  fingerprint: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .describe("Hash of the normalized text."),
+});
+export type ImportedInstruction = z.infer<typeof ImportedInstruction>;
+
+/** A linter or compiler setting that corresponds to a catalog rule. */
+export const ImportedToolSetting = z.strictObject({
+  tool: z
+    .string()
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+    .max(40),
+  setting: z.string().min(1).max(120).describe("e.g. no-console, T201, strict."),
+  value: z.string().max(60).describe("As configured, e.g. error, warn, off, true."),
+  stance: z.enum(["enforced", "warned", "disabled"]),
+  standardId: StandardId,
+  source: z.strictObject({ file: RelPath, line: z.number().int().positive().optional() }),
+});
+export type ImportedToolSetting = z.infer<typeof ImportedToolSetting>;
+
+/** A CODEOWNERS entry, with the rule category it suggests ownership of. */
+export const ImportedOwner = z.strictObject({
+  pattern: z.string().min(1).max(300),
+  owners: z.array(z.string().min(1).max(120)).min(1).max(20),
+  category: z.string().max(40).optional(),
+  repositoryDefault: z.boolean().describe("The catch-all entry (*), i.e. who owns the repository."),
+  source: SourceLine,
+});
+export type ImportedOwner = z.infer<typeof ImportedOwner>;
+
+export const ScanImports = z.strictObject({
+  instructions: z.array(ImportedInstruction).max(500),
+  toolSettings: z.array(ImportedToolSetting).max(300),
+  owners: z.array(ImportedOwner).max(200),
+});
+export type ScanImports = z.infer<typeof ScanImports>;
+
 /**
  * What `groundrule scan` learned about a repository: its stack, existing agent files and
  * tool configurations, and how every applicable catalog rule would do today. It holds
@@ -126,6 +192,9 @@ export const ScanReport = z
     agentFiles: z.array(ScanAgentFile).max(100),
     tools: z.array(ScanTool).max(100),
     rules: z.array(ScanRule).max(2000),
+    imports: ScanImports.optional().describe(
+      "Existing instructions, tool settings, and owners, as proposals (RFC 0004). Omitted with --no-import.",
+    ),
     summary: z.strictObject({
       rules: Count,
       clean: Count,
@@ -137,4 +206,5 @@ export const ScanReport = z
     }),
   })
   .describe("A repository scan, produced by `groundrule scan` and uploaded with --upload.");
+export type ScanReportInput = z.input<typeof ScanReport>;
 export type ScanReport = z.infer<typeof ScanReport>;

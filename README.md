@@ -84,7 +84,7 @@ npx @groundrule/cli init --org acme     # writes platform: { org: acme } to .gro
 npx @groundrule/cli sync                # your organization's rules, with every customization
 ```
 
-`groundrule scan --upload` shares a scan with your organization so it can see which rules fit each repository. Reports contain counts and at most three one-line, redacted snippets per rule (none for security rules, none at all with `--no-snippets`); `--json` shows exactly what would be sent.
+`groundrule scan --upload` shares a scan with your organization so it can see which rules fit each repository. It also imports what you already have as proposals: instructions from AGENTS.md, CLAUDE.md, Cursor, and Copilot files; ESLint, Biome, Ruff, golangci-lint, Checkstyle, PMD, and tsconfig settings that match catalog rules; and CODEOWNERS (use `--no-import` to leave these out). Reports contain counts and at most three one-line, redacted snippets per rule (none for security rules, none at all with `--no-snippets`); `--json` shows exactly what would be sent.
 
 What each command takes from the platform depends on the rule's rollout stage: `sync` writes rules at Teach, Advise, and Enforce into your agent files; `check` runs Enforce rules as set and Advise rules as warnings. Rules your repository defines in `.groundrule/standards/` still apply. In CI, set `GROUNDRULE_TOKEN` to a token from Settings → API tokens. Sign-ins are saved in `~/.config/groundrule/credentials.json`, readable only by you.
 
