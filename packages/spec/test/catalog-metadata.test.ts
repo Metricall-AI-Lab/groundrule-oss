@@ -75,6 +75,7 @@ describe("Standard catalog metadata (RFC 0001)", () => {
       withSpec({ compliance: [{ framework: "soc2", controls: [] }] }),
     );
     expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe("List at least one control ID, e.g. CC6.1");
   });
 
   it("rejects an unknown rollout stage and noise level", () => {

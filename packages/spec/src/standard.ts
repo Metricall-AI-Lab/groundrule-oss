@@ -143,7 +143,7 @@ export const ComplianceMapping = z.strictObject({
   ),
   controls: z
     .array(z.string().min(1).max(64))
-    .min(1)
+    .min(1, "List at least one control ID, e.g. CC6.1")
     .describe("Control IDs within the framework, e.g. CC6.1 or 8.28."),
 });
 export type ComplianceMapping = z.infer<typeof ComplianceMapping>;
