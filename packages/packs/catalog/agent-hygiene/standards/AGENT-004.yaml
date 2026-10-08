@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-004
+  title: Run the project's checks before declaring the work done
+  type: agent-instruction
+  category: agents
+spec:
+  severity: warning
+  intent: >
+    "Done" from an agent that did not run the tests shifts verification onto reviewers and CI,
+    and claims of passing tests that were never run destroy trust.
+  requirement: >
+    Before reporting a task as complete, find how the project verifies changes (README,
+    CONTRIBUTING, package.json scripts, Makefile, task runner, CI workflow) and run the relevant
+    tests, type checker, linter, and formatter for what you changed. Report exactly which commands
+    you ran and their results. If something could not be run, or failures remain, say so plainly;
+    never claim checks pass without running them.
+  agent:
+    summary: >
+      Before saying you are done, run the project's own test, type-check, lint, and format commands
+      (from README, package scripts, Makefile, or CI) for the code you changed. Report the commands
+      and results, and state clearly anything you could not run or that still fails.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

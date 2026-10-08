@@ -1,0 +1,35 @@
+standard: DOCKER-002
+cases:
+  - name: untagged and latest base images
+    expect: violation
+    count: 3
+    files:
+      Dockerfile: |
+        FROM ubuntu
+        FROM node:latest AS build
+        FROM --platform=linux/amd64 registry.example.com:5000/team/base
+  - name: lowercase instruction with latest
+    expect: violation
+    files:
+      app/Dockerfile.dev: "from python:latest\n"
+  - name: scratch, stage aliases, ARG-based images, tags and digests
+    expect: clean
+    files:
+      Dockerfile: |
+        ARG BASE_IMAGE=node:22-alpine
+        # FROM ubuntu
+        FROM --platform=$BUILDPLATFORM golang:1.23 AS builder
+        FROM builder AS test
+        FROM ${BASE_IMAGE} AS runtime-base
+        FROM runtime-base
+        FROM registry.example.com:5000/team/base:2.4.1
+        FROM gcr.io/distroless/static-debian12@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        FROM node:${NODE_VERSION}-alpine
+        FROM scratch
+        COPY --from=builder /out/app /app
+  - name: an image that shares a prefix with an earlier stage alias is still checked
+    expect: violation
+    files:
+      Dockerfile: |
+        FROM golang:1.23 AS builder-stage
+        FROM builder

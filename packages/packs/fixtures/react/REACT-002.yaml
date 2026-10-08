@@ -1,0 +1,36 @@
+standard: REACT-002
+cases:
+  - name: index and i as keys
+    expect: violation
+    count: 2
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/TodoList.tsx: |
+        export function TodoList({ todos }: Props) {
+          return (
+            <ul>
+              {todos.map((todo, index) => (
+                <TodoItem key={index} todo={todo} />
+              ))}
+              {tags.map((tag, i) => <Tag key={ i } label={tag} />)}
+            </ul>
+          );
+        }
+  - name: stable keys and similar names
+    expect: clean
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/TodoList.tsx: |
+        export function TodoList({ todos }: Props) {
+          return (
+            <ul>
+              {todos.map((todo, index) => (
+                <TodoItem key={todo.id} todo={todo} position={index} />
+              ))}
+              {rows.map((row, i) => <Row key={rows[i].id} data-index={i} />)}
+              {pages.map((page) => <Page key={page.index} />)}
+              <Cell monkey={index} />
+            </ul>
+          );
+        }
+      src/TodoList.stories.tsx: "{items.map((x, i) => <Item key={i} />)}\n"

@@ -1,0 +1,35 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-018
+  title: Restrict CORS to an allow list of trusted origins
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: Reflecting any Origin while allowing credentials lets every website read your users' authenticated responses.
+  requirement: >
+    Configure CORS with an explicit allow list of trusted origins. Never reflect the request's
+    Origin header back unchecked, never allow the "null" origin, and never combine a wildcard or
+    reflected origin with Access-Control-Allow-Credentials: true. Use Access-Control-Allow-Origin: *
+    only for public, unauthenticated resources.
+  examples:
+    approved:
+      - { code: 'cors({ origin: ["https://app.example.com"], credentials: true })', language: typescript }
+    forbidden:
+      - { code: "cors({ origin: true, credentials: true })", language: typescript, note: "Reflects any origin with credentials." }
+      - { code: 'res.setHeader("Access-Control-Allow-Origin", req.headers.origin)', language: typescript }
+  agent:
+    summary: >
+      Configure CORS with an explicit allow list of origins; never reflect the request Origin,
+      allow "null", or use a wildcard together with credentials.
+  references:
+    - { id: CWE-942, title: Permissive Cross-domain Security Policy with Untrusted Domains }
+  compliance:
+    - { framework: owasp-asvs, controls: [V14.5.3] }
+  applicability:
+    frameworks: [express, fastify, nestjs, hono, nextjs, spring-boot, django, flask, fastapi]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

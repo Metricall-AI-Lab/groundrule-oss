@@ -1,0 +1,32 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-009
+  title: Write function components with hooks
+  type: agent-instruction
+  category: code-quality
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: Function components and hooks are React's supported model; new APIs (Server Components, use, transitions) do not work with classes.
+  requirement: >
+    Write new components as function components with hooks. Do not convert existing class
+    components as a side effect of an unrelated change. Error boundaries are the one case that
+    still needs a class (or the project's error-boundary library).
+  examples:
+    approved:
+      - "export function OrderList({ orders }: Props) { const [filter, setFilter] = useState(''); ... }"
+    forbidden:
+      - "export class OrderList extends React.Component<Props, State> { ... }"
+  agent:
+    summary: >
+      Write new components as function components with hooks; use classes only for error
+      boundaries. Do not rewrite existing class components unless asked.
+  applicability:
+    frameworks: [react]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

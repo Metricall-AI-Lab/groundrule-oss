@@ -1,0 +1,31 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-012
+  title: Do not use assert for runtime validation
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [python]
+  intent: >
+    Python removes assert statements when run with -O or PYTHONOPTIMIZE, so checks written
+    as asserts silently disappear in some deployments.
+  requirement: >
+    Validate inputs, permissions, and invariants that must hold in production with an explicit
+    `if` and a raised exception (ValueError, TypeError, PermissionError, or a domain error).
+    Use assert only in tests and for internal sanity checks whose removal is harmless.
+  examples:
+    approved: ['if amount <= 0:\n    raise ValueError("amount must be positive")']
+    forbidden: ["assert user.is_admin, \"forbidden\""]
+  agent:
+    summary: >
+      Never use assert to validate input, permissions, or production invariants; asserts are
+      stripped under python -O. Raise an explicit exception instead. Asserts are fine in tests.
+  references:
+    - { url: "https://docs.python.org/3/reference/simple_stmts.html#the-assert-statement", title: "Python reference: the assert statement" }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

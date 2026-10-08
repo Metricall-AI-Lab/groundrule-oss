@@ -1,0 +1,35 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-008
+  title: Narrow types instead of asserting them
+  type: agent-instruction
+  category: code-quality
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript]
+  intent: Non-null assertions and as-casts silence the compiler without checking anything, so the crash moves to runtime.
+  requirement: >
+    Do not use the non-null assertion operator (!) or as-casts to make a type error go away.
+    Narrow with a check (if, optional chaining, a type guard, a schema parse) and handle the
+    missing case. Assertions are acceptable only where an invariant is guaranteed and obvious
+    from the surrounding code, with a comment saying why.
+  examples:
+    approved:
+      - "const user = users.get(id); if (!user) throw new NotFoundError(id);"
+      - "const config = ConfigSchema.parse(raw);"
+    forbidden:
+      - "const user = users.get(id)!;"
+      - "const config = raw as Config;"
+      - "const n = value as unknown as number;"
+  agent:
+    summary: >
+      Do not use ! non-null assertions or as-casts to silence type errors. Narrow with a check,
+      type guard, or schema parse and handle the missing case explicitly.
+  applicability:
+    files: ["**/tsconfig.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

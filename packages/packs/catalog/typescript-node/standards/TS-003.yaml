@@ -16,13 +16,14 @@ spec:
     Parse the input instead: JSON.parse, a schema, or a lookup table of allowed operations.
   checks:
     - evaluator: regex
-      pattern: "(?<![\\w.])eval\\s*\\(|\\bnew\\s+Function\\s*\\("
+      # Skips comment lines, so "we never call eval()" in a comment is not flagged.
+      pattern: "^(?![ \\t]*(?://|/?\\*))[^\\n]*?(?:(?<![\\w.$])eval\\s*\\(|\\bnew\\s+Function\\s*\\()"
       include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
       exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/benchmarks/**", "**/scripts/**", "**/*.config.*", "**/bin/**"]
       message: eval or new Function in application code
   references:
-    - { id: CWE-95, title: Eval Injection }
-    - { id: CWE-94, title: Improper Control of Generation of Code }
+    - { id: CWE-95, title: "Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')" }
+    - { id: CWE-94, title: "Improper Control of Generation of Code ('Code Injection')" }
     - { id: OWASP-A03:2021, title: Injection, url: "https://owasp.org/Top10/A03_2021-Injection/" }
   compliance:
     - { framework: owasp-asvs, controls: [V5.2.4] }
@@ -33,5 +34,6 @@ spec:
     noise: low
     knownFalsePositives:
       - Sandboxes or code generators that need dynamic evaluation by design. Record an exception for them.
+      - The text "eval(" inside a string literal on a code line.
   rollout:
     recommendedStage: enforce

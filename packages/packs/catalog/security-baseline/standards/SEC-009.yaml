@@ -1,0 +1,43 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-009
+  title: No npm access tokens in code or .npmrc
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: An npm token can publish new versions of your packages, turning one leak into a supply-chain attack on every consumer.
+  requirement: >
+    Never commit npm access tokens (npm_...), including as a literal _authToken in .npmrc.
+    Reference an environment variable instead, e.g. //registry.npmjs.org/:_authToken=${NPM_TOKEN}.
+  examples:
+    approved:
+      - "//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
+    forbidden:
+      - "//registry.npmjs.org/:_authToken=npm_..."
+  remediation: >
+    Revoke the token on npmjs.com (or your registry), replace it with a granular token scoped to
+    the packages it needs, and reference it as ${NPM_TOKEN} in .npmrc.
+  checks:
+    - evaluator: regex
+      pattern: '\bnpm_(?![Xx]{36})[A-Za-z0-9]{36}\b'
+      message: npm access token found in code
+    - evaluator: regex
+      pattern: ':_authToken\s*=\s*(?!\$\{)\S+'
+      include: ["**/.npmrc"]
+      message: .npmrc contains a literal auth token instead of ${ENV_VAR}
+  references:
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+  compliance:
+    - { framework: owasp-asvs, controls: [V2.10.4] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
+  applicability:
+    files: ["**/package.json", "**/.npmrc"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Private registries configured with a non-secret placeholder token. Use ${ENV_VAR} syntax instead.
+  rollout:
+    recommendedStage: enforce

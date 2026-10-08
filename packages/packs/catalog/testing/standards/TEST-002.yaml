@@ -1,0 +1,63 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-002
+  title: Every skipped test states why
+  type: requirement
+  category: testing
+spec:
+  severity: warning
+  intent: >
+    Skipped tests without a reason are never re-enabled; the behavior they covered quietly
+    loses its safety net.
+  requirement: >
+    A skipped or disabled test carries its reason and, ideally, a ticket: a comment on the same
+    line or the line above in JavaScript and TypeScript, @Disabled("reason") or @Ignore("reason")
+    in Java and Kotlin, @pytest.mark.skip(reason=...) or pytest.skip("reason") in Python, and
+    t.Skip("reason") in Go. Prefer a conditional skip (skipif, test.skip(condition, reason)) over
+    an unconditional one.
+  remediation: >
+    Fix and re-enable the test, delete it if it is obsolete, or add the reason and a ticket
+    reference, e.g. // Flaky on CI, see PAY-123.
+  examples:
+    approved:
+      - code: |
+          // Disabled until the sandbox supports refunds (PAY-123).
+          it.skip("refunds a captured payment", async () => { ... });
+        language: typescript
+      - code: '@pytest.mark.skip(reason="needs Postgres 16 (DATA-88)")'
+        language: python
+    forbidden:
+      - code: 'xit("refunds a captured payment", async () => { ... });'
+        language: typescript
+      - code: "@Disabled"
+        language: java
+  agent:
+    summary: >
+      Do not skip or disable a test to get a green run. If a skip is truly needed, write the reason
+      and a ticket next to it (comment, @Disabled("..."), skip(reason=...), t.Skip("...")).
+  checks:
+    - evaluator: regex
+      # it.skip("title") / xit("title") etc. with no comment or ticket on the line or the line above.
+      pattern: '^(?<!^[ \t]*(?://|/?\*)[^\n]*\n)(?![ \t]*(?://|/?\*))(?![^\n]*(?://|#\d|\b[A-Z][A-Z0-9]+-\d+\b))[^\n]*?(?<![\w$''"`.])(?:(?:describe|it|test|context|suite|specify)(?:\.describe)?\.skip|xit|xdescribe|xcontext|xtest)\s*\(\s*[''"`]'
+      include: ["**/*.test.*", "**/*.spec.*", "**/*.cy.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/e2e/**", "**/cypress/**"]
+      exclude: ["**/*.snap", "**/*.md", "**/*.mdx", "**/*.py", "**/*.java", "**/*.kt", "**/*.go", "**/*.rb", "**/fixtures/**", "**/__fixtures__/**", "**/testdata/**"]
+      message: Skipped test without a reason
+    - evaluator: regex
+      pattern: '^[ \t]*@pytest\.mark\.skip\b(?!\s*\(\s*(?:reason\s*=|[''"]))|^(?![ \t]*#)[^\n]*?\bpytest\.skip\(\s*\)'
+      include: ["**/test_*.py", "**/*_test.py", "**/tests/**/*.py", "**/test/**/*.py", "**/conftest.py"]
+      message: Skipped test without a reason
+    - evaluator: regex
+      pattern: '^[ \t]*@(?:Disabled|Ignore)\b(?!\s*\(\s*(?:value\s*=\s*)?")'
+      include: ["**/src/test/**/*.java", "**/src/test/**/*.kt", "**/*Test.java", "**/*Tests.java", "**/*IT.java", "**/*Test.kt", "**/*Tests.kt"]
+      message: Disabled test without a reason
+    - evaluator: regex
+      pattern: '^(?![ \t]*//)[^\n]*?\b[tb]\.Skip(?:Now)?\(\s*\)'
+      include: ["**/*_test.go"]
+      message: Skipped test without a reason
+  quality:
+    noise: low
+    knownFalsePositives:
+      - A JavaScript skip whose reason is in a comment more than one line above it. Move the comment next to the skip.
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,13 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: github-actions
+  title: GitHub Actions
+  description: Supply-chain pinning, token permissions, and injection safety for GitHub Actions workflows.
+  owner: groundrule
+  version: 1.0.0
+  tags: [ci, github-actions, supply-chain, security]
+spec:
+  include: ["standards/**/*.yaml"]
+  applicability:
+    files: [".github/workflows/*.yml", ".github/workflows/*.yaml"]

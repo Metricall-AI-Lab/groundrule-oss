@@ -1,0 +1,25 @@
+standard: PY-007
+cases:
+  - name: eval and exec of dynamic code
+    expect: violation
+    count: 2
+    files:
+      app/rules.py: |
+        def run(expr, code):
+            value = eval(expr)
+            exec (code, {})
+            return value
+  - name: literal_eval, methods named eval, strings in comments, and tests
+    expect: clean
+    files:
+      app/rules.py: |
+        import ast
+
+        def run(expr, model, cursor):
+            # We never call eval() on user input.
+            value = ast.literal_eval(expr)
+            model.eval()
+            cursor.exec(expr)
+            evaluate(expr)
+            return value
+      tests/test_rules.py: "assert eval('1 + 1') == 2\n"

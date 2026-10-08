@@ -1,0 +1,43 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-011
+  title: Use SLF4J placeholders, not string concatenation, in log calls
+  type: requirement
+  category: observability
+spec:
+  severity: advisory
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+  intent: >
+    Placeholders defer formatting until the level is enabled and keep the message template
+    constant, so log aggregators can group events and structured encoders can extract arguments.
+  requirement: >
+    Pass values to SLF4J as {} placeholder arguments. Do not build log messages with +.
+    Pass exceptions as the last argument so the stack trace is logged.
+  remediation: >
+    Rewrite log.info("Claim " + id + " approved") as log.info("Claim {} approved", id), and
+    log.error("Failed: " + e.getMessage()) as log.error("Failed to approve claim {}", id, e).
+  examples:
+    approved:
+      - 'log.info("Claim {} approved by {}", claimId, userId);'
+      - 'log.error("Payment for claim {} failed", claimId, e);'
+    forbidden:
+      - 'log.info("Claim " + claimId + " approved by " + userId);'
+      - 'log.error("Payment failed: " + e.getMessage());'
+  checks:
+    - evaluator: regex
+      # A log call whose first argument is a literal followed by + and a non-literal.
+      # Splitting a long constant message across literals ("a " + "b {}") is fine.
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?\b(?:log|logger|LOG|LOGGER)\s*\.\s*(?:trace|debug|info|warn|error)\s*\(\s*"(?:[^"\\\n]|\\.)*"\s*\+(?!\s*")'
+      include: ["**/*.java"]
+      message: String concatenation in a log call; use {} placeholders
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Concatenating a constant into the template (e.g. "Prefix " + PREFIX). Harmless but still worth inlining.
+  rollout:
+    recommendedStage: advise

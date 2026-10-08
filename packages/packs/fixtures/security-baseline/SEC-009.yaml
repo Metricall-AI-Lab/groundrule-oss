@@ -1,0 +1,30 @@
+standard: SEC-009
+cases:
+  - name: literal token in .npmrc
+    expect: violation
+    count: 2
+    files:
+      .npmrc: |
+        registry=https://registry.npmjs.org/
+        //registry.npmjs.org/:_authToken=npm_lc0q13yhrW0g2CUf⟨⟩d0EhWzGIUmmM8fvdJvw8
+  - name: token in a publish script
+    expect: violation
+    files:
+      scripts/publish.sh: |
+        export NODE_AUTH_TOKEN=npm_lc0q13yhrW0g2CUf⟨⟩d0EhWzGIUmmM8fvdJvw8
+        npm publish
+  - name: private registry token that is not npm_-prefixed
+    expect: violation
+    files:
+      .npmrc: |
+        @acme:registry=https://npm.pkg.github.com/
+        //npm.pkg.github.com/:_authToken=0f3c9a1e7b2d4c6a8e0f1b3d5c7a9e1f
+  - name: token referenced from the environment, and npm_ environment variable names
+    expect: clean
+    files:
+      .npmrc: |
+        //registry.npmjs.org/:_authToken=${NPM_TOKEN}
+        always-auth=true
+      scripts/version.js: |
+        console.log(process.env.npm_package_version, process.env.npm_config_registry);
+        const placeholder = "npm_XXXXXXXXXXXXXXXX⟨⟩XXXXXXXXXXXXXXXXXXXX";

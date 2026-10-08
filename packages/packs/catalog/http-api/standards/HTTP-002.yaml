@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-002
+  title: Use the status code that matches the outcome
+  type: agent-instruction
+  category: api-design
+spec:
+  severity: warning
+  intent: >
+    Clients, proxies, retries, caches, and monitoring all branch on the status code; a wrong
+    one causes silent data loss, retry storms, or alerts that never fire.
+  requirement: >
+    Never return 200 with an error in the body. Use 201 with a Location header for creates,
+    204 for success with no body, 400 for malformed requests and 422 for well-formed but
+    invalid ones (or the single one the project already uses for validation), 401 when the
+    caller is not authenticated, 403 when authenticated but not allowed, 404 when the resource
+    does not exist or the caller must not learn that it exists, 409 for state conflicts, and
+    429 for rate limits. Use 5xx only for server faults, never for bad client input.
+  examples:
+    approved:
+      - "POST /orders → 201 Created, Location: /orders/ord_8f2k, body: the created order"
+      - "GET /orders/ord_8f2k owned by another tenant → 404 Not Found"
+    forbidden:
+      - "200 OK with { \"success\": false, \"error\": \"not found\" }"
+      - "500 Internal Server Error because a required field was missing"
+  agent:
+    summary: >
+      Pick status codes deliberately: 201 + Location on create, 204 for empty success, 400/422
+      for invalid input (follow the project's existing choice), 401 unauthenticated, 403
+      forbidden, 404 when the caller must not learn a resource exists, 409 conflict, 429 rate
+      limited. Never return 200 with an error body or 500 for bad input.
+  references:
+    - { id: RFC-9110, title: "HTTP Semantics, section 15: Status Codes", url: "https://www.rfc-editor.org/rfc/rfc9110#section-15" }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

@@ -1,0 +1,28 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-008
+  title: Do not commit the .terraform directory
+  type: repository
+  category: infrastructure
+spec:
+  severity: warning
+  scope:
+    languages: [terraform]
+  intent: >
+    .terraform/ is a local cache of provider binaries, downloaded modules, and backend
+    configuration. It is platform-specific, large, and can contain backend credentials.
+  requirement: >
+    Keep .terraform/ out of version control. Commit .terraform.lock.hcl (a file next to the
+    directory) instead; it is what makes provider versions reproducible.
+  remediation: >
+    Remove the directory from git (git rm -r --cached .terraform) and add .terraform/ to
+    .gitignore. Keep .terraform.lock.hcl committed.
+  checks:
+    - evaluator: files
+      forbid: ["**/.terraform/**"]
+      message: .terraform directory committed to the repository
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: enforce

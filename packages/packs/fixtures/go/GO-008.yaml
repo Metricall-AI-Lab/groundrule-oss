@@ -1,0 +1,38 @@
+standard: GO-008
+cases:
+  - name: Sprintf with quoted and raw SQL
+    expect: violation
+    count: 3
+    files:
+      internal/store/users.go: |
+        package store
+
+        func (s *Store) FindByEmail(ctx context.Context, email string) (*User, error) {
+        	q := fmt.Sprintf("SELECT id, name FROM users WHERE email = '%s'", email)
+        	row := s.db.QueryRowContext(ctx, q)
+        	del := fmt.Sprintf("delete from sessions where user_id = '%v'", id)
+        	upd := fmt.Sprintf(`
+        		UPDATE users SET name = '%s'
+        		WHERE id = $1`, name)
+        	return scan(row)
+        }
+  - name: placeholders, non-SQL messages, integer limits, and tests
+    expect: clean
+    files:
+      internal/store/users.go: |
+        package store
+
+        func (s *Store) FindByEmail(ctx context.Context, email string) (*User, error) {
+        	row := s.db.QueryRowContext(ctx, "SELECT id, name FROM users WHERE email = $1", email)
+        	if err != nil {
+        		return nil, fmt.Errorf(fmt.Sprintf("update failed: %v", err))
+        	}
+        	msg := fmt.Sprintf("Select a plan for %s", name)
+        	note := fmt.Sprintf("deleted %s from the cache", key)
+        	q := fmt.Sprintf("SELECT id FROM users ORDER BY id LIMIT %d", limit)
+        	return scan(row)
+        }
+      internal/store/users_test.go: |
+        package store
+
+        var q = fmt.Sprintf("SELECT * FROM %s", table)

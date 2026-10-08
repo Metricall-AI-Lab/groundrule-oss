@@ -1,0 +1,39 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: K8S-010
+  title: Restrict pod traffic with NetworkPolicies
+  type: agent-instruction
+  category: security
+spec:
+  severity: advisory
+  intent: >
+    By default every pod can reach every other pod in the cluster, so one compromised
+    workload can reach databases and internal APIs it never needed.
+  requirement: >
+    Each namespace should have a default-deny NetworkPolicy for ingress (and, where
+    practical, egress), plus explicit policies that allow only the traffic each workload
+    needs. When adding a workload that accepts or makes connections, add or update its
+    NetworkPolicy in the same change.
+  agent:
+    summary: >
+      When adding or changing a Kubernetes workload, add or update NetworkPolicies so only
+      the traffic it needs is allowed, on top of a namespace default-deny policy.
+  examples:
+    approved:
+      - code: |
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: default-deny-ingress
+          spec:
+            podSelector: {}
+            policyTypes: [Ingress]
+        language: yaml
+  references:
+    - { id: CWE-284, title: Improper Access Control }
+    - https://kubernetes.io/docs/concepts/services-networking/network-policies/
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

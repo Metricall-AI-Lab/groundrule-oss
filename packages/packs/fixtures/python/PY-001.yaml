@@ -1,0 +1,34 @@
+standard: PY-001
+cases:
+  - name: bare except swallowing errors
+    expect: violation
+    count: 2
+    files:
+      app/service.py: |
+        def load(path):
+            try:
+                return read(path)
+            except:
+                pass
+
+        def save(path, data):
+            try:
+                write(path, data)
+            except :
+                log("failed")
+  - name: typed and catch-all Exception handlers, and comments
+    expect: clean
+    files:
+      app/service.py: |
+        def load(path):
+            try:
+                return read(path)
+            except ValueError:
+                return None
+            except (KeyError, OSError) as exc:
+                raise LoadError(path) from exc
+            except Exception:
+                logger.exception("load failed")
+                raise
+        # Never write a bare except: it hides errors.
+        except_handlers = {}

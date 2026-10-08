@@ -1,0 +1,54 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-013
+  title: Do not use Lombok @Data on JPA entities
+  type: prohibition
+  category: data
+spec:
+  severity: warning
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+  intent: >
+    @Data generates equals, hashCode, and toString over every field. On an entity that triggers
+    lazy loading (or LazyInitializationException) from toString and logging, recurses through
+    bidirectional associations, and changes hashCode when the generated id is assigned, which
+    loses entities stored in HashSets.
+  requirement: >
+    Do not annotate @Entity classes with @Data. Use @Getter and @Setter as needed, exclude
+    associations from any generated toString, and implement equals/hashCode on the id or a
+    natural key in a way that stays stable before and after persist.
+  remediation: >
+    Replace @Data with @Getter and @Setter (and @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    if needed). Write equals/hashCode by hand: compare ids only when both are non-null, and return
+    getClass().hashCode() so the value does not change when the id is assigned.
+  examples:
+    approved:
+      - code: |
+          @Entity
+          @Getter
+          @Setter
+          @NoArgsConstructor(access = AccessLevel.PROTECTED)
+          public class Claim { ... }
+        language: java
+    forbidden:
+      - code: |
+          @Entity
+          @Data
+          public class Claim { ... }
+        language: java
+  checks:
+    - evaluator: regex
+      # @Entity and @Data in the same run of annotations, in either order.
+      pattern: '@(?:[\w.]+\.)?(?:Entity|Data)\b(?:\((?:[^()]|\([^()]*\))*\))?(?:\s+@[\w.]+(?:\((?:[^()]|\([^()]*\))*\))?)*?\s+@(?:[\w.]+\.)?(?:Entity|Data)\b'
+      include: ["**/*.java"]
+      message: Lombok @Data on a JPA entity
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - A non-JPA annotation that happens to be named @Entity (e.g. from another persistence library). Exclude those paths with scope.exclude.
+  rollout:
+    recommendedStage: advise

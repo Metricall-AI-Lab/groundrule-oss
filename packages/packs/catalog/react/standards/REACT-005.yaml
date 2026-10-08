@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-005
+  title: Follow the Rules of Hooks
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: React matches hook state by call order, so a conditional or nested hook call silently swaps state between hooks or crashes.
+  requirement: >
+    Call hooks only at the top level of function components and custom hooks: never inside
+    conditions, loops, nested functions, try/catch, or after an early return. Name custom
+    hooks useSomething. List every reactive value an effect, memo, or callback reads in its
+    dependency array instead of suppressing react-hooks/exhaustive-deps.
+  examples:
+    approved:
+      - "const [open, setOpen] = useState(false); if (!user) return null;"
+    forbidden:
+      - "if (!user) return null; const [open, setOpen] = useState(false);"
+      - "useEffect(() => { load(userId); }, []); // eslint-disable-line react-hooks/exhaustive-deps"
+  agent:
+    summary: >
+      Call hooks unconditionally at the top level of components and custom hooks, before any
+      early return. Keep dependency arrays complete; restructure the code instead of disabling
+      exhaustive-deps.
+  references:
+    - https://react.dev/reference/rules/rules-of-hooks
+  applicability:
+    frameworks: [react]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

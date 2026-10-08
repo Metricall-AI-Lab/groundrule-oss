@@ -1,0 +1,63 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: K8S-012
+  title: No wildcard RBAC rules or cluster-admin bindings
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  intent: >
+    A "*" in verbs or resources grants everything, including resources added later, and
+    binding cluster-admin hands a workload full control of the cluster.
+  requirement: >
+    RBAC Roles and ClusterRoles must list explicit verbs and resources. Do not use "*" in
+    verbs or resources, and do not bind workloads or groups to cluster-admin. Prefer
+    namespaced Roles over ClusterRoles.
+  remediation: >
+    Replace "*" with the specific verbs (get, list, watch, ...) and resources the workload
+    uses, and bind a purpose-built Role instead of cluster-admin.
+  examples:
+    approved:
+      - code: |
+          rules:
+            - apiGroups: [""]
+              resources: ["configmaps"]
+              verbs: ["get", "list", "watch"]
+        language: yaml
+    forbidden:
+      - 'verbs: ["*"]'
+      - code: |
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: cluster-admin
+        language: yaml
+  agent:
+    summary: >
+      Write RBAC rules with explicit verbs and resources, never "*", prefer namespaced Roles,
+      and never bind to cluster-admin.
+  checks:
+    - evaluator: regex
+      pattern: '(?:^[ \t]*(?:-[ \t]+)?(?:verbs|resources):[ \t]*\[[^\]\n]*["'']\*["'']|^[ \t]*(?:-[ \t]+)?(?:verbs|resources):[ \t]*\r?\n(?:[ \t]*-[ \t]*[^\n]*\r?\n)*?[ \t]*-[ \t]*["'']\*["'']|^[ \t]*roleRef:[ \t]*\r?\n(?:[ \t]+[^\n]*\r?\n){0,3}?[ \t]+name:[ \t]*["'']?cluster-admin["'']?[ \t]*\r?$)(?:(?<=^kind:[\s\S]*)|(?=[\s\S]*^kind:))'
+      message: RBAC grants wildcard permissions or binds cluster-admin. List explicit verbs and resources.
+      include:
+        - "**/k8s/**/*.y*ml"
+        - "**/kubernetes/**/*.y*ml"
+        - "**/manifests/**/*.y*ml"
+        - "**/deploy/**/*.y*ml"
+        - "**/deployment/**/*.y*ml"
+        - "**/deployments/**/*.y*ml"
+        - "**/kustomize/**/*.y*ml"
+        - "**/charts/**/templates/**/*.y*ml"
+        - "**/helm/**/templates/**/*.y*ml"
+      exclude: ["**/.github/**", "**/*compose*.y*ml"]
+  references:
+    - { id: CWE-269, title: Improper Privilege Management }
+    - https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Operators and cluster tooling (e.g. Argo CD, cert-manager installs) that ship broad ClusterRoles by design. Exclude vendored manifests or grant an exception.
+  rollout:
+    recommendedStage: advise

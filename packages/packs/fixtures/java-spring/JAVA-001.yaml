@@ -1,0 +1,33 @@
+standard: JAVA-001
+cases:
+  - name: field injection with @Autowired
+    expect: violation
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/java/acme/ClaimService.java: |
+        @Service
+        public class ClaimService {
+          @Autowired
+          private ClaimRepository claims;
+        }
+  - name: constructor injection, and field injection in tests
+    expect: clean
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/java/acme/ClaimService.java: |
+        @Service
+        public class ClaimService {
+          private final ClaimRepository claims;
+          @Autowired
+          public ClaimService(ClaimRepository claims) { this.claims = claims; }
+        }
+      src/test/java/acme/ClaimServiceTest.java: |
+        class ClaimServiceTest {
+          @Autowired
+          private ClaimService service;
+        }
+  - name: not a Spring Boot project
+    expect: clean
+    files:
+      pom.xml: "<project></project>"
+      src/main/java/acme/Thing.java: "class Thing { @Autowired private Foo foo; }\n"

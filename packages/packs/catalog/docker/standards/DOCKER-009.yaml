@@ -1,0 +1,42 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-009
+  title: Keep a .dockerignore next to every build context
+  type: repository
+  category: security
+spec:
+  severity: advisory
+  intent: >
+    Without a .dockerignore, COPY . . sends .git, .env files, local credentials, and
+    node_modules into the build context and often into the image itself.
+  requirement: >
+    Every directory used as a Docker build context must have a .dockerignore (or a
+    <Dockerfile>.dockerignore) that excludes at least .git, .env and other secret files,
+    local dependency folders, and build output. Prefer copying explicit paths over COPY . .
+  agent:
+    summary: >
+      When adding or editing a Dockerfile, make sure its build context has a .dockerignore
+      that excludes .git, .env* files, credentials, dependency folders, and build output.
+  examples:
+    approved:
+      - code: |
+          .git
+          .env*
+          !.env.example
+          node_modules
+          dist
+          *.pem
+        language: gitignore
+        note: A typical .dockerignore.
+  rationale: >
+    This is guidance rather than a check because Groundrule's file checks cannot make a
+    requirement conditional on a Dockerfile being present, and build contexts are not
+    always the Dockerfile's directory.
+  references:
+    - { id: CWE-538, title: Insertion of Sensitive Information into Externally-Accessible File or Directory }
+    - https://docs.docker.com/build/building/best-practices/
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

@@ -1,0 +1,49 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-014
+  title: Never bind request bodies to JPA entities
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [java]
+    frameworks: [spring-boot]
+  intent: >
+    Binding JSON straight onto an entity lets a client set any mapped field, including ids,
+    ownership, status, or roles (mass assignment), and couples the API contract to the schema.
+  requirement: >
+    Controller parameters annotated with @RequestBody or @ModelAttribute must be request DTOs
+    (Java records work well) that contain only the fields the client may set. Load the entity in
+    the service and copy the permitted fields onto it explicitly. Responses use response DTOs.
+  examples:
+    approved:
+      - code: |
+          public record UpdateClaimRequest(@NotBlank String description, @Positive BigDecimal amount) {}
+
+          @PutMapping("/claims/{id}")
+          ClaimResponse update(@PathVariable long id, @Valid @RequestBody UpdateClaimRequest body) {
+            return claims.update(id, body);
+          }
+        language: java
+    forbidden:
+      - code: |
+          @PutMapping("/claims/{id}")
+          Claim update(@PathVariable long id, @RequestBody Claim claim) {
+            return repository.save(claim);   // client can set status, ownerId, approvedBy...
+          }
+        language: java
+  agent:
+    summary: >
+      Never use a JPA @Entity as a @RequestBody/@ModelAttribute parameter or return type. Accept a
+      request DTO (record) with only client-settable fields, load the entity in the service, and
+      copy allowed fields explicitly; return a response DTO.
+  references:
+    - { id: CWE-915, title: Improperly Controlled Modification of Dynamically-Determined Object Attributes }
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

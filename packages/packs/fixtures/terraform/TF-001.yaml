@@ -1,0 +1,46 @@
+standard: TF-001
+cases:
+  - name: static keys in the AWS provider
+    expect: violation
+    count: 2
+    files:
+      infra/providers.tf: |
+        provider "aws" {
+          region     = "eu-west-1"
+          access_key = "AKIAIOSFOD⟨⟩NN7EXAMPLE"
+          secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        }
+  - name: literal database password on a resource
+    expect: violation
+    files:
+      infra/db.tf: |
+        resource "aws_db_instance" "main" {
+          engine   = "postgres"
+          username = "app"
+          password = "changeme123"
+        }
+  - name: variables, interpolations, comments, and similarly named arguments
+    expect: clean
+    files:
+      infra/providers.tf: |
+        provider "aws" {
+          region = var.region
+          # access_key = "AKIAIOSFOD⟨⟩NN7EXAMPLE"
+        }
+      infra/db.tf: |
+        resource "aws_db_instance" "main" {
+          password                    = var.db_password
+          master_password             = "not-checked-here"
+          manage_master_user_password = true
+        }
+        resource "aws_rds_cluster" "c" {
+          password = "${random_password.db.result}"
+        }
+        resource "random_password" "db" {
+          length = 32
+        }
+        resource "x" "y" {
+          password_length = "16"
+          token           = ""
+          lifecycle { ignore_changes = [password] }
+        }

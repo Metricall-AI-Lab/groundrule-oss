@@ -1,0 +1,26 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-011
+  title: Update the API description in the same change as the API
+  type: agent-instruction
+  category: api-design
+spec:
+  severity: warning
+  intent: >
+    Clients, SDK generators, mocks, and contract tests are built from the API description; when
+    it drifts from the code, they break silently.
+  requirement: >
+    If the repository has an OpenAPI (or other) API description, every change to routes,
+    parameters, request or response fields, status codes, or error codes updates it in the same
+    pull request. If the description is generated from code or annotations, regenerate it with
+    the project's command instead of editing it by hand, and commit the result if it is checked in.
+  agent:
+    summary: >
+      After changing an endpoint, find the API description (openapi.yaml/json, swagger, or
+      annotations) and update or regenerate it in the same change, including new fields, status
+      codes, and error responses. Never hand-edit a generated spec.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

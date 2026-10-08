@@ -1,0 +1,58 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: K8S-003
+  title: Set allowPrivilegeEscalation to false
+  type: requirement
+  category: security
+spec:
+  severity: warning
+  intent: >
+    Unless it is disabled, a process in the container can gain more privileges than its
+    parent, for example through setuid binaries.
+  requirement: >
+    Every container (including init containers) must set
+    securityContext.allowPrivilegeEscalation: false. It is a container-level field;
+    it cannot be set on the pod.
+  remediation: >
+    Add allowPrivilegeEscalation: false to each container's securityContext.
+  examples:
+    approved:
+      - code: |
+          containers:
+            - name: api
+              image: ghcr.io/acme/api:1.8.2
+              securityContext:
+                allowPrivilegeEscalation: false
+        language: yaml
+  agent:
+    summary: >
+      Set securityContext.allowPrivilegeEscalation: false on every container in Kubernetes
+      manifests.
+  checks:
+    - evaluator: regex
+      # Flags each containers: list in a file that never sets allowPrivilegeEscalation: false.
+      # Skips Helm templates ({{ ... }}), where security contexts usually come from values.
+      pattern: '^[ \t]*containers:[ \t]*\r?$(?![\s\S]*allowPrivilegeEscalation:[ \t]*["'']?false)(?<!allowPrivilegeEscalation:[ \t]*["'']?false[\s\S]*)(?<!\{\{[\s\S]*)(?![\s\S]*\{\{)(?:(?<=^kind:[\s\S]*)|(?=[\s\S]*^kind:))'
+      message: No container in this manifest sets allowPrivilegeEscalation false.
+      include:
+        - "**/k8s/**/*.y*ml"
+        - "**/kubernetes/**/*.y*ml"
+        - "**/manifests/**/*.y*ml"
+        - "**/deploy/**/*.y*ml"
+        - "**/deployment/**/*.y*ml"
+        - "**/deployments/**/*.y*ml"
+        - "**/kustomize/**/*.y*ml"
+        - "**/charts/**/templates/**/*.y*ml"
+        - "**/helm/**/templates/**/*.y*ml"
+      exclude: ["**/.github/**", "**/*compose*.y*ml", "**/kustomization.y*ml", "**/patches/**", "**/*patch*.y*ml"]
+  references:
+    - { id: CWE-250, title: Execution with Unnecessary Privileges }
+    - https://kubernetes.io/docs/concepts/security/pod-security-standards/
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Settings injected later (Kustomize patches in another file, admission controllers such as Kyverno mutations). Exclude those paths or grant an exception.
+      - The check works per file, so a file with several workloads passes if any one of them sets the field.
+  rollout:
+    recommendedStage: advise

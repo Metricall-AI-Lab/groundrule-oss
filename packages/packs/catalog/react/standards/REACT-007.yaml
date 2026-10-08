@@ -1,0 +1,36 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-007
+  title: Use buttons and links for interactive elements
+  type: agent-instruction
+  category: accessibility
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: A div or span with onClick cannot be focused or activated with the keyboard and is not announced as interactive.
+  requirement: >
+    Use <button type="button"> for actions and <a href> (or the router's Link) for navigation.
+    Do not attach onClick to div, span, li, or img. If a custom element is unavoidable, give
+    it a role, tabIndex={0}, and keyboard handlers for Enter and Space.
+  examples:
+    approved:
+      - '<button type="button" onClick={onDelete}>Delete</button>'
+      - '<Link to={`/orders/${order.id}`}>View order</Link>'
+    forbidden:
+      - "<div className=\"btn\" onClick={onDelete}>Delete</div>"
+      - "<span onClick={() => navigate('/orders')}>Orders</span>"
+  agent:
+    summary: >
+      Use <button type="button"> for actions and links for navigation; never put onClick on a
+      div or span. Reuse the design system's Button and Link components when they exist.
+  references:
+    - { id: WCAG-2.1.1, title: Keyboard, url: "https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html" }
+  applicability:
+    frameworks: [react]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

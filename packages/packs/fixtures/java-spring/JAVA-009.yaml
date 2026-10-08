@@ -1,0 +1,53 @@
+standard: JAVA-009
+cases:
+  - name: wildcard exposure in properties
+    expect: violation
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/resources/application.properties: "management.endpoints.web.exposure.include=*\n"
+  - name: wildcard exposure in nested YAML, after an exclude
+    expect: violation
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/resources/application.yml: |
+        management:
+          endpoints:
+            web:
+              base-path: /manage
+              exposure:
+                exclude: shutdown
+                include: "*"
+  - name: wildcard exposure as a YAML list
+    expect: violation
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/resources/application-prod.yaml: |
+        management:
+          endpoints:
+            web:
+              exposure:
+                include:
+                  - "*"
+  - name: explicit lists, wildcard exclude, JMX wildcard, and local profile
+    expect: clean
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/resources/application.properties: |
+        management.endpoints.web.exposure.include=health,info,prometheus
+        management.endpoints.web.exposure.exclude=*
+        management.endpoints.jmx.exposure.include=*
+      src/main/resources/application.yml: |
+        management:
+          endpoints:
+            jmx:
+              exposure:
+                include: "*"
+            web:
+              exposure:
+                include: health,info
+      src/main/resources/application-local.yml: |
+        management:
+          endpoints:
+            web:
+              exposure:
+                include: "*"

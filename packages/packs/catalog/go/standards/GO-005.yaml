@@ -1,0 +1,48 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-005
+  title: Give every goroutine a way to stop
+  type: agent-instruction
+  category: concurrency
+spec:
+  severity: warning
+  scope:
+    languages: [go]
+  intent: Goroutines that never exit leak memory and connections and keep working after their caller has given up.
+  requirement: >
+    Before starting a goroutine, know how it ends: it must stop when its context is
+    cancelled or its input channel is closed, and the code that starts it must be able to
+    wait for it (sync.WaitGroup or golang.org/x/sync/errgroup). Never block forever on a
+    channel send nobody will receive; give unbuffered result channels a receiver on every
+    path or use a buffered channel. Only the sender closes a channel.
+  examples:
+    approved:
+      - code: |
+          g, ctx := errgroup.WithContext(ctx)
+          for _, id := range ids {
+              g.Go(func() error { return fetch(ctx, id) })
+          }
+          return g.Wait()
+        language: go
+    forbidden:
+      - code: |
+          go func() {
+              for {
+                  poll()
+                  time.Sleep(time.Second)
+              }
+          }()
+        language: go
+  agent:
+    summary: >
+      Every goroutine you start must have a clear exit (context cancellation or a closed channel),
+      and its starter must be able to wait for it (WaitGroup or errgroup). Avoid sends that can
+      block forever. Fire-and-forget goroutines are not allowed.
+  references:
+    - https://go.dev/wiki/CodeReviewComments#goroutine-lifetimes
+    - https://pkg.go.dev/golang.org/x/sync/errgroup
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

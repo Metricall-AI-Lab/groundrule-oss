@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-005
+  title: Do not make breaking changes to a published API version
+  type: agent-instruction
+  category: api-design
+spec:
+  severity: blocker
+  intent: >
+    Clients you do not control (mobile apps, partners, other teams) cannot upgrade in lockstep
+    with your deploy, so a breaking change is an outage for them.
+  requirement: >
+    Changes to a published API version are additive only. Breaking changes include removing or
+    renaming a field, endpoint, or query parameter; changing a field's type, format, or units;
+    making an optional request field required or adding a new required one; tightening
+    validation; changing status codes, error codes, defaults, or pagination; and removing enum
+    values. Ship breaking changes as a new version (or a new field or endpoint) and deprecate
+    the old one with a documented sunset date. Treat new enum values in responses as
+    potentially breaking and document that clients must tolerate unknown values.
+  examples:
+    approved:
+      - "Add optional field `deliveryWindow` to the order response"
+      - "Add `amountMinor` and deprecate `amount`, removing it only in v2"
+    forbidden:
+      - "Rename `customer_id` to `customerId` in v1"
+      - "Change `price` from a string to a number in v1"
+  agent:
+    summary: >
+      Treat every published endpoint as a contract: only add optional fields and new endpoints.
+      Never rename, remove, retype, or newly require fields, or change status codes or defaults,
+      in an existing version; if the task needs that, stop and say it requires a new version or
+      a deprecation plan.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

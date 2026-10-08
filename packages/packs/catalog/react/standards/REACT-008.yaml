@@ -1,0 +1,47 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-008
+  title: No secrets in client-exposed environment variables
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: Variables prefixed NEXT_PUBLIC_, VITE_, REACT_APP_, EXPO_PUBLIC_, or GATSBY_ are inlined into the JavaScript bundle that every visitor downloads.
+  requirement: >
+    Never give a secret (secret keys, passwords, private keys, service-role keys, database
+    URLs) a client-exposed prefix. Keep secrets in server-only variables and call them from
+    server code (API routes, server components, a backend).
+  remediation: >
+    Rename the variable without the public prefix, read it only on the server, and rotate the
+    secret: it has already shipped in a public bundle.
+  examples:
+    approved:
+      - "process.env.STRIPE_SECRET_KEY // read in an API route"
+      - "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_..."
+    forbidden:
+      - "NEXT_PUBLIC_STRIPE_SECRET_KEY=sk_live_..."
+      - "import.meta.env.VITE_DB_PASSWORD"
+  checks:
+    - evaluator: regex
+      # Skips comment lines (#, //, /* */). Publishable, anon, and site keys are public by design and not matched.
+      pattern: '^(?![ \t]*(?:#|//|/?\*))[^\n]*?\b(?:NEXT_PUBLIC|VITE|REACT_APP|EXPO_PUBLIC|GATSBY)_[A-Z0-9_]*?(?:SECRET|PASSWORD|PASSWD|PRIVATE_KEY|SERVICE_ROLE|DATABASE_URL|DB_URL)[A-Z0-9_]*\b'
+      include: ["**/.env", "**/.env.*", "**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/.next/**", "**/docs/**", "**/*.md"]
+      message: Secret in a client-exposed environment variable
+  references:
+    - { id: CWE-200, title: Exposure of Sensitive Information to an Unauthorized Actor }
+    - https://nextjs.org/docs/app/building-your-application/configuring/environment-variables
+    - https://vite.dev/guide/env-and-mode
+  applicability:
+    frameworks: [react, nextjs]
+    files: ["**/package.json"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Names that contain a matched word without holding a secret (e.g. NEXT_PUBLIC_PASSWORD_MIN_LENGTH). Rename the variable or record an exception.
+  rollout:
+    recommendedStage: enforce

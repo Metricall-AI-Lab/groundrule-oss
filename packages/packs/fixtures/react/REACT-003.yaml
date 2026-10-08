@@ -1,0 +1,47 @@
+standard: REACT-003
+cases:
+  - name: target blank without rel, including multi-line tags
+    expect: violation
+    count: 2
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/Footer.tsx: |
+        export function Footer() {
+          return (
+            <footer>
+              <a href="https://example.com/docs" target="_blank">Docs</a>
+              <a
+                href={statusUrl}
+                onClick={() => track("status")}
+                target={"_blank"}
+                rel="nofollow"
+              >
+                Status
+              </a>
+            </footer>
+          );
+        }
+  - name: rel set, same-tab links, abbr, and spreads
+    expect: clean
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/Footer.tsx: |
+        export function Footer(props: LinkProps) {
+          return (
+            <footer>
+              <a href="https://example.com/docs" target="_blank" rel="noopener noreferrer">Docs</a>
+              <a rel="noreferrer" href={url} target="_blank">Blog</a>
+              <a
+                href={statusUrl}
+                onClick={() => track("status")}
+                target="_blank"
+                rel="noopener"
+              >
+                Status
+              </a>
+              <a href="/pricing">Pricing</a>
+              <abbr title="HyperText" target="_blank">HTML</abbr>
+              <a {...props} target="_blank" />
+            </footer>
+          );
+        }

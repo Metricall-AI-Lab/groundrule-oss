@@ -1,0 +1,17 @@
+standard: TS-002
+cases:
+  - name: request in dependencies
+    expect: violation
+    files:
+      package.json: '{ "name": "api", "dependencies": { "request": "^2.88.2" } }'
+      src/index.ts: "export {};\n"
+  - name: node-uuid in devDependencies
+    expect: violation
+    files:
+      package.json: '{ "name": "api", "devDependencies": { "node-uuid": "^1.4.8" } }'
+      src/index.ts: "export {};\n"
+  - name: modern replacements and similarly named packages
+    expect: clean
+    files:
+      package.json: '{ "name": "api", "dependencies": { "undici": "^7.0.0", "uuid": "^11.0.0", "request-ip": "^3.3.0" } }'
+      src/index.ts: "export {};\n"

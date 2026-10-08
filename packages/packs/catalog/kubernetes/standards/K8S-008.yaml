@@ -1,0 +1,73 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: K8S-008
+  title: Do not commit Secret manifests with values
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: >
+    Values in a Secret's data are only base64-encoded, not encrypted, so a committed Secret
+    is a plaintext credential in git history for everyone with repository access.
+  requirement: >
+    Never commit kind: Secret manifests that contain data or stringData values. Commit an
+    encrypted or referenced form instead: SealedSecret, ExternalSecret, a SOPS-encrypted
+    file, or a secret generator that reads from an untracked file.
+  remediation: >
+    Remove the Secret from the repository, rotate every value it contained, and replace it
+    with a SealedSecret, an ExternalSecret backed by your secret manager, or a SOPS-encrypted
+    manifest.
+  examples:
+    approved:
+      - code: |
+          apiVersion: external-secrets.io/v1beta1
+          kind: ExternalSecret
+          metadata:
+            name: db
+          spec:
+            secretStoreRef: { name: vault, kind: ClusterSecretStore }
+            target: { name: db }
+            dataFrom:
+              - extract: { key: prod/db }
+        language: yaml
+    forbidden:
+      - code: |
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: db
+          stringData:
+            password: s3cr3t
+        language: yaml
+  agent:
+    summary: >
+      Never commit Kubernetes Secret manifests with data or stringData values; use
+      SealedSecrets, ExternalSecrets, or SOPS-encrypted files instead.
+  checks:
+    - evaluator: regex
+      # kind: Secret with a non-empty data/stringData map in the same YAML document.
+      # Templated values ({{ ... }}), SOPS-encrypted values (ENC[...]), and empty strings do not count.
+      pattern: '^kind:[ \t]*["'']?Secret["'']?[ \t]*\r?$(?:(?=(?:(?!^---)[\s\S])*?^(?:data|stringData):[ \t]*\r?\n[ \t]+[\w.-]+:[ \t]*(?!\{\{|["'']{2}|ENC\[)\S)|(?<=^(?:data|stringData):[ \t]*\r?\n[ \t]+[\w.-]+:[ \t]*(?!\{\{|["'']{2}|ENC\[)\S(?:(?!^---)[\s\S])*))'
+      message: Secret manifest with committed values. Use SealedSecrets, ExternalSecrets, or SOPS.
+      include:
+        - "**/k8s/**/*.y*ml"
+        - "**/kubernetes/**/*.y*ml"
+        - "**/manifests/**/*.y*ml"
+        - "**/deploy/**/*.y*ml"
+        - "**/deployment/**/*.y*ml"
+        - "**/deployments/**/*.y*ml"
+        - "**/kustomize/**/*.y*ml"
+        - "**/charts/**/templates/**/*.y*ml"
+        - "**/helm/**/templates/**/*.y*ml"
+      exclude: ["**/.github/**", "**/*compose*.y*ml"]
+  references:
+    - { id: CWE-312, title: Cleartext Storage of Sensitive Information }
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+    - https://kubernetes.io/docs/concepts/configuration/secret/
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Secrets that hold only placeholders or local-development values (e.g. for kind or minikube). Move them out of the checked paths or grant an exception.
+  rollout:
+    recommendedStage: advise

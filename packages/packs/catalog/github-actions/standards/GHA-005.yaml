@@ -1,0 +1,44 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-005
+  title: Do not pipe downloaded scripts into a shell in workflows
+  type: prohibition
+  category: supply-chain
+spec:
+  severity: warning
+  intent: >
+    curl | sh runs whatever the server returns at that moment, with the job's token and
+    secrets, and leaves no record of what ran.
+  requirement: >
+    Do not pipe curl or wget output into sh, bash, or zsh in workflows or composite actions.
+    Prefer a pinned setup action, a package manager, or download a versioned artifact and
+    verify its checksum or signature before running it.
+  remediation: >
+    Download a specific version to a file, verify it (sha256sum -c, cosign verify-blob, or
+    gpg), then run it; or use a SHA-pinned setup action for the tool.
+  examples:
+    approved:
+      - code: |
+          curl -fsSLo tool.tar.gz "https://example.com/tool/v1.4.2/tool-linux-amd64.tar.gz"
+          echo "${TOOL_SHA256}  tool.tar.gz" | sha256sum -c -
+        language: shell
+    forbidden:
+      - "curl -fsSL https://example.com/install.sh | bash"
+  checks:
+    - evaluator: regex
+      pattern: '^[^#\n]*(?:\b(?:curl|wget)\b[^\n|]*\|[ \t]*(?:sudo[ \t]+(?:-\S+[ \t]+)*)?(?:ba|z|da)?sh\b|\b(?:ba|z)?sh[ \t]+<\([ \t]*(?:curl|wget)\b)'
+      include:
+        - ".github/workflows/*.yml"
+        - ".github/workflows/*.yaml"
+        - "**/action.yml"
+        - "**/action.yaml"
+      message: Downloaded script piped into a shell
+  references:
+    - { id: CWE-494, title: Download of Code Without Integrity Check }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Official installers that publish no checksums (some language toolchains). Prefer their setup action; otherwise record an exception.
+  rollout:
+    recommendedStage: advise

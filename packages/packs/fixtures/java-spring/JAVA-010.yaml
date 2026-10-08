@@ -1,0 +1,54 @@
+standard: JAVA-010
+cases:
+  - name: CSRF disabled in the three common styles without a justification
+    expect: violation
+    count: 3
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/java/acme/SecurityConfig.java: |
+        @Configuration
+        class SecurityConfig {
+          @Bean
+          SecurityFilterChain web(HttpSecurity http) throws Exception {
+            http
+                .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+                .csrf(csrf -> csrf.disable())
+                .formLogin(Customizer.withDefaults());
+            return http.build();
+          }
+          @Bean
+          SecurityFilterChain admin(HttpSecurity http) throws Exception {
+            // Admin console for operators
+            http.csrf(AbstractHttpConfigurer::disable);
+            return http.build();
+          }
+          void legacy(HttpSecurity http) throws Exception {
+            http.csrf().disable();
+          }
+        }
+  - name: justified disables, partial exemptions, and commented-out code
+    expect: clean
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/java/acme/SecurityConfig.java: |
+        @Configuration
+        class SecurityConfig {
+          @Bean
+          SecurityFilterChain api(HttpSecurity http) throws Exception {
+            http
+                // CSRF off: stateless API, bearer tokens only, no cookies are issued.
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            return http.build();
+          }
+          @Bean
+          SecurityFilterChain web(HttpSecurity http) throws Exception {
+            http.csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"))
+                .csrf(Customizer.withDefaults());
+            return http.build();
+          }
+          void legacy(HttpSecurity http) throws Exception {
+            http.csrf().disable(); // csrf: machine-to-machine endpoint, mTLS only
+            // http.csrf().disable();
+          }
+        }

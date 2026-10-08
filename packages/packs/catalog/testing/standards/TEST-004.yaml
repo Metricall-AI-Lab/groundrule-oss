@@ -1,0 +1,25 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-004
+  title: Fix bugs with a regression test that fails first
+  type: process
+  category: testing
+spec:
+  severity: warning
+  intent: >
+    A fix without a test that reproduces the bug proves nothing and lets the bug return in
+    the next refactor.
+  requirement: >
+    Every bug fix includes a test that reproduces the reported failure, at the lowest level that
+    can express it. The test must fail without the fix and pass with it; confirm that by running
+    it before applying the fix (or by temporarily reverting the fix). Name the test after the
+    behavior, not the ticket, and reference the ticket in a comment or the commit if useful.
+  agent:
+    summary: >
+      When fixing a bug, first write a test that reproduces it and run it to see it fail, then fix
+      the code and see it pass. Say in your summary that you observed the failure before the fix.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

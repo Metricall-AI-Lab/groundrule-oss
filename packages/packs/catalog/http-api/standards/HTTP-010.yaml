@@ -1,0 +1,29 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-010
+  title: Expose opaque public identifiers, not database keys
+  type: guidance
+  category: api-design
+spec:
+  severity: advisory
+  intent: >
+    Sequential database keys leak business volume, invite enumeration, and couple clients to
+    your storage, making migrations and sharding painful.
+  requirement: >
+    Identify resources in URLs and payloads with opaque, non-sequential public IDs (UUIDs,
+    ULIDs, or prefixed IDs such as ord_8f2k) rather than auto-increment keys. Do not expose
+    table names, internal service hostnames, or storage paths in responses. Opaque IDs are not
+    access control; authorization checks are still required.
+  examples:
+    approved: ["GET /orders/ord_01HV3K9Z8Q"]
+    forbidden: ["GET /orders/10432"]
+  agent:
+    summary: >
+      Use the project's public ID type (UUID, ULID, or prefixed ID) in URLs and responses for
+      new resources, not auto-increment primary keys, and still authorize every lookup.
+      Follow the existing scheme if the API already exposes numeric IDs.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

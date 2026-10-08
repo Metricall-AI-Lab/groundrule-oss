@@ -1,0 +1,33 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-003
+  title: Paginate every list endpoint with a server-enforced maximum page size
+  type: agent-instruction
+  category: api-design
+spec:
+  severity: warning
+  intent: >
+    An unbounded list endpoint works in development and then times out, exhausts memory, or
+    becomes a data-scraping tool once the table grows.
+  requirement: >
+    Every endpoint that returns a collection is paginated from its first version. Default and
+    maximum page sizes are enforced on the server, and requests above the maximum are clamped
+    or rejected. Prefer opaque cursor pagination over offsets for large or frequently changing
+    collections. Order results by a stable key with a unique tie-breaker (e.g. created_at, id)
+    so pages never skip or repeat items. Return the next cursor (or link) in the response.
+  examples:
+    approved:
+      - "GET /orders?limit=50&cursor=eyJpZCI6Im9yZF84ZjJrIn0 → { items: [...], nextCursor: \"...\" }"
+    forbidden:
+      - "GET /orders → every order in the table"
+      - "GET /orders?limit=100000 honoured as requested"
+  agent:
+    summary: >
+      Never add a list endpoint that returns an unbounded collection. Paginate it (cursor-based
+      unless the project uses offsets), enforce a default and maximum page size on the server,
+      and sort by a stable key plus a unique tie-breaker such as id.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-006
+  title: Await or handle every promise
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+  intent: A floating promise loses its errors and races the code after it; in Node an unhandled rejection crashes the process.
+  requirement: >
+    Every promise must be awaited, returned, or given a .catch handler. Intentional
+    fire-and-forget calls are marked with void and handle their own errors. Do not pass
+    async functions where the caller ignores the returned promise (forEach, event emitters,
+    Express handlers without error forwarding).
+  examples:
+    approved:
+      - "await sendEmail(user);"
+      - "void refreshCache().catch((err) => logger.warn({ err }, 'cache refresh failed'));"
+      - "await Promise.all(items.map((item) => save(item)));"
+    forbidden:
+      - "sendEmail(user); // not awaited"
+      - "items.forEach(async (item) => { await save(item); });"
+  agent:
+    summary: >
+      Await, return, or .catch every promise; mark deliberate fire-and-forget calls with void
+      and handle their errors. Never pass an async callback to forEach; use for...of or Promise.all.
+  references:
+    - https://typescript-eslint.io/rules/no-floating-promises/
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

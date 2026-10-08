@@ -1,0 +1,59 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-001
+  title: No hard-coded credentials in Terraform
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [terraform]
+  intent: >
+    Credentials written into .tf files are committed, copied into plans and state, and
+    readable by everyone with repository access.
+  requirement: >
+    Never write literal values for credential arguments (access_key, secret_key, token,
+    password, client_secret, api_key, api_token) in providers, backends, or resources.
+    Use provider credential chains (environment, instance roles, OIDC), sensitive input
+    variables, or a secret-manager data source.
+  remediation: >
+    Rotate the credential, then remove the literal. For providers, rely on the default
+    credential chain (environment variables, SSO, instance or workload identity). For
+    resources, read the value from a sensitive variable or a secret manager, or let the
+    platform generate it (e.g. manage_master_user_password for RDS).
+  examples:
+    approved:
+      - code: |
+          provider "aws" {
+            region = var.region
+          }
+          resource "aws_db_instance" "main" {
+            password = var.db_password # variable "db_password" { sensitive = true }
+          }
+        language: terraform
+    forbidden:
+      - code: |
+          provider "aws" {
+            access_key = "AKIAIOSFODNN7EXAMPLE"
+            secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+          }
+        language: terraform
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*(?:access_key|secret_key|token|password|client_secret|api_key|api_token)[ \t]*=[ \t]*"(?!\$\{)[^"\n]+"'
+      include: ["**/*.tf"]
+      message: Credential argument set to a literal value
+  references:
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+  compliance:
+    - { framework: owasp-asvs, controls: [V2.10.4] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Local emulator setups (e.g. LocalStack) that use dummy keys such as access_key = "test". Exclude those directories with scope.exclude.
+      - Resource arguments named token or password that hold non-secret values in a specific provider. Exclude the file or move the value to a variable.
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,28 @@
+standard: GO-007
+cases:
+  - name: ListenAndServe and ListenAndServeTLS helpers
+    expect: violation
+    count: 2
+    files:
+      cmd/api/main.go: |
+        package main
+
+        func main() {
+        	go http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", mux)
+        	log.Fatal(http.ListenAndServe(":8080", mux))
+        }
+  - name: http.Server with timeouts, and comments
+    expect: clean
+    files:
+      cmd/api/main.go: |
+        package main
+
+        func main() {
+        	// http.ListenAndServe(":8080", mux) has no timeouts.
+        	srv := &http.Server{Addr: ":8080", Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+        	log.Fatal(srv.ListenAndServe())
+        }
+      internal/web/server_test.go: |
+        package web
+
+        func TestServe(t *testing.T) { go http.ListenAndServe(":0", nil) }

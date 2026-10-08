@@ -1,0 +1,24 @@
+standard: SEC-002
+cases:
+  - name: .env at the root
+    expect: violation
+    files:
+      .env: "DATABASE_URL=postgres://app:hunter2@db/prod\n"
+  - name: environment-specific env file in a service
+    expect: violation
+    files:
+      services/api/.env.production: "STRIPE_KEY=placeholder\n"
+  - name: example and template files
+    expect: clean
+    files:
+      .env.example: "DATABASE_URL=postgres://user:password@localhost/app\n"
+      services/api/.env.sample: "PORT=3000\n"
+      services/web/.env.local.example: "API_URL=http://localhost:3000\n"
+  - name: env fixtures used by tests
+    expect: clean
+    files:
+      tests/fixtures/.env: "FOO=bar\n"
+  - name: suffixed example files (real-repo regression, bulletproof-react)
+    expect: clean
+    files:
+      apps/web/.env.example-e2e: "VITE_APP_API_URL=http://localhost:8080/api\n"

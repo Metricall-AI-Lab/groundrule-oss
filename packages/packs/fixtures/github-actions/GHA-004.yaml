@@ -1,0 +1,55 @@
+standard: GHA-004
+cases:
+  - name: pull_request_target checking out the PR head
+    expect: violation
+    files:
+      .github/workflows/pr.yml: |
+        on: pull_request_target
+        permissions:
+          contents: read
+        jobs:
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+              - run: npm ci && npm test
+  - name: pull_request_target checking out the merge ref
+    expect: violation
+    files:
+      .github/workflows/pr.yml: |
+        on:
+          pull_request_target:
+            types: [labeled]
+        jobs:
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: "refs/pull/${{ github.event.number }}/merge"
+  - name: pull_request checking out head, and pull_request_target checking out base only
+    expect: clean
+    files:
+      .github/workflows/ci.yml: |
+        on: pull_request
+        jobs:
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+      .github/workflows/label.yml: |
+        on: pull_request_target
+        permissions:
+          pull-requests: write
+        jobs:
+          label:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.base.sha }}
+              - uses: actions/labeler@v5

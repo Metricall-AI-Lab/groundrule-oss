@@ -1,0 +1,14 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: terraform
+  title: Terraform
+  description: Credentials, state, supply-chain pinning, and network exposure rules for Terraform code.
+  owner: groundrule
+  version: 1.0.0
+  tags: [terraform, infrastructure-as-code, security, cloud]
+spec:
+  include: ["standards/**/*.yaml"]
+  applicability:
+    languages: [terraform]
+    files: ["**/*.tf"]

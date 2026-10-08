@@ -1,0 +1,62 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-010
+  title: Justify every CSRF disable in Spring Security
+  type: requirement
+  category: security
+spec:
+  severity: warning
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+    frameworks: [spring-boot]
+  intent: >
+    Disabling CSRF protection is correct only when no browser sends ambient credentials (cookies,
+    HTTP basic) to the endpoints. Copied from tutorials, it opens cookie-authenticated apps to
+    cross-site request forgery.
+  requirement: >
+    Keep Spring Security's CSRF protection on for any endpoint a browser reaches with cookie or
+    session authentication. Disable it only for stateless APIs authenticated by a bearer token, and
+    say why in a // comment on the line above (or at the end of the line) that mentions CSRF.
+  remediation: >
+    If the app uses sessions or cookies, remove the disable and send the CSRF token from the client
+    (e.g. CookieCsrfTokenRepository for single-page apps), or exempt only specific machine-to-machine
+    paths with csrf.ignoringRequestMatchers(...). If the API is truly stateless, add a comment such as
+    "// CSRF off: stateless API, bearer tokens only, no cookies" directly above the call.
+  examples:
+    approved:
+      - code: |
+          http
+              // CSRF off: stateless API authenticated by bearer tokens; no cookies are issued.
+              .csrf(AbstractHttpConfigurer::disable)
+              .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        language: java
+      - code: |
+          http.csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"));
+        language: java
+    forbidden:
+      - code: |
+          http.csrf(csrf -> csrf.disable())
+              .formLogin(Customizer.withDefaults());
+        language: java
+  checks:
+    - evaluator: regex
+      # .csrf().disable(), .csrf(AbstractHttpConfigurer::disable), or .csrf(c -> c.disable()),
+      # unless the line above or the same line has a // comment mentioning CSRF.
+      pattern: '^(?<!//[^\n]*csrf[^\n]*\n)(?![ \t]*(?://|/?\*))[^\n]*?\.csrf\(\s*(?:\)\s*\.\s*disable\(\s*\)|[\w.]+::disable\s*\)|(\w+)\s*->\s*\1\s*\.\s*disable\(\s*\)\s*\))(?![^\n]*//[^\n]*csrf)'
+      flags: i
+      include: ["**/*.java"]
+      message: CSRF protection disabled without a // comment explaining why
+  references:
+    - { id: CWE-352, title: Cross-Site Request Forgery (CSRF) }
+  compliance:
+    - { framework: owasp-asvs, controls: [V4.2.2] }
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Justifications written as block comments or more than one line above the call are not recognized. Use a // comment on the line directly above.
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,39 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-012
+  title: Give variables and outputs a type and description
+  type: agent-instruction
+  category: maintainability
+spec:
+  severity: info
+  intent: >
+    Module inputs and outputs are its interface. Types catch wrong values at plan time,
+    and descriptions are the only documentation most modules have.
+  requirement: >
+    Declare type and description on every variable, and description on every output.
+    Use object types with optional() attributes rather than any or untyped maps, add
+    validation blocks for constrained values, and give defaults only where a safe default
+    exists. Keep variables in variables.tf and outputs in outputs.tf.
+  examples:
+    approved:
+      - code: |
+          variable "environment" {
+            type        = string
+            description = "Deployment environment, e.g. staging or prod."
+            validation {
+              condition     = contains(["staging", "prod"], var.environment)
+              error_message = "environment must be staging or prod."
+            }
+          }
+        language: terraform
+    forbidden:
+      - 'variable "environment" {}'
+  agent:
+    summary: >
+      Give every Terraform variable a type and description (plus validation where values
+      are constrained), and every output a description. Avoid type = any.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

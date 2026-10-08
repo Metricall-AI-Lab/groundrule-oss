@@ -1,0 +1,54 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-008
+  title: No literal secrets in Spring configuration files
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    frameworks: [spring-boot]
+  intent: >
+    application.properties and application.yml are committed, packaged into the jar, and copied
+    into images. A password written there is readable by everyone with access to any of them.
+  requirement: >
+    Do not write literal passwords, client secrets, API keys, or private keys in
+    application*.properties, application*.yml, or bootstrap*.yml under src/main/resources.
+    Reference them with ${...} placeholders resolved from the environment or a secret manager.
+  remediation: >
+    Rotate the exposed secret, then replace the value with a placeholder such as
+    spring.datasource.password=${DB_PASSWORD} and supply it from the environment, Kubernetes
+    secrets, Vault, or your cloud's secret manager. Do not give the placeholder a literal default.
+  examples:
+    approved:
+      - "spring.datasource.password=${DB_PASSWORD}"
+      - "client-secret: ${OAUTH_CLIENT_SECRET}"
+    forbidden:
+      - "spring.datasource.password=s3cr3t-prod"
+      - "client-secret: 8f1c2e7a9b"
+      - "password: ${DB_PASSWORD:postgres}"
+  checks:
+    - evaluator: regex
+      # A key ending in a secret-like word with a non-empty value that is not a ${...} placeholder
+      # (without a literal default), a {cipher} value, or a Jasypt ENC(...) value.
+      pattern: '^[ \t]*(?:[\w\-\[\]]+\.)*[\w\-]*?(?:password|passwd|secret|secret[-_]?key|api[-_]?key|access[-_]?key|private[-_]?key)[ \t]*[=:][ \t]*(?!["'']?\$\{[^:}\n]*(?::(?:\$\{[^}\n]*\})?)?\}|["'']?\{cipher\}|["'']?ENC\(|""[ \t]*(?:#|$)|''''[ \t]*(?:#|$)|#)\S'
+      flags: i
+      include:
+        - "**/src/main/resources/**/application*.{properties,yml,yaml}"
+        - "**/src/main/resources/**/bootstrap*.{properties,yml,yaml}"
+      exclude: ["**/application-local.*"]
+      message: Literal secret in Spring configuration; use a ${...} placeholder
+  references:
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+  compliance:
+    - { framework: owasp-asvs, controls: [V2.10.4] }
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Throwaway credentials for local containers in a shared profile file (e.g. application-dev.yml). Move them to application-local.* (excluded) or an untracked file.
+      - Keys that end in a secret-like word but hold no secret, such as a property naming a header (an api-key property whose value is a header name). Suppress with an exception.
+  rollout:
+    recommendedStage: advise

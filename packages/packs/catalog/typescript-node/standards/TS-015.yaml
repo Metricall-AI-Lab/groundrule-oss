@@ -1,0 +1,29 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-015
+  title: Declare the supported Node.js version in package.json
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript]
+  intent: Without a declared Node.js version, developers, CI, and production drift onto different runtimes and fail in ways that do not reproduce.
+  requirement: >
+    The root package.json declares engines.node with the supported range. Applications also
+    pin the exact development version in .nvmrc, .node-version, or .tool-versions, matching
+    the CI and production runtime.
+  agent:
+    summary: >
+      Keep engines.node in the root package.json and the pinned version in .nvmrc (or
+      .node-version) in step with CI and production; don't use APIs newer than that range.
+  examples:
+    approved: ['{ "name": "api", "engines": { "node": ">=20.11" } }']
+    forbidden: ['{ "name": "api", "engines": { "npm": ">=10" } }']
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

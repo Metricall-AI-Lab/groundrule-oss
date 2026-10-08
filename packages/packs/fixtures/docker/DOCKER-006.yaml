@@ -1,0 +1,21 @@
+standard: DOCKER-006
+cases:
+  - name: update in its own RUN
+    expect: violation
+    count: 2
+    files:
+      Dockerfile: |
+        FROM debian:12-slim
+        RUN apt-get update
+        RUN apt-get install -y curl
+        RUN apt-get -qq update -y
+  - name: update combined with install, including across continuation lines
+    expect: clean
+    files:
+      Dockerfile: |
+        FROM debian:12-slim
+        RUN apt-get update && apt-get install -y --no-install-recommends curl
+        RUN apt-get update \
+         && apt-get install -y --no-install-recommends git \
+         && rm -rf /var/lib/apt/lists/*
+        # RUN apt-get update

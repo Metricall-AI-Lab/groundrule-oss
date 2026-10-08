@@ -5,7 +5,7 @@ metadata:
   title: Security baseline
   description: Secrets, credentials, TLS, and supply-chain basics every repository should follow.
   owner: groundrule
-  version: 1.0.0
+  version: 1.1.0
   tags: [security, secrets, supply-chain]
 spec:
   include: ["standards/**/*.yaml"]

@@ -1,0 +1,45 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-010
+  title: No fmt.Print in library code
+  type: prohibition
+  category: observability
+spec:
+  severity: advisory
+  scope:
+    languages: [go]
+  intent: Printing to stdout from library code bypasses log levels and structure and pollutes the output of every program that imports it.
+  requirement: >
+    Library (non-main) packages log through the project's logger (log/slog or the logger it
+    injects) or return information to the caller. Do not call fmt.Print, fmt.Printf,
+    fmt.Println, print, or println. Writing to an io.Writer the caller passes in is fine.
+  remediation: >
+    Log through the project's logger (e.g. slog.InfoContext(ctx, "order created", "id", id)),
+    return the value to the caller, or write to an io.Writer passed in.
+  examples:
+    approved:
+      - code: 'logger.InfoContext(ctx, "order created", "order_id", id)'
+        language: go
+      - code: 'fmt.Fprintf(w, "%d orders\n", n)'
+        language: go
+    forbidden:
+      - code: 'fmt.Printf("order created: %v\n", order)'
+        language: go
+  checks:
+    - evaluator: regex
+      # Skips comment lines and files declaring package main.
+      pattern: '^(?![ \t]*//)[^\n]*?(?:\bfmt\.Print(?:f|ln)?\(|(?<![\w.])print(?:ln)?\()(?<!^package[ \t]+main\b[\s\S]*)'
+      include: ["**/*.go"]
+      exclude: ["**/*_test.go", "**/testdata/**", "**/vendor/**", "**/cmd/**", "**/main.go", "**/examples/**", "**/example/**", "**/tools/**", "**/magefiles/**"]
+      message: fmt.Print in library code; use the project's logger or an io.Writer
+  references:
+    - https://pkg.go.dev/log/slog
+  applicability:
+    files: ["**/go.mod"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Command-line helper packages outside cmd/ whose job is printing to the terminal. Exclude their paths with scope.exclude.
+  rollout:
+    recommendedStage: advise

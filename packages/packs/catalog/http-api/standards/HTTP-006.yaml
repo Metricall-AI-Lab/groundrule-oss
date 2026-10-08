@@ -1,0 +1,40 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-006
+  title: Validate every request against a schema and never bind it straight to a model
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: >
+    Unvalidated input causes crashes and injection, and binding a request body directly to a
+    persistence model lets callers set fields they must not control, such as role or ownerId.
+  requirement: >
+    Validate path parameters, query parameters, headers, and bodies at the HTTP boundary with
+    the project's schema library before any business logic runs. Bound every string length,
+    array size, number range, and the overall body size. Map validated input into an explicit
+    request DTO that lists only the fields the caller may set; never pass a raw request body to
+    an ORM create or update call. Return field-level errors in the API's error shape.
+  examples:
+    approved:
+      - code: |
+          const input = UpdateProfile.parse(req.body); // { displayName: z.string().max(80) }
+          await users.update(req.user.id, { displayName: input.displayName });
+        language: typescript
+    forbidden:
+      - code: |
+          await User.update(req.params.id, req.body); // caller can set role, ownerId, balance
+        language: typescript
+  agent:
+    summary: >
+      Validate every path, query, header, and body input with the project's schema library at the
+      handler boundary, with explicit length, size, and range limits. Copy only allowed fields into
+      a DTO; never pass req.body (or its equivalent) directly to an ORM create or update.
+  references:
+    - { id: CWE-20, title: Improper Input Validation }
+    - { id: CWE-915, title: Improperly Controlled Modification of Dynamically-Determined Object Attributes }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

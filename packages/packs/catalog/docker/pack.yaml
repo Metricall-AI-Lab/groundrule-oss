@@ -1,0 +1,13 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: docker
+  title: Docker
+  description: Secure, reproducible, and lean container images built from Dockerfiles.
+  owner: groundrule
+  version: 1.0.0
+  tags: [docker, containers, security, supply-chain]
+spec:
+  include: ["standards/**/*.yaml"]
+  applicability:
+    files: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]

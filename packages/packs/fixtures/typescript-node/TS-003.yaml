@@ -1,0 +1,18 @@
+standard: TS-003
+cases:
+  - name: eval of user input
+    expect: violation
+    files:
+      src/rules.ts: "export const run = (expr: string) => eval(expr);\n"
+  - name: new Function
+    expect: violation
+    files:
+      src/template.js: "const render = new Function('data', body);\n"
+  - name: methods named eval and the word in strings
+    expect: clean
+    files:
+      src/rules.ts: |
+        const result = await model.eval(input);
+        const label = "eval";
+        // We never call eval() on user input.
+      src/rules.test.ts: "expect(eval('1+1')).toBe(2);\n"

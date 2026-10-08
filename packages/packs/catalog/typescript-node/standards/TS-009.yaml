@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-009
+  title: "Import Node.js built-ins with the node: prefix"
+  type: guidance
+  category: code-quality
+spec:
+  severity: info
+  scope:
+    languages: [typescript, javascript]
+  intent: The node prefix makes built-ins unambiguous; no npm package with the same name can shadow them.
+  requirement: >
+    Import Node.js built-in modules with the node: prefix (node:fs, node:path, node:crypto, ...)
+    in code that runs on Node.js 16 or later.
+  remediation: >
+    Add the prefix: import { readFile } from "node:fs/promises". Biome's useNodejsImportProtocol
+    and eslint-plugin-unicorn's prefer-node-protocol can fix this automatically.
+  examples:
+    approved: ['import { readFile } from "node:fs/promises";', 'const path = require("node:path");']
+    forbidden: ['import { readFile } from "fs/promises";', 'const path = require("path");']
+  checks:
+    - evaluator: regex
+      # Skips comment lines. Matches static imports/exports, require(), and dynamic import().
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(\s*|^[ \t]*import\s+)[''"](?:assert|async_hooks|buffer|child_process|cluster|crypto|dgram|diagnostics_channel|dns|events|fs|http|http2|https|inspector|module|net|os|path|perf_hooks|process|querystring|readline|stream|string_decoder|timers|tls|tty|url|util|v8|vm|worker_threads|zlib)(?:/[a-z_/]+)?[''"]'
+      include: ["**/*.ts", "**/*.mts", "**/*.cts", "**/*.js", "**/*.mjs", "**/*.cjs"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/vendor/**", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**", "**/testing/**", "**/mocks/**", "**/__mocks__/**", "**/*.d.ts", "**/*.min.js", "**/*.config.*", "**/generators/**", "**/scripts/**"]
+      message: "Import Node.js built-ins with the node: prefix"
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Browser code that imports npm polyfills with the same names as built-ins (events, buffer, util, url, assert, path). Exclude front-end source folders with scope.exclude.
+      - Projects that must still support Node.js older than 14.18 or 16.0. Do not adopt the rule there.
+  rollout:
+    recommendedStage: advise

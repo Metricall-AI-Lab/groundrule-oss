@@ -1,0 +1,39 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-011
+  title: No deprecated Buffer() constructor
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+  intent: Buffer(n) and new Buffer(n) are deprecated because they can expose uninitialized memory and behave differently by argument type.
+  requirement: >
+    Do not call Buffer() or new Buffer(). Use Buffer.from, Buffer.alloc, or Buffer.allocUnsafe
+    (only when every byte is overwritten immediately).
+  remediation: >
+    Replace new Buffer(string or array) with Buffer.from(...) and new Buffer(size) with
+    Buffer.alloc(size).
+  examples:
+    approved: ['Buffer.from(token, "base64")', "Buffer.alloc(1024)"]
+    forbidden: ['new Buffer(token, "base64")', "new Buffer(1024)", "Buffer(data)"]
+  checks:
+    - evaluator: regex
+      # Skips comment lines; does not match Buffer.from, isBuffer(, or toBuffer(.
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?(?<![\w.$])(?:new\s+)?Buffer\s*\('
+      include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/vendor/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**", "**/*.d.ts", "**/*.min.js"]
+      message: Deprecated Buffer() constructor; use Buffer.from or Buffer.alloc
+  references:
+    - { id: CWE-908, title: Use of Uninitialized Resource }
+    - { id: DEP0005, title: "Node.js deprecation DEP0005: Buffer() constructor", url: "https://nodejs.org/api/deprecations.html" }
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - A local function or class that is itself named Buffer. Rename it or record an exception.
+  rollout:
+    recommendedStage: enforce

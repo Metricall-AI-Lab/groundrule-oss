@@ -1,0 +1,43 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-007
+  title: No eval or exec
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [python]
+  intent: Evaluating strings as code turns any injection bug into remote code execution.
+  requirement: >
+    Never call the built-in eval() or exec() in application code.
+  remediation: >
+    Parse the input instead: json.loads, ast.literal_eval for Python literals, a schema
+    (pydantic), or a lookup table of allowed operations.
+  examples:
+    approved:
+      - "value = ast.literal_eval(text)"
+      - "handler = HANDLERS[name]"
+    forbidden:
+      - "value = eval(request.args['expr'])"
+      - "exec(code, namespace)"
+  checks:
+    - evaluator: regex
+      # Skips comment lines and methods or names such as literal_eval() or cursor.exec().
+      pattern: '^(?![ \t]*#)[^\n]*?(?<![\w.])(?:eval|exec)[ \t]*\('
+      include: ["**/*.py"]
+      exclude: ["**/test_*.py", "**/*_test.py", "**/tests/**", "**/test/**", "**/conftest.py", "**/fixtures/**", "**/docs/**", "**/examples/**"]
+      message: eval or exec in application code
+  references:
+    - { id: CWE-95, title: "Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')" }
+    - { id: CWE-94, title: "Improper Control of Generation of Code ('Code Injection')" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.2.4] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Sandboxes, REPLs, or code generators that need dynamic evaluation by design. Record an exception.
+      - The text "eval(" inside a string literal or doctest on a code line.
+  rollout:
+    recommendedStage: enforce

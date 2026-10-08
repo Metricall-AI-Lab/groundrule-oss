@@ -1,0 +1,14 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: react
+  title: React
+  description: Security, accessibility, and correctness conventions for React applications.
+  owner: groundrule
+  version: 1.0.0
+  tags: [react, frontend, javascript, typescript, accessibility]
+spec:
+  include: ["standards/**/*.yaml"]
+  applicability:
+    frameworks: [react]
+    files: ["**/package.json"]

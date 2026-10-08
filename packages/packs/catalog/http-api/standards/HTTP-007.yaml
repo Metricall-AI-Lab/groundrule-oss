@@ -1,0 +1,41 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-007
+  title: Authenticate and authorize every endpoint, denying by default
+  type: agent-instruction
+  category: security
+spec:
+  severity: blocker
+  intent: >
+    Broken object-level authorization is the most common serious API flaw: being logged in is
+    not the same as being allowed to read or change this particular record.
+  requirement: >
+    Every endpoint requires authentication unless it is explicitly listed as public. Apply
+    authentication with the project's shared middleware or guard (deny by default), not ad hoc
+    checks in handlers. For every request that reads or changes a resource by ID, verify that
+    the caller (user and tenant) is allowed to access that specific resource, ideally by scoping
+    the query itself (WHERE id = ? AND tenant_id = ?). Never trust user, tenant, or role IDs
+    from the request body or query string over the authenticated identity.
+  examples:
+    approved:
+      - "orders.findOne({ id: req.params.id, tenantId: req.auth.tenantId })"
+    forbidden:
+      - "orders.findOne({ id: req.params.id }) after only checking that the caller is logged in"
+      - "Reading the tenant ID from req.body.tenantId"
+  agent:
+    summary: >
+      Put every new endpoint behind the project's authentication middleware unless it is
+      explicitly public. When loading a resource by ID, scope the query to the authenticated
+      user or tenant and return 404 otherwise; never take user, tenant, or role from the request
+      body or query.
+  references:
+    - { id: CWE-862, title: Missing Authorization }
+    - { id: CWE-639, title: Authorization Bypass Through User-Controlled Key }
+    - { id: OWASP-API1:2023, title: Broken Object Level Authorization, url: "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V4.2.1] }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

@@ -1,0 +1,61 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-011
+  title: No SSH keys or key stores in the repository
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: SSH private keys and PKCS#12 or Java key stores hold private keys, often with weak or default passwords.
+  requirement: >
+    Do not commit SSH private keys (id_rsa, id_ecdsa, id_ed25519, PuTTY .ppk) or key stores
+    (.p12, .pfx, .jks, .keystore). Load signing and TLS keys from a secret manager at build or run time.
+  examples:
+    approved:
+      - "id_ed25519.pub (public keys are fine)"
+      - "truststore.jks containing only public CA certificates"
+    forbidden:
+      - "deploy/id_rsa"
+      - "certs/server.pfx"
+  remediation: >
+    Remove the file from git, treat the key as compromised and rotate it, then load the key
+    or key store from your secret manager (for CI, a protected secret written to disk at build time).
+  checks:
+    - evaluator: files
+      forbid:
+        - "**/id_rsa"
+        - "**/id_dsa"
+        - "**/id_ecdsa"
+        - "**/id_ed25519"
+        - "**/*.ppk"
+        - "**/*.p12"
+        - "**/*.pfx"
+        - "**/*.jks"
+        - "**/*.keystore"
+      allow:
+        # Trust stores hold public certificates only.
+        - "**/*truststore*"
+        - "**/*TrustStore*"
+        # The Android debug key store is generated per machine and is not a release credential.
+        - "**/debug.keystore"
+        - "**/test/**"
+        - "**/tests/**"
+        - "**/__tests__/**"
+        - "**/testdata/**"
+        - "**/fixtures/**"
+      message: Private key or key store committed to the repository
+  references:
+    - { id: CWE-321, title: Use of Hard-coded Cryptographic Key }
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+  compliance:
+    - { framework: owasp-asvs, controls: [V2.10.4, V6.4.1] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.24", "5.17"] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Trust stores not named *truststore* that hold only public certificates. Add them to the check's allow list.
+      - Encrypted signing material deliberately stored in git (e.g. fastlane match repositories). Disable the standard there.
+  rollout:
+    recommendedStage: enforce

@@ -1,0 +1,34 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-003
+  title: Commit the Terraform dependency lock file
+  type: repository
+  category: supply-chain
+spec:
+  severity: warning
+  scope:
+    languages: [terraform]
+  intent: >
+    .terraform.lock.hcl records the exact provider versions and their checksums. Without
+    it, every init can resolve a different, unverified provider build.
+  requirement: >
+    Commit the .terraform.lock.hcl that terraform init creates in each root module, and
+    update it only with terraform init -upgrade or terraform providers lock in a reviewed change.
+  remediation: >
+    Run terraform init in each root module (add terraform providers lock -platform=... for
+    every platform that runs Terraform) and commit .terraform.lock.hcl. Make sure it is not
+    listed in .gitignore.
+  checks:
+    - evaluator: files
+      requireAny: ["**/.terraform.lock.hcl"]
+      message: No .terraform.lock.hcl is committed
+  references:
+    - { id: CWE-1357, title: Reliance on Insufficiently Trustworthy Component }
+    - https://developer.hashicorp.com/terraform/language/files/dependency-lock
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Repositories that only publish reusable modules, which by convention do not commit a lock file. Disable the standard for those repositories.
+  rollout:
+    recommendedStage: advise

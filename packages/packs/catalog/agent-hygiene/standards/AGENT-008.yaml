@@ -1,0 +1,26 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-008
+  title: Update docs, examples, and the changelog when behavior changes
+  type: agent-instruction
+  category: agents
+spec:
+  severity: advisory
+  intent: >
+    Documentation that describes old behavior is worse than none: users and other agents follow
+    it confidently and break things.
+  requirement: >
+    When a change alters user-visible behavior, configuration, environment variables, CLI flags,
+    API contracts, or setup steps, update the affected README sections, docs, example config
+    (such as .env.example), and code comments in the same change, and add a changelog entry if
+    the project keeps one. Do not create new documentation files unless asked.
+  agent:
+    summary: >
+      If your change alters behavior, config, env vars, flags, or setup, update the matching README
+      or docs, example config, and comments in the same change, and add a CHANGELOG entry if the
+      project has one. Don't create new doc files unless asked.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

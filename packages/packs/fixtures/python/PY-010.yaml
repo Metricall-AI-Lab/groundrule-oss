@@ -1,0 +1,22 @@
+standard: PY-010
+cases:
+  - name: utcnow and utcfromtimestamp
+    expect: violation
+    count: 2
+    files:
+      app/events.py: |
+        import datetime
+
+        created = datetime.datetime.utcnow()
+        when = datetime.utcfromtimestamp(ts)
+  - name: aware datetimes, other libraries, and comments
+    expect: clean
+    files:
+      app/events.py: |
+        from datetime import datetime, timezone
+        import arrow
+
+        # Do not use datetime.utcnow(); it is naive.
+        created = datetime.now(timezone.utc)
+        when = datetime.fromtimestamp(ts, tz=timezone.utc)
+        other = arrow.utcnow()

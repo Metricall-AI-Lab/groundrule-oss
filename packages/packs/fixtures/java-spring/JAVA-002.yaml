@@ -1,0 +1,22 @@
+standard: JAVA-002
+cases:
+  - name: System.out and printStackTrace in main code
+    expect: violation
+    count: 2
+    files:
+      src/main/java/acme/Importer.java: |
+        class Importer {
+          void run() {
+            System.out.println("starting");
+            try { load(); } catch (Exception e) { e.printStackTrace(); }
+          }
+        }
+  - name: SLF4J logging, and console output in tests
+    expect: clean
+    files:
+      src/main/java/acme/Importer.java: |
+        class Importer {
+          private static final Logger log = LoggerFactory.getLogger(Importer.class);
+          void run() { log.info("starting"); }
+        }
+      src/test/java/acme/ImporterTest.java: "class T { void t() { System.out.println(1); } }\n"

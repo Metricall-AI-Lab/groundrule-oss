@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-013
+  title: Run gofmt, go vet, and tests with the race detector in CI
+  type: process
+  category: code-quality
+spec:
+  severity: advisory
+  scope:
+    languages: [go]
+  intent: Formatting, vet findings, and data races are cheap to catch automatically and expensive to find in production.
+  requirement: >
+    CI fails when any file is not gofmt-formatted, when go vet reports a problem, or when
+    go test -race fails. Keep go.mod tidy (go mod tidy produces no diff). Format and vet
+    locally before pushing.
+  agent:
+    summary: >
+      Before finishing a change, run gofmt (or goimports), go vet ./..., and go test -race ./...,
+      and keep go.mod tidy. Fix what they report instead of suppressing it.
+  references:
+    - https://pkg.go.dev/cmd/vet
+    - https://go.dev/doc/articles/race_detector
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

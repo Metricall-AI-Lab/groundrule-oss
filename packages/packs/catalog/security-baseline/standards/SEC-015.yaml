@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-015
+  title: Use parameterized queries, never string-built SQL
+  type: agent-instruction
+  category: security
+spec:
+  severity: blocker
+  intent: SQL assembled from strings lets input rewrite the query, and remains the most exploited injection class.
+  requirement: >
+    Pass values to SQL (and NoSQL, HQL, LDAP) queries as bound parameters or through the
+    ORM/query builder's parameter API. Never concatenate, interpolate, or format input into
+    query text. Identifiers that cannot be parameterized (table, column, sort direction)
+    must be chosen from a fixed allow list.
+  examples:
+    approved:
+      - { code: 'db.query("SELECT * FROM users WHERE id = $1", [id])', language: typescript }
+      - { code: 'cur.execute("SELECT * FROM users WHERE email = %s", (email,))', language: python }
+    forbidden:
+      - { code: 'db.query(`SELECT * FROM users WHERE id = ${id}`)', language: typescript }
+      - { code: 'cur.execute(f"SELECT * FROM users WHERE email = ''{email}''")', language: python }
+      - { code: 'jdbc.query("SELECT * FROM users ORDER BY " + sort)', language: java, note: "Map sort to an allow-listed column instead." }
+  agent:
+    summary: >
+      Always pass values to SQL and other queries as bound parameters; never concatenate,
+      interpolate, or format input into query text. Pick table/column names from a fixed allow list.
+  references:
+    - { id: CWE-89, title: "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')" }
+    - { id: OWASP-A03:2021, title: Injection, url: "https://owasp.org/Top10/A03_2021-Injection/" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.3.4] }
+    - { framework: pci-dss, controls: ["6.2.4"] }
+    - { framework: iso-27001, controls: ["8.28"] }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

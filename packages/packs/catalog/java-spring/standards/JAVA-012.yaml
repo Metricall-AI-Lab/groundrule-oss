@@ -1,0 +1,45 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-012
+  title: Use java.time instead of Date, Calendar, and SimpleDateFormat
+  type: requirement
+  category: code-quality
+spec:
+  severity: advisory
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+  intent: >
+    java.util.Date and Calendar are mutable and time-zone ambiguous, and SimpleDateFormat is not
+    thread-safe, which causes corrupted dates when a formatter is shared between requests.
+  requirement: >
+    In new code, use java.time types (Instant, LocalDate, OffsetDateTime, ZonedDateTime, Duration)
+    and DateTimeFormatter. Get the current time from an injected java.time.Clock so it can be fixed
+    in tests. Convert to Date only at the boundary of a library that requires it.
+  remediation: >
+    Replace new Date() with Instant.now(clock), Calendar arithmetic with plusDays/plusHours, and
+    SimpleDateFormat with a static final DateTimeFormatter. Use Date.from(instant) where a legacy
+    API still needs a Date.
+  examples:
+    approved:
+      - "Instant createdAt = Instant.now(clock);"
+      - 'private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");'
+      - "token.setExpiration(Date.from(Instant.now(clock).plus(ttl)));"
+    forbidden:
+      - "Date createdAt = new Date();"
+      - 'private static final SimpleDateFormat DAY = new SimpleDateFormat("yyyy-MM-dd");'
+      - "Calendar cal = Calendar.getInstance();"
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?(?:\bnew\s+(?:java\.util\.)?Date\s*\(|\bnew\s+(?:java\.text\.)?SimpleDateFormat\s*\(|\bCalendar\s*\.\s*getInstance\s*\()'
+      include: ["**/*.java"]
+      message: Legacy date API; use java.time
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Code that must construct a Date for a legacy library. Prefer Date.from(Instant), which is not flagged.
+  rollout:
+    recommendedStage: advise

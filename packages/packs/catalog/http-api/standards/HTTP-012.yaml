@@ -1,0 +1,30 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-012
+  title: Follow the API's existing naming and resource conventions
+  type: guidance
+  category: api-design
+spec:
+  severity: advisory
+  intent: >
+    An API that mixes camelCase and snake_case, singular and plural paths, or several envelope
+    styles forces every client to special-case endpoints and is hard to change later.
+  requirement: >
+    Match the API's established conventions: one field casing (camelCase or snake_case) across
+    every endpoint, plural nouns for collections (/orders/{id}), HTTP methods rather than verbs
+    in paths (use a sub-resource such as POST /orders/{id}/cancel only for actions that do not
+    map to a method), enums as string values rather than integers, and the same response
+    envelope everywhere. When no convention exists yet, choose one and document it.
+  examples:
+    approved: ["GET /orders/{orderId}/items → { \"items\": [...], \"nextCursor\": null }"]
+    forbidden: ["POST /getOrderItems → { \"Items\": [...], \"next_cursor\": null }"]
+  agent:
+    summary: >
+      Before adding an endpoint, read two or three existing ones and copy their field casing,
+      path style, envelope, enum representation, and error shape exactly. Use plural nouns and
+      HTTP methods, not verbs in paths.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

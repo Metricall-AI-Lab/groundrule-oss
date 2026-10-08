@@ -1,0 +1,48 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-006
+  title: Do not make HTTP calls without a timeout
+  type: prohibition
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [go]
+  intent: http.DefaultClient and a zero http.Client have no timeout, so one slow server can hang a request path forever.
+  requirement: >
+    Do not use http.Get, http.Head, http.Post, http.PostForm, http.DefaultClient, or an
+    empty http.Client{} for outbound calls. Use an http.Client with a Timeout, or build
+    requests with http.NewRequestWithContext and a context that has a deadline.
+  remediation: >
+    Create a shared client such as &http.Client{Timeout: 10 * time.Second} and use it, or
+    send the request with http.NewRequestWithContext and a context with a deadline.
+  examples:
+    approved:
+      - code: |
+          client := &http.Client{Timeout: 10 * time.Second}
+          resp, err := client.Do(req)
+        language: go
+    forbidden:
+      - code: "resp, err := http.Get(url)"
+        language: go
+      - code: "resp, err := http.DefaultClient.Do(req)"
+        language: go
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*//)[^\n]*?(?:\bhttp\.(?:Get|Head|Post|PostForm)\(|\bhttp\.DefaultClient\b|\bhttp\.Client\{\s*\})'
+      include: ["**/*.go"]
+      exclude: ["**/*_test.go", "**/testdata/**", "**/vendor/**", "**/examples/**", "**/example/**"]
+      message: HTTP call without a timeout; use an http.Client with Timeout or a context deadline
+  references:
+    - { id: CWE-400, title: Uncontrolled Resource Consumption }
+    - https://pkg.go.dev/net/http#Client
+  applicability:
+    files: ["**/go.mod"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - http.DefaultClient.Do with a request whose context already carries a deadline. Prefer a dedicated client anyway, or record an exception.
+      - Short-lived CLI tools where a hang is harmless. Exclude their paths with scope.exclude.
+  rollout:
+    recommendedStage: advise

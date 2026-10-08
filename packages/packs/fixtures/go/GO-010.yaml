@@ -1,0 +1,39 @@
+standard: GO-010
+cases:
+  - name: printing from a library package
+    expect: violation
+    count: 2
+    files:
+      internal/orders/service.go: |
+        package orders
+
+        func (s *Service) Create(ctx context.Context, o Order) error {
+        	fmt.Printf("creating order %v\n", o)
+        	println("debug")
+        	return s.repo.Save(ctx, o)
+        }
+  - name: Fprintf to a writer, Sprintf, logger, package main, cmd, and tests
+    expect: clean
+    files:
+      internal/orders/service.go: |
+        package orders
+
+        // fmt.Println is not allowed here.
+        func (s *Service) Report(w io.Writer, n int) string {
+        	fmt.Fprintf(w, "%d orders\n", n)
+        	s.logger.Info("report written", "count", n)
+        	p.println()
+        	return fmt.Sprintf("%d", n)
+        }
+      main.go: |
+        package main
+
+        func main() { fmt.Println("hello") }
+      cmd/tool/root.go: |
+        package tool
+
+        func run() { fmt.Println("done") }
+      internal/orders/service_test.go: |
+        package orders
+
+        func TestX(t *testing.T) { fmt.Println("x") }

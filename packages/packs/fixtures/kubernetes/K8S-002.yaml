@@ -1,0 +1,34 @@
+standard: K8S-002
+cases:
+  - name: host network, PID, and IPC
+    expect: violation
+    count: 3
+    files:
+      manifests/agent.yaml: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: agent
+        spec:
+          hostNetwork: true
+          hostPID: "true"
+          hostIPC: true
+          containers:
+            - name: agent
+              image: acme/agent:1.0.0
+  - name: explicit false, hostPort-free Service, and a non-Kubernetes config
+    expect: clean
+    files:
+      k8s/pod.yaml: |
+        apiVersion: v1
+        kind: Pod
+        spec:
+          hostNetwork: false
+          containers:
+            - name: api
+              image: acme/api:1.0.0
+      deploy/compose.yaml: |
+        services:
+          api:
+            network_mode: host
+            hostNetwork: true

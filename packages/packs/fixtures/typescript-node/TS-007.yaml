@@ -1,0 +1,40 @@
+standard: TS-007
+cases:
+  - name: root tsconfig without strict
+    expect: violation
+    files:
+      src/index.ts: "export const x = 1;\n"
+      tsconfig.json: |
+        {
+          "compilerOptions": {
+            "target": "es2022",
+            "module": "nodenext",
+            "outDir": "dist"
+          }
+        }
+  - name: package tsconfig disables strict
+    expect: violation
+    files:
+      src/index.ts: "export const x = 1;\n"
+      tsconfig.json: '{ "extends": "./tsconfig.base.json" }'
+      tsconfig.base.json: |
+        {
+          "compilerOptions": {
+            "strict": false
+          }
+        }
+  - name: strict on, commented-out override, shared base, and solution config
+    expect: clean
+    files:
+      src/index.ts: "export const x = 1;\n"
+      tsconfig.json: |
+        {
+          "compilerOptions": {
+            "strict": true,
+            // "strict": false,
+            "noUncheckedIndexedAccess": true
+          }
+        }
+      packages/api/tsconfig.json: '{ "extends": "@tsconfig/strictest/tsconfig.json", "compilerOptions": { "outDir": "dist" } }'
+      packages/web/tsconfig.json: '{ "files": [], "references": [{ "path": "./tsconfig.app.json" }] }'
+      docs/tsconfig.json: '{ "compilerOptions": { "strict": false } }'

@@ -1,0 +1,41 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-001
+  title: No bare except clauses
+  type: prohibition
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [python]
+  intent: >
+    A bare except also catches KeyboardInterrupt and SystemExit and hides programming
+    errors, so failures disappear instead of surfacing.
+  requirement: >
+    Never write `except:` without an exception type. Catch the specific exceptions you
+    can handle; if you truly need a catch-all at a boundary, use `except Exception:` and
+    log or re-raise.
+  remediation: >
+    Name the exceptions you expect (e.g. `except (ValueError, KeyError):`), or use
+    `except Exception:` at a top-level boundary and log the error with its traceback.
+  examples:
+    approved:
+      - "except (ValueError, KeyError) as exc:"
+      - "except Exception:\n    logger.exception(\"job failed\")\n    raise"
+    forbidden:
+      - "except:\n    pass"
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*except[ \t]*:'
+      include: ["**/*.py"]
+      message: Bare except catches everything, including KeyboardInterrupt and SystemExit
+  references:
+    - { id: CWE-396, title: Declaration of Catch for Generic Exception }
+    - { url: "https://peps.python.org/pep-0008/#programming-recommendations", title: "PEP 8: Programming Recommendations" }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - A line starting with "except:" inside a multi-line string or docstring.
+  rollout:
+    recommendedStage: enforce

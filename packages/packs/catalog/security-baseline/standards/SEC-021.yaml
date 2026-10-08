@@ -1,0 +1,35 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-021
+  title: Generate tokens and secrets with a cryptographically secure random generator
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: General-purpose random generators are predictable, so tokens built from them can be guessed.
+  requirement: >
+    Generate session IDs, reset and verification tokens, API keys, nonces, and other
+    unguessable values with the platform's CSPRNG (crypto.randomBytes / crypto.randomUUID,
+    Python secrets, Java SecureRandom, Go crypto/rand) with at least 128 bits of entropy.
+    Never use Math.random, Python random, java.util.Random, math/rand, or timestamps for them.
+  examples:
+    approved:
+      - { code: 'const token = crypto.randomBytes(32).toString("base64url");', language: typescript }
+      - { code: "token = secrets.token_urlsafe(32)", language: python }
+    forbidden:
+      - { code: "const token = Math.random().toString(36).slice(2);", language: typescript }
+      - { code: "token = str(random.randint(100000, 999999))", language: python }
+  agent:
+    summary: >
+      Generate tokens, session IDs, nonces, and keys only with a CSPRNG (crypto.randomBytes,
+      secrets, SecureRandom, crypto/rand); never Math.random, random, java.util.Random, or math/rand.
+  references:
+    - { id: CWE-338, title: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG) }
+  compliance:
+    - { framework: owasp-asvs, controls: [V6.3.1] }
+    - { framework: iso-27001, controls: ["8.24"] }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

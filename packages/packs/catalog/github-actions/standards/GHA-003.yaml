@@ -1,0 +1,50 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-003
+  title: Do not interpolate untrusted event data into scripts
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: >
+    Expressions are substituted into the script text before the shell runs it. An issue
+    title, PR body, branch name, or commit message containing shell syntax becomes code
+    running with the workflow's token and secrets.
+  requirement: >
+    Never place attacker-controllable context (issue, PR, comment, review, and discussion
+    titles and bodies; commit messages and author names; head branch names; github.head_ref)
+    directly inside run: or actions/github-script script:. Pass the value through env: and
+    reference it as a quoted shell variable ("$TITLE") or process.env.
+  remediation: >
+    Move the expression into the step's env: block (e.g. TITLE: ${{ github.event.issue.title }})
+    and use "$TITLE" in the script, always double-quoted.
+  examples:
+    approved:
+      - code: |
+          - run: echo "Title: $TITLE"
+            env:
+              TITLE: ${{ github.event.issue.title }}
+        language: yaml
+    forbidden:
+      - code: |
+          - run: echo "Title: ${{ github.event.issue.title }}"
+        language: yaml
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*(?:-[ \t]+)?(?:run|script):[^\n]*(?:\n(?![ \t]*(?:-[ \t]+)?[A-Za-z_][A-Za-z0-9_-]*:(?:[ \t]|$))[^\n]*)*?\$\{\{[ \t]*(?:github\.head_ref\b|github\.event\.(?:issue\.(?:title|body)|pull_request\.(?:title|body|head\.ref|head\.label|head\.repo\.default_branch)|comment\.body|review\.body|review_comment\.body|discussion\.(?:title|body)|pages\b[^}\n]*\.page_name|head_commit\.(?:message|author\.(?:name|email))|commits\b[^}\n]*\.(?:message|author\.(?:name|email))))'
+      include:
+        - ".github/workflows/*.yml"
+        - ".github/workflows/*.yaml"
+        - "**/action.yml"
+        - "**/action.yaml"
+      message: Untrusted event data interpolated into a script
+  references:
+    - { id: CWE-94, title: "Improper Control of Generation of Code ('Code Injection')" }
+    - { id: CWE-78, title: "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')" }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Script lines that start with a YAML-key-like word followed by a colon end the scanned block early, so an expression after such a line can be missed.
+  rollout:
+    recommendedStage: enforce

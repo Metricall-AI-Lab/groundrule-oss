@@ -1,0 +1,55 @@
+standard: JAVA-008
+cases:
+  - name: literal passwords and secrets in properties and YAML
+    expect: violation
+    count: 4
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/resources/application.properties: |
+        spring.datasource.url=jdbc:postgresql://db:5432/claims
+        spring.datasource.username=claims
+        spring.datasource.password=s3cr3t-prod
+        payments.api-key = 9f8e7d6c5b4a
+      src/main/resources/config/application-prod.yml: |
+        spring:
+          security:
+            oauth2:
+              client:
+                registration:
+                  okta:
+                    client-id: claims-app
+                    client-secret: "8f1c2e7a9b0d"
+        jwt:
+          secret-key: ${JWT_SECRET:changeme}
+  - name: placeholders, empty values, encrypted values, local profile, and tests
+    expect: clean
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/resources/application.properties: |
+        # spring.datasource.password=do-not-commit
+        spring.datasource.password=${DB_PASSWORD}
+        spring.datasource.hikari.password=
+        payments.api-key=${PAYMENTS_API_KEY:}
+        payments.api-key-header=X-Api-Key
+        server.ssl.key-store-password={cipher}AQB8f3c1
+        legacy.password=ENC(G6N718UuyPE5bHyWKyuLQSm02auQPUtm)
+        password-reset.token-ttl=PT15M
+      src/main/resources/application.yml: |
+        spring:
+          datasource:
+            password: "${DB_PASSWORD}"
+          security:
+            oauth2:
+              client:
+                registration:
+                  okta:
+                    client-secret: ${OKTA_SECRET:${FALLBACK_SECRET}}
+        vault:
+          secret:
+            path: claims/prod
+        api-key: ""
+      src/main/resources/application-local.yml: |
+        spring:
+          datasource:
+            password: postgres
+      src/test/resources/application.properties: "spring.datasource.password=test\n"

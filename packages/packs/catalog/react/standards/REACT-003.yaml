@@ -1,0 +1,39 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-003
+  title: Add rel="noopener noreferrer" to target="_blank" links
+  type: requirement
+  category: security
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: A page opened with target="_blank" can get window.opener and redirect the original tab (reverse tabnabbing) in browsers that do not imply noopener.
+  requirement: >
+    Every <a> element with target="_blank" sets rel to include noopener or noreferrer
+    (normally rel="noopener noreferrer").
+  remediation: >
+    Add rel="noopener noreferrer" to the link, or use the project's external-link component.
+  examples:
+    approved: ['<a href={url} target="_blank" rel="noopener noreferrer">Docs</a>']
+    forbidden: ['<a href={url} target="_blank">Docs</a>']
+  checks:
+    - evaluator: regex
+      # Examines the whole <a ...> tag, across lines; arrow functions (=>) inside attributes are skipped over.
+      pattern: '<a\b(?=(?:[^>]|=>)*?\btarget\s*=\s*\{?\s*[''"\x60]_blank[''"\x60])(?!(?:[^>]|=>)*?\brel\s*=\s*\{?\s*[''"\x60][^''"\x60]*\bno(?:opener|referrer)\b)(?!(?:[^>]|=>)*?\{\s*\.\.\.)'
+      include: ["**/*.jsx", "**/*.tsx", "**/*.js"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/*.stories.*", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**"]
+      message: target="_blank" link without rel="noopener noreferrer"
+  references:
+    - { id: CWE-1022, title: Use of Web Link to Untrusted Target with window.opener Access }
+  applicability:
+    frameworks: [react]
+    files: ["**/package.json"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - rel set from a variable or helper (rel={externalRel}). Inline the value or record an exception.
+  rollout:
+    recommendedStage: advise

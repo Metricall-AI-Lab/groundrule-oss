@@ -1,0 +1,37 @@
+standard: PY-002
+cases:
+  - name: list, dict, and set() defaults
+    expect: violation
+    count: 3
+    files:
+      app/orders.py: |
+        def add(item, items=[]):
+            items.append(item)
+            return items
+
+        async def build(name: str, options: dict = {}) -> dict:
+            return options
+
+        class Repo:
+            def tags(
+                self,
+                order_id: str,
+                seen=set(),
+            ):
+                return seen
+  - name: None defaults, tuples, and empty containers inside the body
+    expect: clean
+    files:
+      app/orders.py: |
+        def add(item, items: list[str] | None = None) -> list[str]:
+            items = [] if items is None else items
+            return items
+
+        def build(name: str, options: tuple = (), flags: frozenset = frozenset()) -> dict:
+            result = {}
+            if options == []:
+                return {}
+            return result
+
+        def check(values: Callable[[], int] = default_factory):
+            return values()

@@ -1,0 +1,47 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-001
+  title: Pin third-party actions to a full commit SHA
+  type: requirement
+  category: supply-chain
+spec:
+  severity: warning
+  intent: >
+    Tags and branches are mutable. If a third-party action's repository is compromised,
+    every workflow referencing it by tag runs the attacker's code with the workflow's
+    secrets and token.
+  requirement: >
+    Reference third-party actions and reusable workflows by a full 40-character commit SHA,
+    with the version in a trailing comment so update tools can bump it
+    (uses: owner/repo@<sha> # v1.2.3). Actions owned by GitHub (actions/*, github/*) and
+    local actions (./...) are exempt from the check, though pinning them too is encouraged.
+  remediation: >
+    Replace the tag with the commit SHA it points to and keep the tag as a comment, e.g.
+    uses: docker/login-action@<40-char sha> # v3.3.0. Let Dependabot or Renovate keep
+    the pins current.
+  examples:
+    approved:
+      - "uses: docker/setup-buildx-action@<full 40-character commit SHA> # v3.7.1"
+      - "uses: actions/checkout@v4"
+    forbidden:
+      - "uses: docker/setup-buildx-action@v3"
+      - "uses: some-org/deploy-action@main"
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*(?:-[ \t]+)?uses:[ \t]*["'']?(?!(?:actions|github)/|\./|docker://)[^@\s"''#]+@(?![0-9a-f]{40}["'']?[ \t]*(?:#.*)?$)'
+      include:
+        - ".github/workflows/*.yml"
+        - ".github/workflows/*.yaml"
+        - "**/action.yml"
+        - "**/action.yaml"
+      message: Third-party action is not pinned to a full commit SHA
+  references:
+    - { id: CWE-829, title: Inclusion of Functionality from Untrusted Control Sphere }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Actions from your own organization that you trust at a tag. Exclude them by pinning anyway, or record an exception.
+      - GitHub-owned actions (actions/*, github/*) are deliberately not checked; teams that want them pinned too must extend the check.
+  rollout:
+    recommendedStage: advise

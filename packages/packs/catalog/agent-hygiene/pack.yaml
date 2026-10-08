@@ -1,0 +1,11 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: agent-hygiene
+  title: AI coding agent hygiene
+  description: How AI coding agents should work in a repository - scoped changes, honest verification, no weakened tests, and no surprises.
+  owner: groundrule
+  version: 1.0.0
+  tags: [agents, ai, process, code-review]
+spec:
+  include: ["standards/**/*.yaml"]

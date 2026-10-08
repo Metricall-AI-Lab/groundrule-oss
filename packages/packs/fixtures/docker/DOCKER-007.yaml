@@ -1,0 +1,27 @@
+standard: DOCKER-007
+cases:
+  - name: install without the flag, single and multi-line
+    expect: violation
+    count: 2
+    files:
+      Dockerfile: |
+        FROM debian:12-slim
+        RUN apt-get update && apt-get install -y curl
+        RUN apt-get update \
+         && apt-get install -y \
+              git \
+              ca-certificates \
+         && rm -rf /var/lib/apt/lists/*
+  - name: flag on a continuation line, before install, or via apt config, and a comment
+    expect: clean
+    files:
+      Dockerfile: |
+        FROM debian:12-slim
+        # apt-get install -y curl
+        RUN apt-get update \
+         && apt-get install -y \
+              --no-install-recommends \
+              git \
+         && rm -rf /var/lib/apt/lists/*
+        RUN apt-get -y --no-install-recommends install curl
+        RUN apt-get install -y -o APT::Install-Recommends=false make

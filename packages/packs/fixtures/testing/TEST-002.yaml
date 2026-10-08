@@ -1,0 +1,74 @@
+standard: TEST-002
+cases:
+  - name: JavaScript skips without a reason
+    expect: violation
+    count: 3
+    files:
+      src/payments.test.ts: |
+        import { it, describe } from "vitest";
+
+        it.skip("refunds a captured payment", async () => {});
+        xit('voids an authorization', () => {});
+        test.describe.skip(`webhooks`, () => {});
+  - name: Python, Java, and Go skips without a reason
+    expect: violation
+    count: 5
+    files:
+      tests/test_payments.py: |
+        @pytest.mark.skip
+        def test_refund():
+            pass
+
+        @pytest.mark.skip()
+        def test_void():
+            pytest.skip()
+      src/test/java/com/acme/PaymentServiceTest.java: |
+        class PaymentServiceTest {
+          @Disabled
+          @Test
+          void refunds() {}
+        }
+      payments/refund_test.go: |
+        func TestRefund(t *testing.T) {
+        	t.Skip()
+        }
+  - name: skips with reasons, conditional skips, and unrelated skip calls
+    expect: clean
+    files:
+      src/payments.test.ts: |
+        // Disabled until the sandbox supports refunds (PAY-123).
+        it.skip("refunds a captured payment", async () => {});
+        xit("voids an authorization", () => {}); // flaky on CI, see #482
+        it.skip("captures later PAY-77", () => {});
+        test("firefox only", async ({ browserName }) => {
+          test.skip(browserName !== "firefox", "Firefox-specific behavior");
+        });
+        const rows = query.skip(10).take(5);
+        expect(stream.skip("header")).toBeDefined();
+      tests/test_payments.py: |
+        @pytest.mark.skip(reason="needs Postgres 16 (DATA-88)")
+        def test_refund():
+            pass
+
+        @pytest.mark.skip("sandbox down")
+        def test_void():
+            pass
+
+        @pytest.mark.skipif(sys.platform == "win32", reason="POSIX only")
+        def test_paths():
+            pytest.skip("no network in CI")
+      src/test/java/com/acme/PaymentServiceTest.java: |
+        class PaymentServiceTest {
+          @Disabled("Sandbox does not support refunds, see PAY-123")
+          @DisabledOnOs(OS.WINDOWS)
+          @JsonIgnore
+          @Test
+          void refunds() {}
+        }
+      payments/refund_test.go: |
+        func TestRefund(t *testing.T) {
+        	// t.Skip()
+        	t.Skip("requires a live sandbox")
+        }
+      src/pager.ts: |
+        it.skip("not a test file", () => {});

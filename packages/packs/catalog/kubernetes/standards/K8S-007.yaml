@@ -1,0 +1,52 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: K8S-007
+  title: Pin container images to a version tag or digest
+  type: requirement
+  category: supply-chain
+spec:
+  severity: warning
+  intent: >
+    An untagged or :latest image can change on every pod restart, so replicas run different
+    code, rollbacks do not roll back, and nobody reviewed what is running.
+  requirement: >
+    Every image: in a manifest must name an immutable version tag or a digest
+    (image@sha256:...). Never use :latest or omit the tag.
+  remediation: >
+    Set the image to the exact version you deploy, ideally by digest, and let your CD tool
+    or a dependency bot update it.
+  examples:
+    approved:
+      - "image: ghcr.io/acme/api:1.8.2"
+      - "image: ghcr.io/acme/api@sha256:<digest>"
+    forbidden:
+      - "image: nginx"
+      - "image: ghcr.io/acme/api:latest"
+  agent:
+    summary: >
+      Pin every image in Kubernetes manifests to an explicit version tag or digest; never use
+      :latest or an untagged image.
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*(?:-[ \t]+)?image:[ \t]*["'']?((?:[^\s"''/@{}$]+/)*[^\s"'':/@{}$]+)(?::latest)?["'']?[ \t]*(?:#[^\n]*)?\r?$(?:(?<=^kind:[\s\S]*)|(?=[\s\S]*^kind:))'
+      message: Image is untagged or uses :latest. Pin a version tag or digest.
+      include:
+        - "**/k8s/**/*.y*ml"
+        - "**/kubernetes/**/*.y*ml"
+        - "**/manifests/**/*.y*ml"
+        - "**/deploy/**/*.y*ml"
+        - "**/deployment/**/*.y*ml"
+        - "**/deployments/**/*.y*ml"
+        - "**/kustomize/**/*.y*ml"
+        - "**/charts/**/templates/**/*.y*ml"
+        - "**/helm/**/templates/**/*.y*ml"
+      exclude: ["**/.github/**", "**/*compose*.y*ml"]
+  references:
+    - { id: CWE-1357, title: Reliance on Insufficiently Trustworthy Component }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Kustomize bases that leave images untagged because an overlay's images transformer sets newTag or digest. Exclude the base directory or tag the base image.
+  rollout:
+    recommendedStage: advise

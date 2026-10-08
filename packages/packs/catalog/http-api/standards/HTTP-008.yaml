@@ -1,0 +1,32 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-008
+  title: Rate limit authentication and expensive endpoints
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: >
+    Without limits, login and reset endpoints invite credential stuffing, and expensive
+    endpoints (search, exports, uploads, calls to paid services) let one client exhaust
+    capacity or run up a bill.
+  requirement: >
+    Apply the project's rate limiter to login, sign-up, password reset, OTP, and token
+    endpoints (keyed by account and by client IP), and to expensive endpoints (keyed by caller).
+    Exceeding a limit returns 429 with a Retry-After header in the API's error shape. Cap
+    request body size, upload size, and server-side work such as query complexity and export
+    row counts.
+  agent:
+    summary: >
+      When adding login, password reset, OTP, sign-up, search, export, upload, or endpoints that
+      call paid services, apply the project's rate limiter and return 429 with Retry-After.
+      Cap body and upload sizes and the amount of work one request can trigger.
+  references:
+    - { id: CWE-307, title: Improper Restriction of Excessive Authentication Attempts }
+    - { id: CWE-770, title: Allocation of Resources Without Limits or Throttling }
+    - { id: OWASP-API4:2023, title: Unrestricted Resource Consumption, url: "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/" }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

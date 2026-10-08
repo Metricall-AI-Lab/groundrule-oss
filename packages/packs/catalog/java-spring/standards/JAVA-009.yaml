@@ -1,0 +1,54 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-009
+  title: Do not expose all Actuator endpoints over HTTP
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  scope:
+    frameworks: [spring-boot]
+  intent: >
+    Actuator endpoints such as env, configprops, heapdump, threaddump, and loggers reveal
+    configuration and memory contents or change runtime behavior. Exposing them all with "*"
+    publishes every current and future endpoint.
+  requirement: >
+    Do not set management.endpoints.web.exposure.include to "*". List only the endpoints the
+    service needs over HTTP (typically health, info, and prometheus), and secure any sensitive
+    ones with Spring Security or a separate management port that is not publicly reachable.
+  remediation: >
+    Replace "*" with an explicit list, e.g. management.endpoints.web.exposure.include=health,info,prometheus.
+    If an operator needs more, expose it on a management port restricted to the internal network
+    and require authentication.
+  examples:
+    approved:
+      - "management.endpoints.web.exposure.include=health,info,prometheus"
+    forbidden:
+      - "management.endpoints.web.exposure.include=*"
+      - code: |
+          management:
+            endpoints:
+              web:
+                exposure:
+                  include: "*"
+        language: yaml
+  checks:
+    - evaluator: regex
+      # Flat keys (properties or YAML) and the nested YAML form under web: exposure:.
+      pattern: '^[ \t]*(?:[\w\-]+\.)*web\.exposure\.include[ \t]*[=:][ \t]*["'']?\*|^[ \t]*web:[ \t]*\n(?:[ \t]+(?!jmx:)[^\n]*\n|[ \t]*\n)*?[ \t]+exposure:[ \t]*\n(?:[ \t]*(?:#[^\n]*)?\n|[ \t]+exclude:[^\n]*\n)*[ \t]+include:[ \t]*(?:\n[ \t]*-[ \t]*)?["'']?\*'
+      include:
+        - "**/src/main/resources/**/application*.{properties,yml,yaml}"
+        - "**/src/main/resources/**/bootstrap*.{properties,yml,yaml}"
+      exclude: ["**/application-local.*"]
+      message: All Actuator endpoints exposed over HTTP; list only the ones you need
+  references:
+    - { id: CWE-200, title: Exposure of Sensitive Information to an Unauthorized Actor }
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Services whose management port is bound to an internal-only interface and protected by authentication. Record an exception that names the control.
+  rollout:
+    recommendedStage: advise

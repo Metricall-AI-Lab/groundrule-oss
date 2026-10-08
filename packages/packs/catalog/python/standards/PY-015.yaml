@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-015
+  title: Use module loggers with lazy formatting
+  type: agent-instruction
+  category: observability
+spec:
+  severity: advisory
+  scope:
+    languages: [python]
+  intent: >
+    Per-module loggers let operators tune levels per component, and passing arguments
+    instead of pre-formatted strings skips formatting for disabled levels and keeps messages
+    groupable.
+  requirement: >
+    Create one logger per module with `logger = logging.getLogger(__name__)`; do not log via
+    the root logger (logging.info) in library code or call logging.basicConfig outside the
+    application entry point. Pass values as arguments (`logger.info("loaded %s rows", n)`)
+    or structured fields rather than f-strings, and use logger.exception inside except blocks
+    to keep the traceback.
+  examples:
+    approved:
+      - 'logger.info("imported %d orders from %s", count, source)'
+      - 'logger.exception("payment capture failed for order %s", order_id)'
+    forbidden:
+      - 'logging.info(f"imported {count} orders from {source}")'
+  agent:
+    summary: >
+      Use `logger = logging.getLogger(__name__)` per module, log with %-style arguments rather
+      than f-strings, use logger.exception in except blocks, and configure logging only at the
+      application entry point.
+  references:
+    - { url: "https://docs.python.org/3/howto/logging.html", title: "Python Logging HOWTO" }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

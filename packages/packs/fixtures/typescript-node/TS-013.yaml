@@ -1,0 +1,33 @@
+standard: TS-013
+cases:
+  - name: catch clause and promise catch typed any
+    expect: violation
+    count: 2
+    files:
+      src/client.ts: |
+        try {
+          await call();
+        } catch (err: any) {
+          return err.response.status;
+        }
+        fetchUser().catch((e: any) => console.error(e.message));
+  - name: unknown catch variables, untyped catches, and any elsewhere
+    expect: clean
+    files:
+      src/client.ts: |
+        try {
+          await call();
+        } catch (err) {
+          if (err instanceof HttpError) return err.status;
+          throw err;
+        } 
+        try { run(); } catch (err: unknown) { report(err); }
+        fetchUser().catch((e: unknown) => report(e));
+        const anyValue: any = JSON.parse(text);
+        function matchAny(input: any) {}
+      src/client.test.ts: "try { run(); } catch (e: any) { expect(e.code).toBe(1); }\n"
+  - name: test mocks typed loosely (real-repo regression, bulletproof-react)
+    expect: clean
+    files:
+      tsconfig.json: "{}"
+      src/testing/mocks/handlers/auth.ts: "try { login(); } catch (error: any) { return error.message; }\n"

@@ -1,0 +1,49 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-006
+  title: Do not put @Transactional on private methods
+  type: prohibition
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+    frameworks: [spring-boot]
+  intent: >
+    Spring applies @Transactional through proxies, which cannot intercept private methods. The
+    annotation is silently ignored, so code that looks transactional runs without a transaction.
+  requirement: >
+    Do not annotate private methods with @Transactional. Put it on a public method that is called
+    from another bean, so the call goes through the Spring proxy.
+  remediation: >
+    Make the method public and call it from another bean, or move @Transactional to the public
+    entry point that calls the private method. Calls from the same class (self-invocation) also
+    bypass the proxy, so moving the method into a separate bean is often the right fix.
+  examples:
+    approved:
+      - code: |
+          @Transactional
+          public void settle(long claimId) { applyPayment(claimId); }
+
+          private void applyPayment(long claimId) { ... }
+        language: java
+    forbidden:
+      - code: |
+          @Transactional
+          private void applyPayment(long claimId) { ... }
+        language: java
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?@(?:[\w.]+\.)?Transactional\b(?:\((?:[^()]|\([^()]*\))*\))?\s+(?:@[\w.]+(?:\((?:[^()]|\([^()]*\))*\))?\s+)*(?:(?:static|final|synchronized)\s+)*private\s'
+      include: ["**/*.java"]
+      message: "@Transactional on a private method is ignored by Spring's proxy"
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Projects that weave transactions with AspectJ (mode = ASPECTJ), where private methods are intercepted. Disable the standard there.
+  rollout:
+    recommendedStage: enforce

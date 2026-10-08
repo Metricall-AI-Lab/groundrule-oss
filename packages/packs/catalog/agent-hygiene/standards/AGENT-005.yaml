@@ -1,0 +1,28 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-005
+  title: Never weaken tests or checks to get a green build
+  type: agent-instruction
+  category: agents
+spec:
+  severity: blocker
+  intent: >
+    A test or check that was loosened to pass no longer protects anything, and the failure it
+    reported is still in the code, now hidden.
+  requirement: >
+    When a test, type check, linter, or security scan fails, fix the code. Do not delete, skip,
+    or loosen tests or assertions; update snapshots or expected values without confirming the new
+    behavior is intended; add suppressions (eslint-disable, @ts-ignore, # noqa, # type: ignore,
+    @SuppressWarnings, nolint); lower coverage thresholds; mark CI steps as allowed to fail; bypass
+    hooks with --no-verify; or disable security controls such as TLS verification, authentication,
+    or CSRF protection. If you believe a test or check is wrong, leave it in place and explain why.
+  agent:
+    summary: >
+      If a test or check fails, fix the code. Never delete, skip, or loosen tests, rewrite expected
+      values to match buggy output, add lint or type suppressions, lower thresholds, use --no-verify,
+      or disable security checks to get green; if you think the test is wrong, stop and explain why.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

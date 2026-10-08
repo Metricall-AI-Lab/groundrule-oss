@@ -1,0 +1,51 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-008
+  title: Use query placeholders, not fmt.Sprintf, to build SQL
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [go]
+  intent: Formatting values into SQL text lets any caller-controlled string rewrite the query.
+  requirement: >
+    Pass values to database/sql (and sqlx, pgx, and similar) as query arguments with
+    placeholders ($1, ?, @name). Never build SQL text with fmt.Sprintf and %s, %v, or %q.
+    Table or column names that must vary come from a fixed allowlist, never directly from input.
+  remediation: >
+    Replace the formatted value with a placeholder and pass it as an argument, e.g.
+    db.QueryContext(ctx, "SELECT name FROM users WHERE id = $1", id). For dynamic identifiers,
+    pick them from a fixed allowlist and record an exception.
+  examples:
+    approved:
+      - code: 'rows, err := db.QueryContext(ctx, "SELECT id, name FROM users WHERE email = $1", email)'
+        language: go
+    forbidden:
+      - code: 'q := fmt.Sprintf("SELECT id, name FROM users WHERE email = ''%s''", email)'
+        language: go
+  checks:
+    - evaluator: regex
+      # fmt.Sprintf whose literal (quoted or raw) format starts with a SQL statement and contains %s, %v, or %q.
+      pattern: '\bfmt\.Sprintf\(\s*(?:"(?=[^"\n]*%[sqv])\s*(?:SELECT\s[^"\n]*?\bFROM|INSERT\s+INTO|UPDATE\s+\S+\s+SET|DELETE\s+FROM)\b|`(?=[^`]*%[sqv])\s*(?:SELECT\s[^`]*?\bFROM|INSERT\s+INTO|UPDATE\s+\S+\s+SET|DELETE\s+FROM)\b)'
+      flags: i
+      include: ["**/*.go"]
+      exclude: ["**/*_test.go", "**/testdata/**", "**/vendor/**"]
+      message: SQL built with fmt.Sprintf; pass values as query arguments with placeholders
+  references:
+    - { id: CWE-89, title: "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')" }
+    - { id: OWASP-A03:2021, title: Injection, url: "https://owasp.org/Top10/A03_2021-Injection/" }
+    - https://go.dev/doc/database/sql-injection
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.3.4] }
+  applicability:
+    files: ["**/go.mod"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Table or column names interpolated from a fixed allowlist. Record an exception.
+      - Integers formatted with %v. Use a placeholder anyway.
+      - Queries assembled by concatenation, or with a format string held in a variable, are not detected.
+  rollout:
+    recommendedStage: advise

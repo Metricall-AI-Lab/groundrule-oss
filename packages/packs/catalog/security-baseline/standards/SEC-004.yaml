@@ -22,7 +22,8 @@ spec:
     - evaluator: regex
       pattern: "rejectUnauthorized\\s*:\\s*false|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*['\"]?0|verify\\s*=\\s*False\\b|InsecureSkipVerify\\s*:\\s*true"
       message: TLS certificate verification is disabled
-      exclude: ["**/*.md"]
+      # Tests commonly talk to local TLS test servers with self-signed certificates.
+      exclude: ["**/*.md", "**/*_test.go", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/testdata/**", "**/conftest.py", "**/test_*.py"]
   references:
     - { id: CWE-295, title: Improper Certificate Validation }
   compliance:

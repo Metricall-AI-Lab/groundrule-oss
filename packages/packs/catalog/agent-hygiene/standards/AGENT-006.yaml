@@ -1,0 +1,28 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-006
+  title: Ask before destructive or irreversible operations
+  type: agent-instruction
+  category: agents
+spec:
+  severity: blocker
+  intent: >
+    Deleted data, rewritten history, and changed shared infrastructure often cannot be restored,
+    and an agent acting on a misunderstanding can cause an outage in seconds.
+  requirement: >
+    Get explicit confirmation from the user before: deleting files or directories you did not
+    create, dropping or truncating tables or running data-deleting migrations, force-pushing or
+    rewriting published git history, deleting branches or tags, running commands against shared,
+    staging, or production environments (deploys, terraform apply, kubectl, database consoles),
+    rotating or revoking credentials, and sending messages or making purchases. Prefer reversible
+    alternatives (soft deletes, new branches, dry runs, plan output) and show what would change first.
+  agent:
+    summary: >
+      Stop and ask before anything destructive or hard to undo: deleting files you did not create,
+      dropping data or running destructive migrations, force-pushing or rewriting history, and any
+      command against shared, staging, or production systems. Show a dry run or plan first.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

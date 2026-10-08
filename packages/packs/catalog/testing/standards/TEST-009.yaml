@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-009
+  title: Test new and changed behavior, not coverage numbers
+  type: guidance
+  category: testing
+spec:
+  severity: advisory
+  intent: >
+    Coverage shows what code ran, not what was verified; chasing a percentage produces tests that
+    execute code without checking anything, while real edge cases go untested.
+  requirement: >
+    Every behavior a change adds or modifies is exercised by a test that asserts on its outcome,
+    including error paths and edge cases (empty input, boundaries, permissions, failures of
+    dependencies). Do not add tests without meaningful assertions to raise coverage, and do not
+    lower coverage thresholds to make a change pass. Use coverage reports to find untested
+    behavior, not as the goal.
+  agent:
+    summary: >
+      For each behavior you add or change, add tests that assert on the outcome, including the
+      error path and boundary cases. Never write assertion-free tests to raise coverage or lower
+      coverage thresholds to pass CI.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

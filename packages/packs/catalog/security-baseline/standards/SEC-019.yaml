@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-019
+  title: Verify JWT signature, algorithm, and expiry
+  type: agent-instruction
+  category: security
+spec:
+  severity: blocker
+  intent: A JWT that is decoded but not properly verified lets anyone forge an identity.
+  requirement: >
+    Verify every incoming JWT before trusting any claim: check the signature with a pinned list
+    of expected algorithms (never "none", never taken from the token header), and validate exp,
+    nbf, iss, and aud. Never use decode-without-verify functions for authorization decisions,
+    and never disable signature or expiry checks.
+  examples:
+    approved:
+      - { code: 'jwt.verify(token, key, { algorithms: ["RS256"], issuer, audience })', language: typescript }
+      - { code: 'jwt.decode(token, key, algorithms=["RS256"], audience=AUD, issuer=ISS)', language: python }
+    forbidden:
+      - { code: "const claims = jwt.decode(token);", language: typescript, note: "Decodes without verifying." }
+      - { code: 'jwt.decode(token, options={"verify_signature": False})', language: python }
+      - { code: "jwt.verify(token, key, { ignoreExpiration: true })", language: typescript }
+  agent:
+    summary: >
+      Always verify JWTs with a pinned algorithm list (never "none") and validate exp, iss, and aud;
+      never trust claims from a decode-only call or disable signature or expiry checks.
+  references:
+    - { id: CWE-347, title: Improper Verification of Cryptographic Signature }
+  compliance:
+    - { framework: owasp-asvs, controls: [V3.5.3] }
+  applicability:
+    dependencies: [jsonwebtoken, jose, pyjwt, python-jose, jjwt-api]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

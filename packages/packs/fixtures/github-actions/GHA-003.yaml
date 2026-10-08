@@ -1,0 +1,71 @@
+standard: GHA-003
+cases:
+  - name: issue title on a run line and PR body in a multi-line script
+    expect: violation
+    count: 2
+    files:
+      .github/workflows/triage.yml: |
+        on:
+          issues:
+            types: [opened]
+          pull_request:
+        jobs:
+          triage:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo "New issue: ${{ github.event.issue.title }}"
+              - name: Check body
+                run: |
+                  set -euo pipefail
+                  if grep -q urgent <<< "${{ github.event.pull_request.body }}"; then
+                    echo urgent
+                  fi
+  - name: head branch name in github-script and commit message in a composite action
+    expect: violation
+    count: 2
+    files:
+      .github/workflows/branch.yml: |
+        on: pull_request
+        jobs:
+          label:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/github-script@v7
+                with:
+                  script: |
+                    const branch = "${{ github.head_ref }}";
+                    console.log(branch);
+      .github/actions/notify/action.yml: |
+        runs:
+          using: composite
+          steps:
+            - shell: bash
+              run: >
+                ./notify.sh
+                "${{ github.event.head_commit.message }}"
+  - name: untrusted data passed via env, used in if, and safe context in run
+    expect: clean
+    files:
+      .github/workflows/triage.yml: |
+        on:
+          issues:
+            types: [opened]
+        jobs:
+          triage:
+            if: ${{ contains(github.event.issue.title, 'bug') }}
+            runs-on: ubuntu-latest
+            steps:
+              - name: Comment
+                run: |
+                  echo "Issue #${{ github.event.issue.number }} by $AUTHOR"
+                  echo "Title: $TITLE"
+                env:
+                  TITLE: ${{ github.event.issue.title }}
+                  AUTHOR: ${{ github.event.issue.user.login }}
+              - run: echo "sha ${{ github.sha }} on ${{ github.ref_name }}"
+              - uses: actions/github-script@v7
+                env:
+                  BODY: ${{ github.event.issue.body }}
+                with:
+                  script: |
+                    console.log(process.env.BODY);

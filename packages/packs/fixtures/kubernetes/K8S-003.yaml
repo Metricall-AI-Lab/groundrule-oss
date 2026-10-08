@@ -1,0 +1,78 @@
+standard: K8S-003
+cases:
+  - name: Deployment without allowPrivilegeEscalation false
+    expect: violation
+    files:
+      k8s/api/deployment.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: api
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  image: ghcr.io/acme/api:1.8.2
+                  securityContext:
+                    allowPrivilegeEscalation: true
+  - name: hardened Deployment, a Service, a Helm template, and a CI workflow
+    expect: clean
+    files:
+      k8s/api/deployment.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              initContainers:
+                - name: migrate
+                  image: ghcr.io/acme/api:1.8.2
+                  securityContext:
+                    allowPrivilegeEscalation: false
+              containers:
+                - name: api
+                  image: ghcr.io/acme/api:1.8.2
+                  securityContext:
+                    allowPrivilegeEscalation: false
+      k8s/api/service.yaml: |
+        apiVersion: v1
+        kind: Service
+        spec:
+          ports:
+            - port: 80
+      charts/api/templates/deployment.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  securityContext:
+                    {{- toYaml .Values.securityContext | nindent 12 }}
+      deploy/ci.yml: |
+        jobs:
+          test:
+            containers:
+              - node:22
+  - name: kustomize component patch (real-repo regression, microservices-demo)
+    expect: clean
+    files:
+      kustomize/components/branding/kustomization.yaml: |
+        apiVersion: kustomize.config.k8s.io/v1alpha1
+        kind: Component
+        patches:
+          - patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: frontend
+              spec:
+                template:
+                  spec:
+                    containers:
+                      - name: server
+                        env:
+                          - name: BRANDING
+                            value: "true"

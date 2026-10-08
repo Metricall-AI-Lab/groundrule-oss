@@ -1,0 +1,29 @@
+standard: TS-014
+cases:
+  - name: debugger statements left in code
+    expect: violation
+    count: 2
+    files:
+      src/cart.ts: |
+        export function total(items: Item[]) {
+          debugger;
+          return items.reduce((sum, i) => sum + i.price, 0);
+        }
+      src/App.jsx: |
+        export function App() {
+            debugger
+          return null;
+        }
+  - name: the word debugger in identifiers, strings, comments, and tests
+    expect: clean
+    files:
+      src/debug.ts: |
+        const debuggerEnabled = process.env.DEBUG === "1";
+        session.debugger.enable();
+        const label = "debugger";
+        // debugger;
+        /* debugger; */
+      src/cart.test.ts: |
+        it("works", () => {
+          debugger;
+        });

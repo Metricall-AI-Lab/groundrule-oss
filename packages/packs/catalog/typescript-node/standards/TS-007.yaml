@@ -1,0 +1,44 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-007
+  title: Keep TypeScript strict mode on
+  type: requirement
+  category: code-quality
+spec:
+  severity: warning
+  scope:
+    languages: [typescript]
+  intent: Without strict, null and undefined flow everywhere unchecked and implicit any hides type errors.
+  requirement: >
+    The root tsconfig.json sets "compilerOptions.strict": true, or extends a shared config
+    that does. No tsconfig may set "strict": false.
+  remediation: >
+    Set "strict": true in compilerOptions. For a large legacy codebase, enable it and add
+    targeted @ts-expect-error comments, or migrate folder by folder with a separate tsconfig.
+  examples:
+    approved: ['{ "compilerOptions": { "strict": true } }']
+    forbidden: ['{ "compilerOptions": { "strict": false } }', '{ "compilerOptions": { "target": "es2022" } }']
+  checks:
+    - evaluator: regex
+      # The root config must turn strict on, extend a shared config, or be a solution file
+      # with project references. Extended configs are not resolved, so they are trusted.
+      pattern: '"strict"\s*:\s*true\b|"extends"\s*:|"references"\s*:'
+      mode: require
+      include: ["tsconfig.json"]
+      message: 'Root tsconfig.json does not enable "strict": true'
+    - evaluator: regex
+      # Skips commented-out lines (tsconfig allows comments).
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?"strict"\s*:\s*false\b'
+      include: ["**/tsconfig.json", "**/tsconfig.*.json", "**/tsconfig-*.json"]
+      exclude: ["**/node_modules/**", "**/fixtures/**", "**/examples/**", "**/example/**", "**/docs/**"]
+      message: tsconfig disables strict mode
+  applicability:
+    files: ["**/tsconfig.json"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Projects mid-migration from JavaScript that disable strict on purpose. Record an exception until the migration is done.
+      - A root tsconfig.json that turns on the strict flags one by one instead of using strict. Set strict instead.
+  rollout:
+    recommendedStage: advise

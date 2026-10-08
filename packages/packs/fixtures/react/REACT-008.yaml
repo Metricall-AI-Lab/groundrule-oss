@@ -1,0 +1,27 @@
+standard: REACT-008
+cases:
+  - name: secret keys with public prefixes in env files and code
+    expect: violation
+    count: 3
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      .env.example: |
+        NEXT_PUBLIC_API_URL=https://api.example.com
+        NEXT_PUBLIC_STRIPE_SECRET_KEY=
+        VITE_SUPABASE_SERVICE_ROLE_KEY=
+      src/db.ts: |
+        const url = import.meta.env.VITE_DATABASE_URL;
+  - name: publishable keys, server-only secrets, and comments
+    expect: clean
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      .env.example: |
+        # Never prefix secrets: NEXT_PUBLIC_STRIPE_SECRET_KEY would ship in the bundle.
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+        NEXT_PUBLIC_SUPABASE_ANON_KEY=
+        VITE_FIREBASE_API_KEY=
+        STRIPE_SECRET_KEY=
+        DATABASE_URL=
+      src/app/api/pay/route.ts: |
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+        // Do not use process.env.REACT_APP_SECRET here.

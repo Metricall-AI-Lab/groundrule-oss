@@ -1,0 +1,42 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-007
+  title: No Google API keys in code
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  intent: Google API keys grant billable access to Google Cloud and Gemini APIs, and leaked keys are abused within hours.
+  requirement: >
+    Do not hard-code Google API keys (AIza...). Read server-side keys from the environment or a
+    secret manager. Keys that must ship to browsers or mobile apps must be restricted by
+    referrer or app and by API, and injected from build configuration rather than source.
+  examples:
+    approved:
+      - "const key = process.env.GOOGLE_API_KEY;"
+    forbidden:
+      - 'const key = "AIzaSy...";  // a real 39-character key in source'
+  remediation: >
+    Delete or rotate the key in the Google Cloud console, restrict its replacement to the APIs
+    and referrers or apps that need it, and load it from the environment or a secret manager.
+  checks:
+    - evaluator: regex
+      # 39-character keys; values containing runs of X are documentation placeholders.
+      pattern: '(?<![0-9A-Za-z_-])AIza(?![0-9A-Za-z_-]*(?:XXXXXXXX|xxxxxxxx))[0-9A-Za-z_-]{35}(?![0-9A-Za-z_-])'
+      message: Google API key found in code
+  references:
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+  compliance:
+    - { framework: owasp-asvs, controls: [V2.10.4] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - >
+        Firebase web configuration and Maps JavaScript keys are designed to ship to browsers.
+        If such a key is restricted by referrer and API, disable the check for that config file
+        with scope.exclude.
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-001
+  title: Do not commit focused tests
+  type: prohibition
+  category: testing
+spec:
+  severity: blocker
+  intent: >
+    A committed .only or fit silently turns off every other test in the file or suite, so CI
+    goes green while running a fraction of the tests.
+  requirement: >
+    Never commit focused tests: it.only, describe.only, test.only, context.only, test.describe.only,
+    fit, fdescribe, or fcontext. Use your test runner's command-line filter to run a subset locally.
+  remediation: >
+    Remove .only (or the f prefix) and use the runner's filter instead, e.g. vitest -t "name",
+    jest -t "name", playwright test -g "name", or rspec file_spec.rb:42.
+  examples:
+    approved: ['it("rejects an expired coupon", () => { ... })']
+    forbidden: ['it.only("rejects an expired coupon", () => { ... })', 'fdescribe("Cart", () => { ... })']
+  agent:
+    summary: >
+      Never leave .only, fit, or fdescribe in test files; run a subset with the runner's filter
+      (e.g. vitest -t, jest -t, playwright -g) instead.
+  checks:
+    - evaluator: regex
+      # Skips comment lines and quoted occurrences (e.g. lint-rule tests with code in strings).
+      pattern: '^(?![ \t]*(?://|/?\*|#))[^\n]*?(?<![\w$''"`.])(?:(?:describe|it|test|context|suite|specify)(?:\.describe)?\.only\b(?:\.each)?\s*[(`]|(?:fit|fdescribe|fcontext)\s*\(?\s*[''"`])'
+      include: ["**/*.test.*", "**/*.spec.*", "**/*.cy.*", "**/*_spec.rb", "**/test/**", "**/tests/**", "**/__tests__/**", "**/spec/**", "**/e2e/**", "**/cypress/**"]
+      exclude: ["**/*.snap", "**/*.md", "**/*.mdx", "**/fixtures/**", "**/__fixtures__/**", "**/testdata/**"]
+      message: Focused test (.only / fit / fdescribe) committed
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Fixture files for test-runner or lint-rule projects that contain focused tests on purpose. Put them under fixtures/ or exclude them with scope.exclude.
+  rollout:
+    recommendedStage: enforce

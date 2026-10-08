@@ -49,4 +49,18 @@ export async function listPacks(): Promise<PackInfo[]> {
 }
 
 /** Bundled packs. Listed explicitly so a stray folder never becomes a pack. */
-const KNOWN = new Set(["security-baseline", "typescript-node", "java-spring"]);
+const KNOWN = new Set([
+  "security-baseline",
+  "typescript-node",
+  "java-spring",
+  "python",
+  "go",
+  "react",
+  "docker",
+  "kubernetes",
+  "terraform",
+  "github-actions",
+  "http-api",
+  "testing",
+  "agent-hygiene",
+]);

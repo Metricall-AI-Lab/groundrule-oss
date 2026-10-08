@@ -132,6 +132,9 @@ importers:
       '@types/picomatch':
         specifier: ^4.0.3
         version: 4.0.3
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
 
   packages/reporters:
     dependencies:

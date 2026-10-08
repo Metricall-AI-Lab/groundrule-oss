@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-008
+  title: Review snapshot and golden-file changes; never update them blindly
+  type: agent-instruction
+  category: testing
+spec:
+  severity: warning
+  intent: >
+    Regenerating snapshots to make a failing test pass turns the test into a recording of
+    whatever the code does now, including the bug.
+  requirement: >
+    Update snapshots or golden files (jest -u, vitest -u, --snapshot-update, UPDATE_GOLDEN,
+    syrupy --snapshot-update) only after reading the diff and confirming every change is
+    intended by the task. Never update all snapshots to clear unrelated failures. Keep snapshots
+    small and focused; prefer explicit assertions on the values that matter over large
+    serialized trees.
+  agent:
+    summary: >
+      Do not run snapshot or golden-file updates to make failures go away. Read each snapshot diff,
+      update only changes your task intended, and report any unexpected snapshot changes instead of
+      accepting them.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

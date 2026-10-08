@@ -1,0 +1,31 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-011
+  title: Enable encryption at rest for data stores
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: >
+    Encryption at rest protects backups, snapshots, and decommissioned disks, and is
+    expected by nearly every compliance framework. It is cheap to enable at creation and
+    often requires a rebuild to add later.
+  requirement: >
+    When creating databases, volumes, buckets, queues, caches, and snapshots, enable
+    encryption at rest explicitly (e.g. storage_encrypted = true on RDS, encrypted = true on
+    EBS, at_rest_encryption_enabled on ElastiCache). Use a customer-managed key when the data
+    is sensitive or must be shared across accounts. Never turn encryption off on an existing
+    resource.
+  agent:
+    summary: >
+      Enable encryption at rest explicitly on every new data store, disk, bucket, queue, and
+      snapshot; use a customer-managed KMS key for sensitive data. Never disable it.
+  references:
+    - { id: CWE-311, title: Missing Encryption of Sensitive Data }
+  compliance:
+    - { framework: hipaa, controls: ["164.312(a)(2)(iv)"] }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

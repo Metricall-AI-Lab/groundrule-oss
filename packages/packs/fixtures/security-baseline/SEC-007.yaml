@@ -1,0 +1,28 @@
+standard: SEC-007
+cases:
+  - name: server key hard-coded in a Python client
+    expect: violation
+    files:
+      app/geocode.py: |
+        import requests
+
+        API_KEY = "AIzaSyC0AVLPp4XAAn7⟨⟩mzcFROCY0qEwCr1qeDwu"
+
+        def geocode(address):
+            return requests.get(URL, params={"address": address, "key": API_KEY})
+  - name: key with dash and underscore characters in a TypeScript config
+    expect: violation
+    files:
+      src/gemini.ts: |
+        export const client = new GoogleGenerativeAI("AIzaSyXmwbEBmUliw6A⟨⟩7W0903Wo_EEmZyk8z2KV");
+  - name: environment lookups, placeholders, and a key-format validator
+    expect: clean
+    files:
+      src/gemini.ts: |
+        export const client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+        // Keys look like AIza followed by 35 characters.
+        export const KEY_FORMAT = /^AIza[0-9A-Za-z_-]{35}$/;
+      README.md: |
+        Set `GOOGLE_API_KEY=AIzaSyXXXXXXXXXXXXX⟨⟩XXXXXXXXXXXXXXXXXXXX` in your shell.
+      docs/setup.md: |
+        Your key starts with `AIza`; never commit it.

@@ -1,0 +1,36 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-017
+  title: Set Secure, HttpOnly, and SameSite on session cookies
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: Session cookies without these attributes can be read by injected scripts, sent over plain HTTP, or replayed cross-site.
+  requirement: >
+    Cookies that carry sessions, authentication, or CSRF state must set Secure, HttpOnly
+    (unless client script genuinely needs to read the value), and SameSite=Lax or Strict.
+    Use SameSite=None only when cross-site delivery is required, and always together with Secure.
+    Prefer the __Host- prefix with Path=/ and no Domain for session cookies.
+  examples:
+    approved:
+      - { code: 'res.cookie("__Host-session", id, { secure: true, httpOnly: true, sameSite: "lax", path: "/" })', language: typescript }
+    forbidden:
+      - { code: 'res.cookie("session", id)', language: typescript, note: "No Secure, HttpOnly, or SameSite." }
+  agent:
+    summary: >
+      When setting session, auth, or CSRF cookies, always set Secure, HttpOnly, and SameSite=Lax
+      or Strict (None only with Secure and a real cross-site need).
+  references:
+    - { id: CWE-614, title: "Sensitive Cookie in HTTPS Session Without 'Secure' Attribute" }
+    - { id: CWE-1004, title: "Sensitive Cookie Without 'HttpOnly' Flag" }
+    - { id: CWE-1275, title: Sensitive Cookie with Improper SameSite Attribute }
+  compliance:
+    - { framework: owasp-asvs, controls: [V3.4.1, V3.4.2, V3.4.3] }
+  applicability:
+    frameworks: [express, fastify, nestjs, hono, nextjs, spring-boot, django, flask, fastapi]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

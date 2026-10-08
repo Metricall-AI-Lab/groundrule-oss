@@ -1,0 +1,53 @@
+standard: TEST-005
+cases:
+  - name: Playwright, Cypress, and promise-based sleeps
+    expect: violation
+    count: 4
+    files:
+      e2e/checkout.spec.ts: |
+        await page.click("text=Pay");
+        await page.waitForTimeout(2000);
+      cypress/e2e/cart.cy.js: |
+        cy.get("button").click();
+        cy.wait(500);
+      src/queue.test.ts: |
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await sleep(250);
+  - name: Python, Java, and Go sleeps
+    expect: violation
+    count: 3
+    files:
+      tests/test_worker.py: |
+        def test_worker_processes_job():
+            enqueue(job)
+            time.sleep(2)
+      src/test/java/com/acme/WorkerTest.java: |
+        @Test void processes() throws Exception { worker.start(); Thread.sleep(500); }
+      worker/worker_test.go: |
+        func TestWorker(t *testing.T) {
+        	go w.Run()
+        	time.Sleep(100 * time.Millisecond)
+        }
+  - name: condition waits, aliases, fake timers, sleep(0), and application code
+    expect: clean
+    files:
+      e2e/checkout.spec.ts: |
+        await expect(page.getByRole("alert")).toHaveText("Saved");
+        // Never use page.waitForTimeout(2000) here.
+      cypress/e2e/cart.cy.js: |
+        cy.wait("@createOrder");
+      src/queue.test.ts: |
+        vi.useFakeTimers();
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        await vi.advanceTimersByTimeAsync(1000);
+      tests/test_worker.py: |
+        await asyncio.sleep(0)
+        # time.sleep(1) would make this flaky
+        with freeze_time("2026-01-01"):
+            assert job.due()
+      src/worker.py: |
+        time.sleep(5)
+      src/main/java/com/acme/Backoff.java: |
+        Thread.sleep(delay);
+      worker/worker.go: |
+        time.Sleep(backoff)

@@ -1,0 +1,21 @@
+standard: PY-008
+cases:
+  - name: wildcard imports in a module
+    expect: violation
+    count: 2
+    files:
+      app/views.py: |
+        from app.models import *
+        from .helpers import *
+  - name: explicit imports, package re-exports, Django settings, and comments
+    expect: clean
+    files:
+      app/views.py: |
+        from app.models import Order, Customer
+        from typing import (
+            Any,
+        )
+        # from app.models import *
+        result = a * b
+      app/__init__.py: "from .core import *\n"
+      project/settings/production.py: "from .base import *\n"

@@ -1,0 +1,51 @@
+standard: JAVA-007
+cases:
+  - name: concatenated JDBC and JPQL queries
+    expect: violation
+    count: 4
+    files:
+      src/main/java/acme/ClaimDao.java: |
+        class ClaimDao {
+          List<Claim> byOwner(String ownerId) {
+            return jdbc.query("SELECT * FROM claims WHERE owner_id = '" + ownerId + "'", mapper);
+          }
+          List<Claim> sorted(String sortField) {
+            return em.createQuery("SELECT c FROM Claim c ORDER BY " + sortField).getResultList();
+          }
+          int close(long id) {
+            return jdbc.update("UPDATE claims SET status = 'CLOSED' WHERE id = " + id);
+          }
+          List<Claim> search(String name) {
+            String sql = "SELECT id, title "
+                + "FROM claims "
+                + "WHERE title LIKE '%" + name + "%'";
+            return jdbc.query(sql, mapper);
+          }
+        }
+  - name: bind parameters, constant concatenation, messages, and tests
+    expect: clean
+    files:
+      src/main/java/acme/ClaimDao.java: |
+        class ClaimDao {
+          private static final String TABLE = "claims";
+          private static final String BASE = "SELECT id, title FROM " + TABLE + " WHERE deleted = false";
+          List<Claim> byOwner(String ownerId) {
+            String sql = "SELECT id, title "
+                + "FROM claims "
+                + "WHERE owner_id = ?";
+            return jdbc.query(sql, mapper, ownerId);
+          }
+          List<Claim> byStatus(Status status) {
+            return em.createQuery("SELECT c FROM Claim c WHERE c.status = :status", Claim.class)
+                .setParameter("status", status).getResultList();
+          }
+          void report(String id) {
+            log.info("Selected claim from inbox: " + id);
+            throw new IllegalStateException("Update failed for claim " + id);
+          }
+          // Never write "SELECT * FROM claims WHERE id = " + id
+        }
+      src/test/java/acme/ClaimDaoTest.java: |
+        class ClaimDaoTest {
+          void seed(long id) { jdbc.update("DELETE FROM claims WHERE id = " + id); }
+        }

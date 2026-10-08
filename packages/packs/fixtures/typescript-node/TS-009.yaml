@@ -1,0 +1,31 @@
+standard: TS-009
+cases:
+  - name: bare built-in imports and requires
+    expect: violation
+    count: 4
+    files:
+      src/files.ts: |
+        import { readFile } from "fs/promises";
+        import path from 'path';
+        import * as crypto from "crypto";
+        export const load = (p: string) => readFile(path.join(p), "utf8");
+      src/legacy.cjs: |
+        const { execSync } = require('child_process');
+  - name: prefixed built-ins, look-alike packages, and comments
+    expect: clean
+    files:
+      src/files.ts: |
+        import { readFile } from "node:fs/promises";
+        import path from "node:path";
+        import fsExtra from "fs-extra";
+        import { pathToRegexp } from "path-to-regexp";
+        import { glob } from "fast-glob";
+        // Previously: import fs from "fs";
+        const fsModule = "fs";
+        const { spawn } = await import("node:child_process");
+      src/App.tsx: |
+        import { EventEmitter } from "events";
+  - name: tooling config files (real-repo regression, bulletproof-react)
+    expect: clean
+    files:
+      lint-staged.config.mjs: "import path from 'path';\n"

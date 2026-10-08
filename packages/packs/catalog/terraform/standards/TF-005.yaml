@@ -1,0 +1,54 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-005
+  title: Do not open SSH or RDP to the internet
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [terraform]
+  intent: >
+    Administrative ports open to 0.0.0.0/0 are scanned and brute-forced within minutes of
+    being exposed.
+  requirement: >
+    Never allow ingress on SSH (22) or RDP (3389) from 0.0.0.0/0 or ::/0. Use a session
+    manager (AWS SSM, GCP IAP, Azure Bastion), a VPN, or a narrow list of known CIDRs.
+    Public ingress is acceptable only for ports a service intentionally exposes, such as
+    443 on a load balancer.
+  remediation: >
+    Replace the open CIDR with your VPN or office ranges, or remove the rule and connect
+    through a session manager or bastion service instead.
+  examples:
+    approved:
+      - code: |
+          ingress {
+            from_port   = 22
+            to_port     = 22
+            protocol    = "tcp"
+            cidr_blocks = [var.vpn_cidr]
+          }
+        language: terraform
+    forbidden:
+      - code: |
+          ingress {
+            from_port   = 22
+            to_port     = 22
+            protocol    = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+          }
+        language: terraform
+  checks:
+    - evaluator: regex
+      pattern: '(?:\bingress[ \t]*\{|\bresource[ \t]+"aws_(?:security_group_rule|vpc_security_group_ingress_rule)"[ \t]+"[^"\n]*"[ \t]*\{)(?![^}]*^[ \t]*type[ \t]*=[ \t]*"egress")(?=[^}]*^[ \t]*(?:from_port|to_port)[ \t]*=[ \t]*(?:22|3389)\b)(?=[^}]*^[ \t]*(?:cidr_blocks|ipv6_cidr_blocks|cidr_ipv4|cidr_ipv6)[ \t]*=[ \t]*(?:\[[^\]]*)?"(?:0\.0\.0\.0/0|::/0)")'
+      include: ["**/*.tf"]
+      message: SSH or RDP ingress open to the internet
+  references:
+    - { id: CWE-284, title: Improper Access Control }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Only AWS security groups (inline ingress blocks, aws_security_group_rule, aws_vpc_security_group_ingress_rule) are checked. Rules that open all ports, port ranges spanning 22, or other clouds' firewalls are not detected.
+  rollout:
+    recommendedStage: enforce

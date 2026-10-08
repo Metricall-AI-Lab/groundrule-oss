@@ -1,0 +1,40 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-009
+  title: Set a timeout on every requests call
+  type: requirement
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [python]
+  intent: >
+    The requests library has no default timeout, so one unresponsive server can hang a
+    worker or request thread indefinitely.
+  requirement: >
+    Pass an explicit timeout= (connect and read, e.g. timeout=(3.05, 10)) to every call made
+    with the requests library, including calls on a Session.
+  remediation: >
+    Add timeout= with values that fit the dependency's latency budget, and handle
+    requests.Timeout where the call is made.
+  examples:
+    approved: ['requests.get(url, params=params, timeout=(3.05, 10))']
+    forbidden: ["requests.get(url, params=params)"]
+  checks:
+    - evaluator: regex
+      # Accepts a timeout= on the same line or before the first ")"; module-level calls only.
+      pattern: '^(?![ \t]*#)[^\n]*?(?<![\w.])requests\.(?:get|post|put|patch|delete|head|options|request)[ \t]*\((?![^\n]*\btimeout[ \t]*=)(?![^)]*\btimeout[ \t]*=)'
+      include: ["**/*.py"]
+      exclude: ["**/test_*.py", "**/*_test.py", "**/tests/**", "**/test/**", "**/conftest.py", "**/fixtures/**"]
+      message: requests call without a timeout can hang forever
+  references:
+    - { url: "https://requests.readthedocs.io/en/latest/user/advanced/#timeouts", title: "Requests: Timeouts" }
+    - { id: CWE-400, title: Uncontrolled Resource Consumption }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Calls split across lines where timeout= comes after a nested call with parentheses, or is passed through **kwargs.
+      - Session calls (session.get) are not detected; the agent instruction still covers them.
+  rollout:
+    recommendedStage: advise

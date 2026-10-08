@@ -1,0 +1,46 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-003
+  title: Use COPY for local files, not ADD
+  type: requirement
+  category: infrastructure
+spec:
+  severity: advisory
+  intent: >
+    ADD silently extracts archives and fetches URLs, so a plain file copy can do something
+    other than what the reader expects, and remote files arrive without integrity checks.
+  requirement: >
+    Use COPY to copy files from the build context or another stage. Use ADD only to extract
+    a local tar archive or to fetch a remote file with --checksum.
+  remediation: >
+    Replace ADD with COPY for local files. For remote files, use ADD --checksum=sha256:<hash>
+    <url> <dest>, or download and verify the checksum in a RUN step.
+  examples:
+    approved:
+      - "COPY package.json package-lock.json ./"
+      - "ADD --checksum=sha256:<hash> https://example.com/tool.tar.gz /tmp/"
+      - "ADD rootfs.tar.gz /"
+    forbidden:
+      - "ADD . /app"
+      - "ADD https://example.com/install.sh /tmp/install.sh"
+  agent:
+    summary: >
+      In Dockerfiles use COPY for local files; use ADD only to unpack a local tar archive or
+      to fetch a remote file with --checksum.
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*ADD[ \t]+(?![^\n]*--checksum=)(?![^\n]*\.(?:tar|tgz|tbz2?|txz)(?:\.(?:gz|bz2|xz|zst))?[ \t])'
+      flags: i
+      message: Use COPY for local files; ADD is only for local tar archives or remote files with --checksum.
+      include: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+      exclude: ["**/*.dockerignore", "**/*.md"]
+  references:
+    - https://docs.docker.com/build/building/best-practices/
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - ADD of a remote Git repository (ADD https://github.com/org/repo.git#<commit>), which BuildKit supports. Grant an exception or pin the commit and keep ADD.
+      - Archives whose names lack a .tar/.tgz extension.
+  rollout:
+    recommendedStage: advise

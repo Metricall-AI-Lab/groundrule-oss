@@ -1,0 +1,39 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-006
+  title: Give every img an alt attribute
+  type: requirement
+  category: accessibility
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: Screen readers announce an image without alt by its file name, or skip it, so users miss the content or hear noise.
+  requirement: >
+    Every <img> has an alt attribute: a short description of what the image conveys, or
+    alt="" for purely decorative images.
+  remediation: >
+    Add alt="what the image shows" for meaningful images, or alt="" if it is decorative.
+  examples:
+    approved: ['<img src={avatarUrl} alt={`${user.name} avatar`} />', '<img src="/divider.svg" alt="" />']
+    forbidden: ["<img src={product.imageUrl} />"]
+  checks:
+    - evaluator: regex
+      # Examines the whole <img ...> tag, across lines. Tags with a props spread are skipped.
+      pattern: '<img\b(?!(?:[^>]|=>)*?(?:\balt\s*=|\{\s*\.\.\.))(?:[^>]|=>)*>'
+      include: ["**/*.jsx", "**/*.tsx"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/*.stories.*", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**"]
+      message: <img> without an alt attribute
+  references:
+    - { id: WCAG-1.1.1, title: Non-text Content, url: "https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html" }
+  applicability:
+    frameworks: [react]
+    files: ["**/package.json"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - "A > character inside a string attribute (title=\"a > b\") ends the tag early. Use {'>'} or record an exception."
+  rollout:
+    recommendedStage: advise

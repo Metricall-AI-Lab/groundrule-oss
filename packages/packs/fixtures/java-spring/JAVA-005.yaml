@@ -1,0 +1,44 @@
+standard: JAVA-005
+cases:
+  - name: class-level and method-level @Transactional on a controller
+    expect: violation
+    count: 2
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/java/acme/web/ClaimController.java: |
+        package acme.web;
+        import org.springframework.transaction.annotation.Transactional;
+        @RestController
+        @Transactional(readOnly = true)
+        public class ClaimController {
+          @Transactional
+          @PostMapping("/claims/{id}/approve")
+          public ClaimDto approve(@PathVariable long id) { return service.approve(id); }
+        }
+  - name: services own transactions; controller imports, comments, and event listeners
+    expect: clean
+    files:
+      pom.xml: "<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>"
+      src/main/java/acme/service/ClaimService.java: |
+        @Service
+        public class ClaimService {
+          @Transactional
+          public ClaimDto approve(long id) { return null; }
+        }
+      src/main/java/acme/web/ClaimController.java: |
+        package acme.web;
+        /**
+         * Thin controller. Transactions are opened by ClaimService, never here
+         * (no @Transactional on this class).
+         */
+        @RestController
+        public class ClaimController {
+          // @Transactional belongs in the service layer
+          @TransactionalEventListener
+          void onApproved(ClaimApproved event) {}
+        }
+  - name: not a Spring Boot project
+    expect: clean
+    files:
+      pom.xml: "<project></project>"
+      src/main/java/acme/web/ClaimController.java: "@Transactional class ClaimController {}\n"

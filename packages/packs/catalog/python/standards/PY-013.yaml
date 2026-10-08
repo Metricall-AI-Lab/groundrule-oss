@@ -1,0 +1,32 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-013
+  title: Type-annotate public functions
+  type: agent-instruction
+  category: code-quality
+spec:
+  severity: advisory
+  scope:
+    languages: [python]
+  intent: >
+    Annotations on public APIs document the contract, let type checkers catch misuse, and
+    make refactoring safe.
+  requirement: >
+    Annotate parameters and return types of public functions, methods, and module-level
+    constants in non-test code. Use built-in generics (list[str], dict[str, int]) and
+    `X | None` on supported Python versions, avoid Any unless the value really is untyped, and
+    keep the project's type checker (mypy or pyright) passing.
+  examples:
+    approved: ["def find_order(order_id: str, *, include_items: bool = False) -> Order | None:"]
+    forbidden: ["def find_order(order_id, include_items=False):"]
+  agent:
+    summary: >
+      Add type hints to every public function's parameters and return type, prefer precise types
+      over Any, and keep the project's type checker passing.
+  references:
+    - { url: "https://peps.python.org/pep-0484/", title: "PEP 484: Type Hints" }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

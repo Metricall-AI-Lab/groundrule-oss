@@ -1,0 +1,35 @@
+standard: PY-009
+cases:
+  - name: requests calls without timeout
+    expect: violation
+    count: 2
+    files:
+      app/client.py: |
+        import requests
+
+        def fetch(url, payload):
+            r = requests.get(url, params={"q": 1})
+            requests.post(
+                url,
+                json=payload,
+            )
+            return r
+  - name: timeouts on the same or later lines, other clients, comments, and tests
+    expect: clean
+    files:
+      app/client.py: |
+        import httpx
+        import requests
+
+        def fetch(url, payload):
+            # requests.get(url) without timeout hangs forever
+            r = requests.get(url, timeout=(3.05, 10))
+            requests.post(
+                url,
+                json=payload,
+                timeout=5,
+            )
+            httpx.get(url)
+            requests.exceptions.Timeout
+            return r
+      tests/test_client.py: "requests.get(url)\n"

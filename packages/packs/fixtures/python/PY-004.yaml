@@ -1,0 +1,28 @@
+standard: PY-004
+cases:
+  - name: unpickling request data and a queue message
+    expect: violation
+    count: 3
+    files:
+      app/api.py: |
+        import pickle
+        import dill
+
+        def handle(request):
+            obj = pickle.loads(request.body)
+            other = dill.load(request.files["state"])
+            return pickle.Unpickler(request.stream).load()
+  - name: dumping, JSON, comments, similar names, and tests
+    expect: clean
+    files:
+      app/api.py: |
+        import json
+        import pickle
+
+        def handle(request):
+            # Never call pickle.loads on request data.
+            data = json.loads(request.body)
+            blob = pickle.dumps(data)
+            config = settings.pickle.load_options
+            return mypickle.loads(blob)
+      tests/test_api.py: "assert pickle.loads(pickle.dumps(x)) == x\n"

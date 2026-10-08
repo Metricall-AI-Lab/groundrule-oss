@@ -1,0 +1,49 @@
+standard: REACT-001
+cases:
+  - name: raw HTML from data, single and multi-line
+    expect: violation
+    count: 2
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/Post.tsx: |
+        export function Post({ post }: Props) {
+          return (
+            <article>
+              <div dangerouslySetInnerHTML={{ __html: post.html }} />
+              <div
+                className="bio"
+                dangerouslySetInnerHTML={{
+                  __html: post.author.bio,
+                }}
+              />
+            </article>
+          );
+        }
+  - name: createElement props object
+    expect: violation
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/render.js: |
+        export const html = (markup) => React.createElement("div", { dangerouslySetInnerHTML: { __html: markup } });
+  - name: inline sanitizer calls, comments, types, and tests
+    expect: clean
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/Post.tsx: |
+        import DOMPurify from "dompurify";
+        // Never use dangerouslySetInnerHTML={{ __html: raw }} without sanitizing.
+        export function Post({ post }: Props) {
+          return (
+            <article>
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.html) }} />
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHtml(post.author.bio),
+                }}
+              />
+              <p>{post.summary}</p>
+            </article>
+          );
+        }
+      src/types.d.ts: "interface Props { dangerouslySetInnerHTML?: { __html: string } }\n"
+      src/Post.test.tsx: "render(<div dangerouslySetInnerHTML={{ __html: '<b>x</b>' }} />);\n"

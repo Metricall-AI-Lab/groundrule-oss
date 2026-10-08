@@ -1,0 +1,36 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-011
+  title: Do not use effects for derived state or event logic
+  type: agent-instruction
+  category: performance
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: Syncing state from other state in an effect causes an extra render with stale values, and logic triggered by effects instead of events runs at the wrong times.
+  requirement: >
+    Compute values derivable from props or state during render (with useMemo only if it is
+    measurably expensive). Run logic caused by a user action in the event handler, not in an
+    effect that watches state. Reset state on identity change with a key, not an effect.
+    Use effects only to synchronize with external systems.
+  examples:
+    approved:
+      - "const visibleTodos = todos.filter((t) => t.done === showDone);"
+      - "async function handleSubmit() { await save(form); toast('Saved'); }"
+    forbidden:
+      - "const [visibleTodos, setVisibleTodos] = useState([]); useEffect(() => setVisibleTodos(todos.filter((t) => t.done === showDone)), [todos, showDone]);"
+  agent:
+    summary: >
+      Derive values during render instead of copying them into state with useEffect, and put
+      logic caused by user actions in event handlers. Use effects only to sync with external systems.
+  references:
+    - https://react.dev/learn/you-might-not-need-an-effect
+  applicability:
+    frameworks: [react]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

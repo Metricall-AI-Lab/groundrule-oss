@@ -1,0 +1,16 @@
+standard: TF-008
+cases:
+  - name: provider cache and backend config committed
+    expect: violation
+    count: 2
+    files:
+      infra/main.tf: "resource \"null_resource\" \"x\" {}\n"
+      infra/.terraform/terraform.tfstate: '{"backend": {"type": "s3"}}'
+      infra/.terraform/modules/modules.json: '{"Modules": []}'
+  - name: lock file and similarly named files
+    expect: clean
+    files:
+      infra/main.tf: "resource \"null_resource\" \"x\" {}\n"
+      infra/.terraform.lock.hcl: "# lock\n"
+      infra/.terraform-version: "1.8.5\n"
+      docs/terraform/README.md: "Docs\n"

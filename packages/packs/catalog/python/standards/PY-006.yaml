@@ -1,0 +1,44 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-006
+  title: Run subprocesses without a shell
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [python]
+  intent: >
+    Passing a command string through a shell lets any interpolated value inject extra
+    commands.
+  requirement: >
+    Call subprocess with an argument list and the default shell=False. Do not use
+    shell=True, os.system, or os.popen. If a shell feature is truly needed, build the
+    command from constants only, or quote every value with shlex.quote.
+  remediation: >
+    Pass a list of arguments, e.g. subprocess.run(["git", "clone", url], check=True),
+    and replace pipes or globs with Python code (subprocess pipes, pathlib.glob).
+  examples:
+    approved: ['subprocess.run(["convert", src, dst], check=True, timeout=60)']
+    forbidden:
+      - 'subprocess.run(f"convert {src} {dst}", shell=True)'
+      - 'os.system("rm -rf " + path)'
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*#)[^\n]*?(?:\bshell[ \t]*=[ \t]*True\b|(?<![\w.])os\.(?:system|popen)[ \t]*\()'
+      include: ["**/*.py"]
+      exclude: ["**/test_*.py", "**/*_test.py", "**/tests/**", "**/test/**", "**/conftest.py", "**/fixtures/**"]
+      message: Command runs through a shell; pass an argument list instead
+  references:
+    - { id: CWE-78, title: "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')" }
+    - { url: "https://docs.python.org/3/library/subprocess.html#security-considerations", title: "subprocess: security considerations" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.3.8] }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - shell=True with a constant command string and no interpolated input. Rewrite as a list or record an exception.
+      - Other libraries that take a shell=True keyword (e.g. fabric, invoke). Exclude those files with scope.exclude.
+  rollout:
+    recommendedStage: advise

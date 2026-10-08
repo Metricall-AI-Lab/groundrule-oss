@@ -1,0 +1,48 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-005
+  title: Load YAML with yaml.safe_load
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [python]
+  intent: >
+    PyYAML's full and unsafe loaders can construct arbitrary Python objects, so loading
+    attacker-controlled YAML with them can execute code.
+  requirement: >
+    Load YAML with yaml.safe_load / yaml.safe_load_all, or yaml.load with
+    Loader=yaml.SafeLoader (or CSafeLoader). Do not use yaml.load with Loader, FullLoader,
+    or UnsafeLoader, and do not use yaml.full_load or yaml.unsafe_load.
+  remediation: >
+    Replace the call with yaml.safe_load(stream), or pass Loader=yaml.SafeLoader. If you
+    need custom types, register constructors on a SafeLoader subclass.
+  examples:
+    approved:
+      - "config = yaml.safe_load(stream)"
+      - "config = yaml.load(stream, Loader=yaml.CSafeLoader)"
+    forbidden:
+      - "config = yaml.load(stream, Loader=yaml.FullLoader)"
+      - "config = yaml.unsafe_load(stream)"
+  checks:
+    - evaluator: regex
+      # yaml.load/load_all without SafeLoader on the same line or before the first ")",
+      # or the full/unsafe helpers. Files using ruamel.yaml (whose YAML().load is safe by default) are skipped.
+      pattern: '^(?![ \t]*#)[^\n]*?(?<![\w.])yaml\.(?:(?:load|load_all)[ \t]*\((?![^\n]*\bC?SafeLoader\b)(?![^)]*\bC?SafeLoader\b)|(?:unsafe_load|unsafe_load_all|full_load|full_load_all)[ \t]*\()(?<!ruamel[\s\S]*)'
+      include: ["**/*.py"]
+      exclude: ["**/test_*.py", "**/*_test.py", "**/tests/**", "**/test/**", "**/conftest.py", "**/fixtures/**"]
+      message: YAML loaded without SafeLoader can construct arbitrary objects
+  references:
+    - { id: CWE-502, title: Deserialization of Untrusted Data }
+    - { url: "https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation", title: "PyYAML yaml.load(input) deprecation" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.5.3] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - A safe loader passed through a variable (Loader=MyLoader) on a call that spans lines with nested parentheses. Use yaml.safe_load or name SafeLoader directly.
+      - Objects named yaml that are not PyYAML, in files that do not mention ruamel.
+  rollout:
+    recommendedStage: enforce

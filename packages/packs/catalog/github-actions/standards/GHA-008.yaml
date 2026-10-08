@@ -1,0 +1,33 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-008
+  title: Do not persist checkout credentials unless a later step pushes
+  type: agent-instruction
+  category: security
+spec:
+  severity: advisory
+  intent: >
+    actions/checkout stores the job token in .git/config by default, where every later
+    step, script, and uploaded artifact that includes the workspace can read it.
+  requirement: >
+    Set persist-credentials: false on actions/checkout in jobs that do not push, tag, or
+    otherwise call git with the job token. When a job must push, keep the token's
+    permissions minimal and never upload the .git directory as an artifact.
+  examples:
+    approved:
+      - code: |
+          - uses: actions/checkout@v4
+            with:
+              persist-credentials: false
+        language: yaml
+  agent:
+    summary: >
+      Add persist-credentials: false to actions/checkout unless a later step in the same
+      job pushes with git. Never upload .git as an artifact.
+  references:
+    - { id: CWE-522, title: Insufficiently Protected Credentials }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

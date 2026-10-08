@@ -1,0 +1,50 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-005
+  title: Do not pass secrets through ENV or ARG
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  intent: >
+    ENV values are stored in the image config and ARG values used by a RUN step end up in
+    the build history, so anyone who can pull the image can read them.
+  requirement: >
+    Never put passwords, tokens, API keys, or other credentials in ENV or ARG, with or
+    without a default value. Use BuildKit secret mounts at build time and inject runtime
+    secrets from the orchestrator (environment, mounted files, or a secret manager).
+  remediation: >
+    Remove the ENV/ARG and use RUN --mount=type=secret,id=<name> for build-time secrets
+    (docker build --secret id=<name>,src=...). Supply runtime secrets when the container
+    starts, for example as a mounted file referenced by a *_FILE variable. Rotate any
+    secret that was already baked into a published image.
+  examples:
+    approved:
+      - "RUN --mount=type=secret,id=npm_token NPM_TOKEN=$(cat /run/secrets/npm_token) npm ci"
+      - "ENV DB_PASSWORD_FILE=/run/secrets/db_password"
+    forbidden:
+      - "ARG NPM_TOKEN"
+      - "ENV DB_PASSWORD=hunter2"
+  agent:
+    summary: >
+      Never put credentials in Dockerfile ENV or ARG. Use RUN --mount=type=secret for build
+      secrets and inject runtime secrets when the container starts.
+  checks:
+    - evaluator: regex
+      # A variable name ending in a credential word, e.g. NPM_TOKEN, DB_PASSWORD, AWS_SECRET_ACCESS_KEY.
+      pattern: '^[ \t]*(?:ENV|ARG)[ \t]+(?:[^\n]*?[ \t])?\w*(?:PASSWORD|PASSWD|SECRET|SECRET_KEY_BASE|TOKEN|API_?KEY|ACCESS_KEY|PRIVATE_KEY|CREDENTIALS?)(?=[ \t]*=|[ \t]|\r?$)'
+      flags: i
+      message: A credential is passed through ENV or ARG and is readable from the image.
+      include: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+      exclude: ["**/*.dockerignore", "**/*.md"]
+  references:
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+    - { id: CWE-312, title: Cleartext Storage of Sensitive Information }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Variables whose names end in a credential word but hold non-secret values (e.g. a public API key for a browser bundle). Rename them or grant an exception.
+      - Old-style ENV values (ENV KEY value) that contain words like "token" as plain text.
+  rollout:
+    recommendedStage: advise

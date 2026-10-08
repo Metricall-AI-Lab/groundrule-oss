@@ -1,0 +1,52 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-006
+  title: Do not make storage buckets public
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [terraform]
+  intent: >
+    Public buckets are one of the most common causes of large data leaks, and the
+    exposure is usually unintentional.
+  requirement: >
+    Do not grant public access to S3 or GCS buckets: no public-read, public-read-write, or
+    authenticated-read ACLs, no S3 public access block settings set to false, and no
+    allUsers or allAuthenticatedUsers on bucket or object IAM. Serve public content through
+    a CDN with origin access control instead of a public bucket.
+  remediation: >
+    Remove the public ACL or IAM member and enable all four S3 public access block settings.
+    For public websites or downloads, put CloudFront (origin access control) or Cloud CDN in
+    front of a private bucket.
+  examples:
+    approved:
+      - code: |
+          resource "aws_s3_bucket_public_access_block" "assets" {
+            bucket                  = aws_s3_bucket.assets.id
+            block_public_acls       = true
+            block_public_policy     = true
+            ignore_public_acls      = true
+            restrict_public_buckets = true
+          }
+        language: terraform
+    forbidden:
+      - 'acl = "public-read"'
+      - 'member = "allUsers" on a google_storage_bucket_iam_member'
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*(?:acl[ \t]*=[ \t]*"(?:public-read|public-read-write|authenticated-read)"|(?:block_public_acls|block_public_policy|ignore_public_acls|restrict_public_buckets)[ \t]*=[ \t]*false\b)|\bresource[ \t]+"google_storage_(?:bucket_iam_member|bucket_iam_binding|bucket_access_control|default_object_access_control|object_access_control)"[ \t]+"[^"\n]*"[ \t]*\{(?=[^}]*"(?:allUsers|allAuthenticatedUsers)")'
+      include: ["**/*.tf"]
+      message: Storage bucket is made public
+  references:
+    - { id: CWE-732, title: Incorrect Permission Assignment for Critical Resource }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Buckets that are public by design (static websites, public datasets). Prefer a CDN in front of a private bucket; otherwise record an exception or exclude the file.
+  rollout:
+    recommendedStage: advise

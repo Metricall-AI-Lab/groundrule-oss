@@ -1,0 +1,20 @@
+standard: TS-011
+cases:
+  - name: Buffer constructor with and without new
+    expect: violation
+    count: 2
+    files:
+      src/token.ts: |
+        export const decode = (t: string) => new Buffer(t, "base64").toString();
+        export const raw = (data: string) => Buffer(data);
+  - name: Buffer.from, Buffer.alloc, isBuffer, toBuffer, types, and comments
+    expect: clean
+    files:
+      src/token.ts: |
+        export const decode = (t: string) => Buffer.from(t, "base64").toString();
+        const zeros = Buffer.alloc(1024);
+        if (Buffer.isBuffer(x)) toBuffer(x);
+        const chunks = new Map<string, Buffer>();
+        function readAll(stream: NodeJS.ReadableStream): Promise<Buffer> { return collect(stream); }
+        // Never use new Buffer(size): it may expose old memory.
+      src/token.test.ts: "expect(new Buffer('a')).toBeDefined();\n"

@@ -1,0 +1,29 @@
+standard: DOCKER-004
+cases:
+  - name: curl piped to sh, wget piped to sudo bash, and bash -c with curl
+    expect: violation
+    count: 3
+    files:
+      Dockerfile: |
+        FROM debian:12-slim
+        RUN curl -fsSL https://example.com/install.sh | sh
+        RUN wget -qO- https://example.com/setup | sudo -E bash -
+        RUN bash -c "$(curl -fsSL https://example.com/install.sh)"
+  - name: pipe on a continuation line
+    expect: violation
+    files:
+      Dockerfile: |
+        FROM debian:12-slim
+        RUN curl -fsSL https://example.com/install.sh \
+          | bash -s -- --yes
+  - name: verified downloads, pipes to sha256sum and tar, and a comment
+    expect: clean
+    files:
+      Dockerfile: |
+        FROM debian:12-slim
+        # Do not use: curl https://example.com/install.sh | sh
+        RUN curl -fsSLo /tmp/tool.tar.gz https://example.com/tool-1.4.2.tar.gz \
+         && echo "abc123  /tmp/tool.tar.gz" | sha256sum -c - \
+         && curl -fsSL https://example.com/tool.tar.gz | tar -xz -C /usr/local/bin \
+         && curl -fsSL https://example.com/health || sh /fallback.sh
+      scripts/install.sh: "curl -fsSL https://example.com/install.sh | sh\n"

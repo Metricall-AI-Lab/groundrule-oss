@@ -1,0 +1,49 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-004
+  title: Do not pipe downloaded scripts into a shell
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  intent: >
+    curl | sh runs whatever the server returns at build time, with no version pin and no
+    integrity check, so a compromised or changed URL ships straight into the image.
+  requirement: >
+    Do not pipe curl or wget output into sh or bash, or run it with sh -c "$(curl ...)".
+    Install software from a package manager, copy it from a pinned official image, or
+    download a pinned version and verify its checksum or signature before running it.
+  remediation: >
+    Download a specific version to a file, verify it (sha256sum -c or a signature), then
+    execute it. Better still, use the OS package manager or COPY --from=<pinned image>.
+  examples:
+    approved:
+      - code: |
+          RUN curl -fsSLo /tmp/tool.tar.gz https://example.com/tool-1.4.2.tar.gz \
+           && echo "<sha256>  /tmp/tool.tar.gz" | sha256sum -c - \
+           && tar -xzf /tmp/tool.tar.gz -C /usr/local/bin
+        language: dockerfile
+      - "COPY --from=ghcr.io/astral-sh/uv:0.5.4 /uv /bin/uv"
+    forbidden:
+      - "RUN curl -fsSL https://example.com/install.sh | sh"
+      - 'RUN bash -c "$(wget -qO- https://example.com/install.sh)"'
+  agent:
+    summary: >
+      Never pipe curl/wget into sh or bash in Dockerfiles. Use a package manager, COPY from
+      a pinned image, or download a pinned file and verify its checksum before running it.
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*#)[^\n]*?(?:\b(?:curl|wget)\b(?:[^\n|\\]|\\\r?\n|\\)*?\|[ \t]*(?:sudo[ \t]+(?:-\S+[ \t]+)*)?(?:/usr)?(?:/bin/)?(?:ba|z|da|k)?sh\b|\b(?:ba|z|da|k)?sh[ \t]+(?:-\w+[ \t]+)*(?:["'']?\$\(|<\()[ \t]*(?:curl|wget)\b)'
+      flags: i
+      message: A downloaded script is executed without an integrity check.
+      include: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+      exclude: ["**/*.dockerignore", "**/*.md"]
+  references:
+    - { id: CWE-494, title: Download of Code Without Integrity Check }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Vendor installers that publish no checksums (rustup, some language version managers). Grant an exception, or pin and verify the installer yourself.
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,34 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-016
+  title: Use the secrets module for security-sensitive randomness
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [python]
+  intent: >
+    The random module is a predictable PRNG; tokens, passwords, or IDs generated with it can be
+    guessed.
+  requirement: >
+    Generate tokens, passwords, reset codes, session IDs, API keys, and nonces with the secrets
+    module (secrets.token_urlsafe, secrets.token_hex, secrets.choice) or os.urandom. Use random
+    only for simulations, sampling, jitter, and tests.
+  examples:
+    approved: ["reset_token = secrets.token_urlsafe(32)"]
+    forbidden: ["reset_token = ''.join(random.choices(string.ascii_letters, k=32))"]
+  agent:
+    summary: >
+      Generate any token, password, code, session ID, or key with the secrets module, never with
+      random. random is fine for jitter, sampling, and tests.
+  references:
+    - { id: CWE-338, title: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG) }
+    - { url: "https://docs.python.org/3/library/secrets.html", title: "secrets: generate secure random numbers" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V6.3.1] }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

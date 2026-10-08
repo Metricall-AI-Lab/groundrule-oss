@@ -1,0 +1,79 @@
+standard: K8S-006
+cases:
+  - name: Deployment and CronJob without requests
+    expect: violation
+    count: 2
+    files:
+      k8s/api.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  image: ghcr.io/acme/api:1.8.2
+                  resources:
+                    limits:
+                      memory: 512Mi
+      k8s/report.yaml: |
+        apiVersion: batch/v1
+        kind: CronJob
+        spec:
+          jobTemplate:
+            spec:
+              template:
+                spec:
+                  containers:
+                    - name: report
+                      image: ghcr.io/acme/report:2.0.1
+  - name: requests set, a Helm template, and a non-Kubernetes file
+    expect: clean
+    files:
+      k8s/api.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  image: ghcr.io/acme/api:1.8.2
+                  resources:
+                    requests:
+                      cpu: 100m
+                      memory: 256Mi
+                    limits:
+                      memory: 512Mi
+      charts/api/templates/deployment.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  resources: {{- toYaml .Values.resources | nindent 12 }}
+      deploy/tasks.yml: |
+        containers:
+          - api
+  - name: kustomize component patch (real-repo regression, microservices-demo)
+    expect: clean
+    files:
+      kustomize/components/branding/kustomization.yaml: |
+        apiVersion: kustomize.config.k8s.io/v1alpha1
+        kind: Component
+        patches:
+          - patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: frontend
+              spec:
+                template:
+                  spec:
+                    containers:
+                      - name: server
+                        env:
+                          - name: BRANDING
+                            value: "true"

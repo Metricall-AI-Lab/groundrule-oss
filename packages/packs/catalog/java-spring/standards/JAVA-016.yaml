@@ -1,0 +1,65 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-016
+  title: Handle exceptions centrally; never swallow them
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [java]
+    frameworks: [spring-boot]
+  intent: >
+    Empty or catch-all handlers hide failures and leave data half-written, while ad hoc try/catch in
+    controllers produces inconsistent error responses that can leak stack traces and internals.
+  requirement: >
+    Do not catch Exception or Throwable just to log and continue, and never leave a catch block
+    empty. Catch specific exceptions only where you can recover or add context, and rethrow (with
+    the cause) otherwise. Map exceptions to HTTP responses in one @RestControllerAdvice, returning
+    ProblemDetail (RFC 9457) bodies without stack traces or exception messages from internal code.
+  examples:
+    approved:
+      - code: |
+          @RestControllerAdvice
+          class ApiErrors {
+            @ExceptionHandler(ClaimNotFoundException.class)
+            ProblemDetail notFound(ClaimNotFoundException e) {
+              return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Claim not found");
+            }
+          }
+        language: java
+      - code: |
+          try {
+            gateway.charge(payment);
+          } catch (GatewayTimeoutException e) {
+            throw new PaymentPendingException(payment.id(), e);
+          }
+        language: java
+    forbidden:
+      - code: |
+          try {
+            gateway.charge(payment);
+          } catch (Exception e) {
+            log.error("charge failed", e);   // continues as if the charge succeeded
+          }
+        language: java
+      - code: |
+          catch (Exception e) {
+            return ResponseEntity.status(500).body(e.toString());
+          }
+        language: java
+  agent:
+    summary: >
+      Never swallow exceptions or catch Exception/Throwable just to log and continue. Catch specific
+      exceptions only to recover or add context, rethrowing with the cause. Map exceptions to HTTP in
+      one @RestControllerAdvice returning ProblemDetail, with no stack traces or internal messages.
+  references:
+    - { id: CWE-390, title: Detection of Error Condition Without Action }
+    - { id: CWE-209, title: Generation of Error Message Containing Sensitive Information }
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

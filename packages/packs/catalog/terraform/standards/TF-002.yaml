@@ -1,0 +1,48 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-002
+  title: Constrain Terraform and provider versions
+  type: agent-instruction
+  category: supply-chain
+spec:
+  severity: warning
+  intent: >
+    Unconstrained providers upgrade silently on the next init, so a plan can change or
+    break without any change to the code.
+  requirement: >
+    Every root module and reusable module declares a terraform block with required_version
+    and lists each provider in required_providers with an explicit source and a version
+    constraint. Root modules use a pessimistic constraint (~> 5.40) or an exact version;
+    reusable modules declare the minimum version they need (>= 5.0). Upgrade providers
+    deliberately, in their own change, and review the plan.
+  examples:
+    approved:
+      - code: |
+          terraform {
+            required_version = ">= 1.6"
+            required_providers {
+              aws = {
+                source  = "hashicorp/aws"
+                version = "~> 5.40"
+              }
+            }
+          }
+        language: terraform
+    forbidden:
+      - code: |
+          provider "aws" {
+            region = "eu-west-1"
+          } # no required_providers: any version is installed
+        language: terraform
+  agent:
+    summary: >
+      Every Terraform module needs a terraform block with required_version and a
+      required_providers entry (source and version constraint) for each provider it uses.
+      Do not change provider versions as a side effect of other work.
+  references:
+    - https://developer.hashicorp.com/terraform/language/expressions/version-constraints
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

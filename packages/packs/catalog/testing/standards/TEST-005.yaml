@@ -1,0 +1,61 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-005
+  title: Wait for conditions, not fixed sleeps, in tests
+  type: prohibition
+  category: testing
+spec:
+  severity: warning
+  intent: >
+    A fixed sleep is either too short on a slow CI machine (a flaky test) or longer than needed
+    everywhere else (a slow suite), and usually both.
+  requirement: >
+    Do not wait for a fixed amount of time in tests. Wait for the condition you need (an element,
+    a response, an event, a polled assertion with a timeout) or control time with fake clocks.
+  remediation: >
+    Replace the sleep with a condition-based wait (await expect(...).toBeVisible(), waitFor,
+    cy.wait("@alias"), Awaitility, Eventually, assert_eventually) or fake timers
+    (vi.useFakeTimers, jest.useFakeTimers, freezegun, a fake clock).
+  examples:
+    approved:
+      - code: 'await expect(page.getByRole("alert")).toHaveText("Saved");'
+        language: typescript
+      - code: "await().atMost(Duration.ofSeconds(5)).until(() -> repo.count() == 1); // Awaitility"
+        language: java
+    forbidden:
+      - code: "await page.waitForTimeout(2000);"
+        language: typescript
+      - code: "Thread.sleep(500);"
+        language: java
+  agent:
+    summary: >
+      Never use sleeps (waitForTimeout, cy.wait(ms), time.sleep, Thread.sleep, time.Sleep,
+      setTimeout promises) to wait in tests; wait for the actual condition or use fake timers.
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?(?:\.waitForTimeout\s*\(|\bcy\.wait\s*\(\s*\d|\bnew\s+Promise\s*\(\s*\(?\s*(\w+)\s*\)?\s*=>\s*setTimeout\s*\(\s*\1\s*,\s*[1-9]|\bawait\s+sleep\s*\(\s*[1-9])'
+      include: ["**/*.test.*", "**/*.spec.*", "**/*.cy.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/e2e/**", "**/cypress/**"]
+      exclude: ["**/*.snap", "**/*.md", "**/*.mdx", "**/*.py", "**/*.java", "**/*.kt", "**/*.go", "**/fixtures/**"]
+      message: Fixed sleep in a test
+    - evaluator: regex
+      pattern: '^(?![ \t]*#)[^\n]*?\b(?:time|asyncio)\.sleep\s*\(\s*(?!0(?:\.0*)?\s*\))\S'
+      include: ["**/test_*.py", "**/*_test.py", "**/tests/**/*.py", "**/test/**/*.py"]
+      exclude: ["**/conftest.py"]
+      message: Fixed sleep in a test
+    - evaluator: regex
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?(?:\bThread\.sleep\s*\(|\bTimeUnit\.\w+\.sleep\s*\()'
+      include: ["**/src/test/**/*.java", "**/src/test/**/*.kt", "**/*Test.java", "**/*IT.java"]
+      message: Fixed sleep in a test
+    - evaluator: regex
+      pattern: '^(?![ \t]*//)[^\n]*?\btime\.Sleep\('
+      include: ["**/*_test.go"]
+      message: Fixed sleep in a test
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Tests of timing behavior (timeouts, rate limiters, retries) that need real elapsed time. Prefer a fake clock; otherwise record an exception.
+      - Concurrency tests that sleep briefly to let goroutines or threads start.
+      - Tests of a sleep or delay helper itself.
+  rollout:
+    recommendedStage: advise

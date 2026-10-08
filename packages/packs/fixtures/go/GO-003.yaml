@@ -1,0 +1,51 @@
+standard: GO-003
+cases:
+  - name: panic in a library package
+    expect: violation
+    files:
+      internal/server/server.go: |
+        package server
+
+        func New(cfg Config) *Server {
+        	if cfg.Addr == "" {
+        		panic("server: Addr is required")
+        	}
+        	return &Server{cfg: cfg}
+        }
+  - name: package main, cmd, tests, comments, and methods named panic
+    expect: clean
+    files:
+      main.go: |
+        package main
+
+        func main() {
+        	if err := run(); err != nil {
+        		panic(err)
+        	}
+        }
+      tools/gen/gen.go: |
+        package main
+
+        func main() { panic("todo") }
+      internal/app/run.go: |
+        // Package app wires the server.
+        package app
+
+        // We never panic(err) here; errors are returned.
+        func Run() error {
+        	defer func() {
+        		if r := recover(); r != nil {
+        			log.Printf("recovered: %v", r)
+        		}
+        	}()
+        	t.panicked = false
+        	return h.panic()
+        }
+      internal/app/run_test.go: |
+        package app
+
+        func TestRun(t *testing.T) { panic("unreachable") }
+      cmd/api/serve.go: |
+        package api
+
+        func mustEnv(k string) string { panic(k) }

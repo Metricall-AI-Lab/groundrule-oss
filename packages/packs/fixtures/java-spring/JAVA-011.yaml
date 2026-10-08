@@ -1,0 +1,33 @@
+standard: JAVA-011
+cases:
+  - name: concatenated log messages
+    expect: violation
+    count: 3
+    files:
+      src/main/java/acme/ClaimService.java: |
+        class ClaimService {
+          private static final Logger log = LoggerFactory.getLogger(ClaimService.class);
+          void approve(long id, String user) {
+            log.info("Claim " + id + " approved by " + user);
+            LOGGER.debug("state: " + state);
+            try { pay(id); } catch (PaymentException e) { log.error("Payment failed: " + e.getMessage()); }
+          }
+        }
+  - name: placeholders, constant multi-line templates, other methods, and tests
+    expect: clean
+    files:
+      src/main/java/acme/ClaimService.java: |
+        class ClaimService {
+          private static final Logger log = LoggerFactory.getLogger(ClaimService.class);
+          void approve(long id, String user) {
+            log.info("Claim {} approved by {}", id, user);
+            log.warn("Claim {} took longer than expected; "
+                + "check the payment gateway latency ({} ms)", id, elapsed);
+            log.info("Quoted \"name\" for claim {}", id);
+            catalog.info("Section " + id);
+            String msg = "Claim " + id;
+            // log.info("Claim " + id);
+          }
+        }
+      src/test/java/acme/ClaimServiceTest.java: |
+        class ClaimServiceTest { void t() { log.info("case " + n); } }

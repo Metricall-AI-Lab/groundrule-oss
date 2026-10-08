@@ -1,0 +1,45 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-001
+  title: Handle every returned error
+  type: agent-instruction
+  category: error-handling
+spec:
+  severity: warning
+  scope:
+    languages: [go]
+  intent: A discarded error turns a clear failure into silent data loss or a confusing crash later.
+  requirement: >
+    Check every error a function returns. Do not discard errors with _ or by ignoring the
+    return value. Handle the error, return it with context, or, when ignoring it is genuinely
+    correct, discard it explicitly with a comment explaining why. Handle an error once:
+    either log it or return it, not both.
+  examples:
+    approved:
+      - code: |
+          if err := tx.Commit(); err != nil {
+              return fmt.Errorf("commit order %s: %w", id, err)
+          }
+        language: go
+      - code: |
+          // Best effort: the response has already been sent.
+          _ = conn.Close()
+        language: go
+    forbidden:
+      - code: "_ = tx.Commit()"
+        language: go
+      - code: "json.Unmarshal(body, &req)"
+        language: go
+  agent:
+    summary: >
+      Check every returned error. Never drop one with _ or by ignoring the return value unless
+      it is genuinely safe, and then add a comment saying why. Either return an error with
+      context or log it, not both.
+  references:
+    - https://go.dev/doc/effective_go#errors
+    - https://go.dev/wiki/CodeReviewComments#handle-errors
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

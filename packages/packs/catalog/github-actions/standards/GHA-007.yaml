@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-007
+  title: Pass secrets to steps through env and never print them
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: >
+    Log masking only hides the exact secret string. Encoded, split, or transformed
+    secrets are printed in clear text, and secrets interpolated into scripts end up in
+    the script file on the runner.
+  requirement: >
+    Expose secrets to a step only through its env: block or an action's with: input, scoped
+    to the step that needs them, not the whole workflow. Never echo, print, or upload secrets
+    or files containing them as artifacts, and register any derived value with ::add-mask::
+    before using it. Do not make secrets available to jobs that run untrusted pull request code.
+    Prefer environment secrets for deployment credentials.
+  examples:
+    approved:
+      - code: |
+          - run: ./deploy.sh
+            env:
+              DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        language: yaml
+    forbidden:
+      - 'run: echo "${{ secrets.DEPLOY_TOKEN }}" | base64'
+  agent:
+    summary: >
+      In workflows, pass secrets via the step's env: or with:, scoped to that step only.
+      Never echo, encode, or upload secrets; ::add-mask:: any derived value.
+  references:
+    - { id: CWE-532, title: Insertion of Sensitive Information into Log File }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

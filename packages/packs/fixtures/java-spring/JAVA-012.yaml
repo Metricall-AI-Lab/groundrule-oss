@@ -1,0 +1,28 @@
+standard: JAVA-012
+cases:
+  - name: Date, SimpleDateFormat, and Calendar in main code
+    expect: violation
+    count: 3
+    files:
+      src/main/java/acme/ClaimClock.java: |
+        class ClaimClock {
+          private static final SimpleDateFormat DAY = new SimpleDateFormat("yyyy-MM-dd");
+          Date now() { return new java.util.Date(); }
+          int year() { return Calendar.getInstance().get(Calendar.YEAR); }
+        }
+  - name: java.time, Date.from at a library boundary, look-alike names, and tests
+    expect: clean
+    files:
+      src/main/java/acme/ClaimClock.java: |
+        import java.util.Date;
+        class ClaimClock {
+          private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+          Instant now() { return Instant.now(clock); }
+          LocalDate today() { return LocalDate.now(clock); }
+          Date expiry() { return Date.from(Instant.now(clock).plus(ttl)); }
+          DateRange range() { return new DateRange(today(), today().plusDays(7)); }
+          java.sql.Date sql() { return java.sql.Date.valueOf(today()); }
+          // new Date() is not allowed here
+        }
+      src/test/java/acme/ClaimClockTest.java: |
+        class ClaimClockTest { Date d = new Date(); }

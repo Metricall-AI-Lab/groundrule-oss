@@ -1,0 +1,52 @@
+standard: TF-006
+cases:
+  - name: public S3 ACL and disabled public access block
+    expect: violation
+    count: 3
+    files:
+      infra/s3.tf: |
+        resource "aws_s3_bucket_acl" "site" {
+          bucket = aws_s3_bucket.site.id
+          acl    = "public-read"
+        }
+        resource "aws_s3_bucket_public_access_block" "site" {
+          bucket              = aws_s3_bucket.site.id
+          block_public_acls   = false
+          block_public_policy = false
+        }
+  - name: GCS bucket readable by allUsers
+    expect: violation
+    files:
+      infra/gcs.tf: |
+        resource "google_storage_bucket_iam_member" "public" {
+          bucket = google_storage_bucket.assets.name
+          role   = "roles/storage.objectViewer"
+          member = "allUsers"
+        }
+  - name: private ACLs, blocked public access, and a public Cloud Run invoker
+    expect: clean
+    files:
+      infra/s3.tf: |
+        resource "aws_s3_bucket_acl" "logs" {
+          bucket = aws_s3_bucket.logs.id
+          acl    = "private"
+          # acl  = "public-read"
+        }
+        resource "aws_s3_bucket_public_access_block" "logs" {
+          bucket                  = aws_s3_bucket.logs.id
+          block_public_acls       = true
+          block_public_policy     = true
+          ignore_public_acls      = true
+          restrict_public_buckets = true
+        }
+      infra/run.tf: |
+        resource "google_cloud_run_service_iam_member" "public" {
+          service = google_cloud_run_service.api.name
+          role    = "roles/run.invoker"
+          member  = "allUsers"
+        }
+        resource "google_storage_bucket_iam_member" "ci" {
+          bucket = google_storage_bucket.assets.name
+          role   = "roles/storage.objectAdmin"
+          member = "serviceAccount:${google_service_account.ci.email}"
+        }

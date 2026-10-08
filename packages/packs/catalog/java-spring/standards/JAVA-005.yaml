@@ -1,0 +1,54 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-005
+  title: Put @Transactional on services, not controllers
+  type: prohibition
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+    frameworks: [spring-boot]
+  intent: >
+    Transaction boundaries belong to the service operation they protect. A transaction opened in a
+    controller spans request mapping and serialization, holds database connections longer, and is
+    lost when the same service is called from a job or message listener.
+  requirement: >
+    Do not annotate controllers or controller methods with @Transactional. Declare transactions on
+    the service methods that implement the use case.
+  remediation: >
+    Move the @Transactional annotation to the service method the controller calls. If the controller
+    calls several services in one transaction, add a service method that orchestrates them.
+  examples:
+    approved:
+      - code: |
+          @Service
+          public class ClaimService {
+            @Transactional
+            public ClaimDto approve(long id) { ... }
+          }
+        language: java
+    forbidden:
+      - code: |
+          @RestController
+          public class ClaimController {
+            @Transactional
+            @PostMapping("/claims/{id}/approve")
+            public ClaimDto approve(@PathVariable long id) { ... }
+          }
+        language: java
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?@(?:[\w.]+\.)?Transactional\b'
+      include: ["**/*Controller.java"]
+      message: "@Transactional on a controller; declare transactions in the service layer"
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Classes named *Controller that are not web controllers (e.g. a domain "FlowController"). Exclude them with scope.exclude.
+  rollout:
+    recommendedStage: advise

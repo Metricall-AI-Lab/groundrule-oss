@@ -1,0 +1,58 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-001
+  title: Run the final image as a non-root user
+  type: requirement
+  category: security
+spec:
+  severity: warning
+  intent: >
+    A container that runs as root turns any code-execution bug into root inside the
+    container, one kernel or runtime flaw away from root on the host.
+  requirement: >
+    The final stage of every Dockerfile must switch to a non-root user with a USER
+    instruction (a name or a numeric UID other than 0). Earlier build stages may run as root.
+  remediation: >
+    Create an unprivileged user (or use one the base image provides, such as node or
+    nonroot) and add USER <name-or-uid> after the last step that needs root, in the
+    final stage. Prefer a numeric UID so Kubernetes runAsNonRoot can verify it.
+  examples:
+    approved:
+      - code: |
+          FROM node:22-alpine
+          WORKDIR /app
+          COPY --chown=node:node . .
+          USER node
+          CMD ["node", "server.js"]
+        language: dockerfile
+    forbidden:
+      - code: |
+          FROM node:22-alpine
+          COPY . .
+          CMD ["node", "server.js"]
+        language: dockerfile
+        note: No USER instruction, so the process runs as root.
+  agent:
+    summary: >
+      Every Dockerfile's final stage must end up running as a non-root user: add
+      USER <non-root name or UID> after the steps that need root.
+  checks:
+    - evaluator: regex
+      # The last FROM in the file, when no later USER sets a non-root user as the final USER.
+      pattern: '^[ \t]*FROM[ \t][^\n]*$(?![\s\S]*^[ \t]*FROM[ \t])(?![\s\S]*^[ \t]*USER[ \t]+(?!(?:root|0)(?::\S*)?[ \t]*\r?$)\S[^\n]*$(?![\s\S]*^[ \t]*USER[ \t]))'
+      flags: i
+      message: The final stage runs as root. Add a USER instruction for a non-root user.
+      include: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+      exclude: ["**/*.dockerignore", "**/*.md"]
+  references:
+    - { id: CWE-250, title: Execution with Unnecessary Privileges }
+    - https://docs.docker.com/build/building/best-practices/
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Base images that already set a non-root user (distroless :nonroot, Chainguard, some vendor images). Add an explicit USER anyway; it documents intent and costs nothing.
+      - Images that must start as root and drop privileges themselves (e.g. via gosu or su-exec in the entrypoint). Grant an exception.
+      - Dockerfiles for build or CI tooling images that are never run as services.
+  rollout:
+    recommendedStage: advise

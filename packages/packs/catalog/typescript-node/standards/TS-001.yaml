@@ -22,7 +22,7 @@ spec:
     - evaluator: regex
       pattern: "\\bconsole\\.(?:log|debug)\\("
       include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
-      exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/benchmarks/**", "**/scripts/**", "**/*.config.*", "**/bin/**"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/testing/**", "**/mocks/**", "**/__mocks__/**", "**/benchmarks/**", "**/scripts/**", "**/*.config.*", "**/bin/**"]
       message: console.log in application code
   applicability:
     files: ["**/package.json"]

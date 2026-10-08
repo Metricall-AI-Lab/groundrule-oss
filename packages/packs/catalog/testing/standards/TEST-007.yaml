@@ -1,0 +1,26 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-007
+  title: Name tests after the behavior they verify
+  type: guidance
+  category: testing
+spec:
+  severity: advisory
+  intent: >
+    When a test fails in CI, its name is the first and often only thing people read; it should
+    say what behavior broke without opening the file.
+  requirement: >
+    Test names state the scenario and expected outcome, not the method under test or a number.
+    One test checks one behavior; split tests whose names need "and".
+  examples:
+    approved: ['it("rejects a coupon that expired yesterday")', "test_refund_fails_when_payment_is_not_captured"]
+    forbidden: ['it("works")', "test_refund_2", "testCalculate"]
+  agent:
+    summary: >
+      Name each test after the scenario and expected outcome ("rejects an expired coupon"), not
+      the function name or a number, and keep one behavior per test.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

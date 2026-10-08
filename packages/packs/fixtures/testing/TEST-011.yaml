@@ -1,0 +1,21 @@
+standard: TEST-011
+cases:
+  - name: committed coverage and pytest output
+    expect: violation
+    count: 3
+    files:
+      coverage/lcov.info: "TN:\nSF:src/index.ts\nend_of_record\n"
+      .nyc_output/processinfo/index.json: "{}"
+      .coverage: "!coverage.py: data\n"
+  - name: committed Playwright report
+    expect: violation
+    files:
+      playwright-report/index.html: "<html></html>\n"
+  - name: coverage config, source folders named coverage, and fixtures
+    expect: clean
+    files:
+      .coveragerc: "[run]\nbranch = True\n"
+      src/coverage/report.ts: "export function report() {}\n"
+      packages/reporter/test/fixtures/coverage/lcov.info: "TN:\nend_of_record\n"
+      test-results.md: "# Test results policy\n"
+      .gitignore: "coverage/\n"

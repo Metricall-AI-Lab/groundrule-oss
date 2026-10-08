@@ -1,0 +1,44 @@
+standard: GHA-001
+cases:
+  - name: third-party actions and a reusable workflow referenced by tag or branch
+    expect: violation
+    count: 3
+    files:
+      .github/workflows/ci.yml: |
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: docker/setup-buildx-action@v3
+              - name: Deploy
+                uses: "some-org/deploy-action@main"
+          shared:
+            uses: acme/workflows/.github/workflows/lint.yml@v1
+  - name: composite action using a short SHA
+    expect: violation
+    files:
+      .github/actions/setup/action.yml: |
+        runs:
+          using: composite
+          steps:
+            - uses: pnpm/action-setup@a3252b7
+  - name: SHA-pinned actions with version comments, first-party, local, and docker actions
+    expect: clean
+    files:
+      .github/workflows/ci.yml: |
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: github/codeql-action/init@v3
+              - uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+              - uses: 'pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d'
+              - uses: ./.github/actions/setup
+              - uses: docker://alpine:3.20
+              # - uses: some-org/deploy-action@main
+          shared:
+            uses: acme/workflows/.github/workflows/lint.yml@0123456789abcdef0123456789abcdef01234567

@@ -1,0 +1,52 @@
+standard: AGENT-010
+cases:
+  - name: conflict markers left in code and config
+    expect: violation
+    count: 4
+    files:
+      src/pricing.ts: |
+        export function total(items) {
+        <<<<<<< HEAD
+          return sum(items) * 1.2;
+        =======
+          return sum(items) * TAX;
+        >>>>>>> feature/tax-config
+        }
+      config/app.yaml: |
+        <<<<<<< ours
+        timeout: 30
+        ||||||| base
+        timeout: 10
+        =======
+        timeout: 60
+        >>>>>>> theirs
+  - name: merge and patch leftovers
+    expect: violation
+    count: 3
+    files:
+      src/pricing.ts.orig: "export const x = 1;\n"
+      src/pricing.ts.rej: "@@ -1 +1 @@\n"
+      src/pricing_BASE_41234.ts: "export const x = 0;\n"
+  - name: arrows, setext headings, operators, docs, and fixtures
+    expect: clean
+    files:
+      src/shift.ts: |
+        const mask = value >>> 7;
+        // <<<<<<< marks a conflict; see docs
+        const banner = "<<<<<<< not at line start";
+        log("=======");
+      README.md: |
+        Title
+        =======
+
+        <<<<<<< HEAD
+        Resolve conflicts like this.
+        >>>>>>> branch
+      test/fixtures/conflict.ts: |
+        <<<<<<< HEAD
+        a
+        >>>>>>> b
+      scripts/origin.sh: "echo origin\n"
+      src/original.ts: "export {};\n"
+      test/fixtures/patch.rej: "@@ -1 +1 @@\n"
+      src/DATABASE_1.sql: "select 1;\n"

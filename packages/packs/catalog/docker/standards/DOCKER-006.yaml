@@ -1,0 +1,47 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-006
+  title: Run apt-get update and install in the same RUN
+  type: requirement
+  category: reliability
+spec:
+  severity: warning
+  intent: >
+    A RUN that only runs apt-get update is cached as its own layer, so later builds install
+    from a stale package index and fail or pull outdated packages.
+  requirement: >
+    Always combine apt-get update with apt-get install in a single RUN instruction, and
+    remove /var/lib/apt/lists/* in the same instruction.
+  remediation: >
+    Merge the update into the install step:
+    RUN apt-get update && apt-get install -y --no-install-recommends <pkgs> && rm -rf /var/lib/apt/lists/*
+  examples:
+    approved:
+      - code: |
+          RUN apt-get update \
+           && apt-get install -y --no-install-recommends ca-certificates \
+           && rm -rf /var/lib/apt/lists/*
+        language: dockerfile
+    forbidden:
+      - code: |
+          RUN apt-get update
+          RUN apt-get install -y ca-certificates
+        language: dockerfile
+  agent:
+    summary: >
+      In Dockerfiles, run apt-get update and apt-get install in the same RUN, and clean
+      /var/lib/apt/lists/* in that RUN.
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*RUN[ \t]+apt(?:-get)?[ \t]+(?:-\S+[ \t]+)*update(?:[ \t]+-\S+)*[ \t]*\r?$'
+      flags: i
+      message: apt-get update runs in its own RUN and will be cached. Combine it with apt-get install.
+      include: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+      exclude: ["**/*.dockerignore", "**/*.md"]
+  references:
+    - https://docs.docker.com/build/building/best-practices/
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: enforce

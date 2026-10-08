@@ -1,0 +1,13 @@
+standard: TS-004
+cases:
+  - name: ts-ignore in application code
+    expect: violation
+    files:
+      tsconfig.json: "{}"
+      src/legacy.ts: "// @ts-ignore\nconst x: number = 'a';\n"
+  - name: ts-expect-error with a reason, and ts-ignore in tests
+    expect: clean
+    files:
+      tsconfig.json: "{}"
+      src/legacy.ts: "// @ts-expect-error -- third-party types are wrong (#123)\nconst x: number = lib();\n"
+      src/legacy.test.ts: "// @ts-ignore\nconst y = 1;\n"

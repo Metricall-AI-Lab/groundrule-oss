@@ -1,0 +1,51 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-006
+  title: Authenticate to cloud providers with OIDC, not long-lived keys
+  type: requirement
+  category: security
+spec:
+  severity: warning
+  intent: >
+    Static cloud keys stored as repository secrets never expire, are usable from anywhere,
+    and leak through logs, forks, and compromised actions. OIDC gives each job short-lived
+    credentials scoped to the repository, branch, or environment.
+  requirement: >
+    Use GitHub's OIDC provider to obtain cloud credentials (AWS role-to-assume, GCP
+    workload_identity_provider, Azure federated credentials) instead of storing access keys
+    or service-account key files as secrets. Restrict the cloud-side trust policy to the
+    specific repository and branch or environment, and grant id-token: write only to the
+    jobs that authenticate.
+  remediation: >
+    Create an OIDC trust (IAM role, workload identity pool, or federated credential) limited
+    to this repository, grant the job id-token: write, replace the key inputs with
+    role-to-assume / workload_identity_provider, then delete and revoke the stored keys.
+  examples:
+    approved:
+      - code: |
+          permissions:
+            id-token: write
+            contents: read
+          steps:
+            - uses: aws-actions/configure-aws-credentials@<full 40-character commit SHA> # v4
+              with:
+                role-to-assume: arn:aws:iam::123456789012:role/deploy
+                aws-region: eu-west-1
+        language: yaml
+    forbidden:
+      - "aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+      - "credentials_json: ${{ secrets.GCP_SA_KEY }}"
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*(?:aws-secret-access-key|credentials_json|AWS_SECRET_ACCESS_KEY)[ \t]*:'
+      include: [".github/workflows/*.yml", ".github/workflows/*.yaml"]
+      message: Long-lived cloud key used instead of OIDC
+  references:
+    - { id: CWE-522, title: Insufficiently Protected Credentials }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Targets that do not support OIDC federation (some S3-compatible stores, older on-premises systems). Record an exception for those workflows.
+  rollout:
+    recommendedStage: advise

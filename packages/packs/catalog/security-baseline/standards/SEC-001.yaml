@@ -16,6 +16,8 @@ spec:
     - evaluator: regex
       pattern: "-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----"
       message: Private key committed to the repository
+      # Throwaway keys for tests (e.g. Go testdata TLS certs) are common and not secrets.
+      exclude: ["**/testdata/**", "**/fixtures/**", "**/__fixtures__/**"]
   references:
     - { id: CWE-321, title: Use of Hard-coded Cryptographic Key }
     - { id: CWE-798, title: Use of Hard-coded Credentials }

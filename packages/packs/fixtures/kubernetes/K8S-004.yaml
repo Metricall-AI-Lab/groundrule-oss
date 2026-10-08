@@ -1,0 +1,65 @@
+standard: K8S-004
+cases:
+  - name: StatefulSet without runAsNonRoot
+    expect: violation
+    files:
+      kubernetes/db.yaml: |
+        apiVersion: apps/v1
+        kind: StatefulSet
+        spec:
+          template:
+            spec:
+              securityContext:
+                runAsNonRoot: false
+              containers:
+                - name: db
+                  image: postgres:16.4
+  - name: pod-level runAsNonRoot, Helm template, and a ConfigMap
+    expect: clean
+    files:
+      kubernetes/api.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 10001
+              containers:
+                - name: api
+                  image: ghcr.io/acme/api:1.8.2
+      kubernetes/config.yaml: |
+        apiVersion: v1
+        kind: ConfigMap
+        data:
+          containers: "3"
+      charts/api/templates/deployment.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+              containers:
+                - name: api
+  - name: kustomize component patch (real-repo regression, microservices-demo)
+    expect: clean
+    files:
+      kustomize/components/branding/kustomization.yaml: |
+        apiVersion: kustomize.config.k8s.io/v1alpha1
+        kind: Component
+        patches:
+          - patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: frontend
+              spec:
+                template:
+                  spec:
+                    containers:
+                      - name: server
+                        env:
+                          - name: BRANDING
+                            value: "true"

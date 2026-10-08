@@ -1,0 +1,65 @@
+standard: K8S-001
+cases:
+  - name: privileged container in a Deployment
+    expect: violation
+    files:
+      k8s/deployment.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: api
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  image: ghcr.io/acme/api:1.8.2
+                  securityContext:
+                    privileged: true
+  - name: flow-style security context in a Helm template
+    expect: violation
+    files:
+      charts/api/templates/daemonset.yaml: |
+        apiVersion: apps/v1
+        kind: DaemonSet
+        spec:
+          template:
+            spec:
+              containers:
+                - name: agent
+                  image: "{{ .Values.image }}"
+                  securityContext: {privileged: true}
+  - name: privileged false, a comment, Compose, and a CI workflow
+    expect: clean
+    files:
+      k8s/deployment.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  image: ghcr.io/acme/api:1.8.2
+                  securityContext:
+                    # privileged: true was removed
+                    privileged: false
+      deploy/docker-compose.yml: |
+        services:
+          dind:
+            image: docker:27-dind
+            privileged: true
+      deploy/stack.yml: |
+        services:
+          agent:
+            image: acme/agent:1.0
+            privileged: true
+      .github/workflows/ci.yml: |
+        jobs:
+          build:
+            services:
+              docker:
+                options: --privileged
+            container:
+              image: node:22
+              privileged: true

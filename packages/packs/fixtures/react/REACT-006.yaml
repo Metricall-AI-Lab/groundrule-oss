@@ -1,0 +1,40 @@
+standard: REACT-006
+cases:
+  - name: images without alt, single and multi-line
+    expect: violation
+    count: 2
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/ProductCard.tsx: |
+        export function ProductCard({ product }: Props) {
+          return (
+            <div>
+              <img src={product.imageUrl} />
+              <img
+                src={product.thumbnail}
+                onError={() => setBroken(true)}
+                className="thumb"
+              />
+            </div>
+          );
+        }
+  - name: alt present, empty alt, spreads, and other components
+    expect: clean
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/ProductCard.tsx: |
+        export function ProductCard({ product, ...imgProps }: Props) {
+          return (
+            <div>
+              <img src={product.imageUrl} alt={product.name} />
+              <img
+                src="/divider.svg"
+                onLoad={() => setLoaded(true)}
+                alt=""
+              />
+              <img {...imgProps} />
+              <Image src={product.hero} alt="Hero" />
+              <ImageGallery images={product.images} />
+            </div>
+          );
+        }

@@ -1,0 +1,28 @@
+standard: SEC-010
+cases:
+  - name: storage account key in appsettings
+    expect: violation
+    files:
+      src/Api/appsettings.json: |
+        {
+          "ConnectionStrings": {
+            "Blobs": "DefaultEndpointsProtocol=https;AccountName=acmeprod;AccountKey=⟨⟩e+Dlo2j+vlnoUFCA+1K+PcYalQMCDgmc0OGOhP⟨⟩BBgcngnObAqPtEh69mRG5Wet4tCTWoPH0DgxrgFv7Xq+pcfw==;EndpointSuffix=core.windows.net"
+          }
+        }
+  - name: Service Bus shared access key in code
+    expect: violation
+    files:
+      worker/queue.py: |
+        CONN = "Endpoint=sb://acme.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=⟨⟩WxpJBSZR081/FQ⟨⟩K+13tWmfIE+4VrBu9XRv200yX7Mx8="
+  - name: emulator, managed identity, and placeholders
+    expect: clean
+    files:
+      src/Api/appsettings.Development.json: |
+        { "ConnectionStrings": { "Blobs": "UseDevelopmentStorage=true" } }
+      docker/azurite.env: |
+        AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=⟨⟩Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT5⟨⟩0uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;
+      worker/queue.py: |
+        CONN = os.environ["SERVICEBUS_CONNECTION"]  # Endpoint=...;SharedAccessKeyName=...;SharedAccessKey=⟨⟩<key>
+      src/Api/Storage.cs: |
+        var client = new BlobServiceClient(new Uri(url), new DefaultAzureCredential());
+        // AccountKey=⟨⟩${AZURE_STORAGE_KEY}

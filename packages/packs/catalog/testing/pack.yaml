@@ -1,0 +1,11 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: testing
+  title: Testing
+  description: Keep test suites trustworthy, deterministic, and honest, across JavaScript, Python, Java, Go, and Ruby.
+  owner: groundrule
+  version: 1.0.0
+  tags: [testing, quality, ci]
+spec:
+  include: ["standards/**/*.yaml"]

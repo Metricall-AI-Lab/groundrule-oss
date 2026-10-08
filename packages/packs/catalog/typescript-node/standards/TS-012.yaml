@@ -1,0 +1,36 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-012
+  title: No blocking synchronous I/O on request paths
+  type: agent-instruction
+  category: performance
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+  intent: Node.js serves every request on one thread, so a synchronous file, crypto, or process call in a handler stalls all concurrent requests.
+  requirement: >
+    Code that runs per request or per message (HTTP handlers, middleware, queue consumers,
+    resolvers) uses the asynchronous APIs: fs/promises instead of readFileSync/writeFileSync/
+    existsSync, async child_process instead of execSync/spawnSync, and async crypto
+    (pbkdf2, scrypt, randomBytes with a callback) for expensive operations. Synchronous calls
+    are fine at startup, in CLIs, and in build scripts.
+  examples:
+    approved:
+      - "const template = await readFile(path, 'utf8');"
+      - "const TEMPLATE = readFileSync(path, 'utf8'); // module load, once at startup"
+    forbidden:
+      - "app.get('/report', (req, res) => { res.send(readFileSync(path, 'utf8')); });"
+      - "const hash = crypto.pbkdf2Sync(password, salt, 600000, 64, 'sha512'); // in a login handler"
+  agent:
+    summary: >
+      In request handlers, middleware, and consumers use async APIs (fs/promises, async
+      child_process, async crypto); keep *Sync calls to startup code, CLIs, and scripts.
+  applicability:
+    frameworks: [express, fastify, nestjs, hono, nextjs]
+    files: ["**/package.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

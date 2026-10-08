@@ -1,0 +1,42 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-007
+  title: Install apt packages with --no-install-recommends
+  type: requirement
+  category: performance
+spec:
+  severity: advisory
+  intent: >
+    Recommended packages pull in software the image never uses, making it larger, slower
+    to pull, and exposed to more CVEs.
+  requirement: >
+    Pass --no-install-recommends to apt-get install (or set APT::Install-Recommends=false)
+    and list every package the image actually needs.
+  remediation: >
+    Add --no-install-recommends to the apt-get install command and add any package the
+    build turns out to need explicitly.
+  examples:
+    approved:
+      - "RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*"
+    forbidden:
+      - "RUN apt-get update && apt-get install -y curl"
+  agent:
+    summary: >
+      Use apt-get install -y --no-install-recommends in Dockerfiles and list the packages
+      you need explicitly.
+  checks:
+    - evaluator: regex
+      # Looks across backslash continuations of the same RUN for the flag.
+      pattern: '^(?![ \t]*#)[^\n]*?\bapt(?:-get)?[ \t](?!(?:[^\n]|\\\r?\n)*?(?:--no-install-recommends|Install-Recommends=["'']?(?:false|0)))(?:-\S+[ \t]+)*install\b'
+      flags: i
+      message: apt-get install without --no-install-recommends.
+      include: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+      exclude: ["**/*.dockerignore", "**/*.md"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Images that disable recommends globally in /etc/apt/apt.conf.d in an earlier step. Add the flag anyway or grant an exception.
+      - Images that deliberately want recommended packages (e.g. full desktop or toolchain images).
+  rollout:
+    recommendedStage: advise

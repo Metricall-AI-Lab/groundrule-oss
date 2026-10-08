@@ -1,0 +1,33 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-010
+  title: Deploy through protected environments
+  type: process
+  category: ci
+spec:
+  severity: advisory
+  intent: >
+    Environments are where GitHub enforces who and what may deploy: required reviewers,
+    branch restrictions, wait timers, and secrets that only deployment jobs can read.
+  requirement: >
+    Jobs that deploy to shared or production infrastructure declare environment: <name>.
+    Configure that environment with deployment branch or tag rules, required reviewers for
+    production, and its own secrets or OIDC subject so credentials cannot be used from
+    other branches or jobs.
+  examples:
+    approved:
+      - code: |
+          jobs:
+            deploy:
+              environment: production
+              runs-on: ubuntu-latest
+        language: yaml
+  agent:
+    summary: >
+      Deploy jobs must declare environment: <name>; keep deployment credentials as
+      environment secrets (or an OIDC subject bound to the environment), not repository secrets.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

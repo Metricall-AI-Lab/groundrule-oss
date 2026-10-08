@@ -1,0 +1,59 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: K8S-006
+  title: Set resource requests for every container
+  type: requirement
+  category: reliability
+spec:
+  severity: warning
+  intent: >
+    Without requests the scheduler cannot place pods sensibly and they are the first to be
+    evicted; without a memory limit one leaking pod can starve its whole node.
+  requirement: >
+    Every container must set resources.requests for cpu and memory and a resources.limits
+    memory value. CPU limits are optional; they often cause throttling and should be a
+    deliberate choice.
+  remediation: >
+    Add resources.requests (cpu, memory) and resources.limits.memory to each container,
+    sized from observed usage (for example from metrics or a VPA recommendation).
+  examples:
+    approved:
+      - code: |
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+        language: yaml
+  agent:
+    summary: >
+      Give every Kubernetes container resources.requests for cpu and memory and a memory
+      limit; add CPU limits only deliberately.
+  checks:
+    - evaluator: regex
+      # Flags each containers: list in a file that has no requests: block at all.
+      # Skips Helm templates ({{ ... }}), where resources usually come from values.
+      pattern: '^[ \t]*containers:[ \t]*\r?$(?![\s\S]*^[ \t]*requests:)(?<!^[ \t]*requests:[\s\S]*)(?<!\{\{[\s\S]*)(?![\s\S]*\{\{)(?:(?<=^kind:[\s\S]*)|(?=[\s\S]*^kind:))'
+      message: Containers in this manifest set no resource requests.
+      include:
+        - "**/k8s/**/*.y*ml"
+        - "**/kubernetes/**/*.y*ml"
+        - "**/manifests/**/*.y*ml"
+        - "**/deploy/**/*.y*ml"
+        - "**/deployment/**/*.y*ml"
+        - "**/deployments/**/*.y*ml"
+        - "**/kustomize/**/*.y*ml"
+        - "**/charts/**/templates/**/*.y*ml"
+        - "**/helm/**/templates/**/*.y*ml"
+      exclude: ["**/.github/**", "**/*compose*.y*ml", "**/kustomization.y*ml", "**/patches/**", "**/*patch*.y*ml"]
+  references:
+    - https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Namespaces whose LimitRange supplies default requests, and resources added by Kustomize patches in another file. Exclude those paths or grant an exception.
+      - The check works per file and only looks for a requests block, so it does not verify every container or the memory limit.
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,45 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-008
+  title: Use the exec form for CMD and ENTRYPOINT
+  type: requirement
+  category: reliability
+spec:
+  severity: advisory
+  intent: >
+    The shell form runs the process under /bin/sh -c, which does not forward SIGTERM, so
+    the app is killed after the stop timeout instead of shutting down gracefully.
+  requirement: >
+    Write CMD and ENTRYPOINT in exec (JSON array) form. If you need shell features, use an
+    entrypoint script that ends with exec "$@" or exec <command>.
+  remediation: >
+    Rewrite CMD node server.js as CMD ["node", "server.js"]. For variable expansion, move
+    the logic into an entrypoint script that finishes with exec.
+  examples:
+    approved:
+      - 'CMD ["node", "server.js"]'
+      - 'ENTRYPOINT ["/docker-entrypoint.sh"]'
+    forbidden:
+      - "CMD node server.js"
+      - "ENTRYPOINT gunicorn app:app"
+  agent:
+    summary: >
+      Write Dockerfile CMD and ENTRYPOINT in exec form (JSON array) so the process receives
+      signals; use an entrypoint script ending in exec for shell logic.
+  checks:
+    - evaluator: regex
+      # Skips continuation lines, e.g. the CMD of a multi-line HEALTHCHECK.
+      pattern: '^[ \t]*(?<!\\[ \t]*\r?\n[ \t]*)(?:CMD|ENTRYPOINT)[ \t]+(?!\[|exec\b)\S'
+      flags: i
+      message: Shell-form CMD/ENTRYPOINT does not forward signals. Use the JSON exec form.
+      include: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+      exclude: ["**/*.dockerignore", "**/*.md"]
+  references:
+    - https://docs.docker.com/build/building/best-practices/
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Images that run a one-off job which never needs graceful shutdown. Grant an exception. (Shell-form commands that start with exec are not flagged.)
+  rollout:
+    recommendedStage: advise

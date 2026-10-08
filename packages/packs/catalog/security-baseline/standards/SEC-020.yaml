@@ -1,0 +1,33 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-020
+  title: Validate destinations before making server-side requests to user-supplied URLs
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: Fetching a URL an attacker controls lets them reach internal services and cloud metadata endpoints from your server.
+  requirement: >
+    When the server fetches a URL that comes from input (webhooks, link previews, imports,
+    image proxies), allow only http(s), validate the host against an allow list where possible,
+    resolve the hostname and reject private, loopback, link-local (including 169.254.169.254),
+    and other internal addresses, connect to the validated IP, and do not follow redirects
+    without validating each hop.
+  examples:
+    approved:
+      - "Fetch webhook URLs through an egress proxy or helper that blocks internal address ranges and re-checks redirects."
+    forbidden:
+      - { code: "const res = await fetch(req.body.url);", language: typescript }
+  agent:
+    summary: >
+      Before fetching any URL that comes from input, allow only http(s), reject hosts that resolve
+      to private, loopback, or link-local addresses, and validate every redirect.
+  references:
+    - { id: CWE-918, title: "Server-Side Request Forgery (SSRF)" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V12.6.1] }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

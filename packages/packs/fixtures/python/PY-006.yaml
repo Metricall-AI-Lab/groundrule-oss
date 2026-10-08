@@ -1,0 +1,29 @@
+standard: PY-006
+cases:
+  - name: shell=True on one and multiple lines, and os.system
+    expect: violation
+    count: 3
+    files:
+      app/convert.py: |
+        import os
+        import subprocess
+
+        def convert(src, dst):
+            subprocess.run(f"convert {src} {dst}", shell=True)
+            subprocess.check_output(
+                "ls " + src,
+                shell=True,
+            )
+            os.system("rm -rf " + dst)
+  - name: argument lists, shell=False, comments, and tests
+    expect: clean
+    files:
+      app/convert.py: |
+        import subprocess
+
+        def convert(src, dst):
+            # Never pass shell=True here.
+            subprocess.run(["convert", src, dst], check=True, shell=False)
+            use_shell = True
+            self.filesystem(dst)
+      tests/test_convert.py: "subprocess.run('echo ok', shell=True)\n"

@@ -1,0 +1,41 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-002
+  title: No mutable default arguments
+  type: prohibition
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [python]
+  intent: >
+    Default values are evaluated once, so a mutable default is shared across every call
+    and leaks state between callers.
+  requirement: >
+    Do not use a list, dict, or set literal (or list(), dict(), set()) as a parameter
+    default. Default to None and create the object inside the function.
+  remediation: >
+    Change the default to None and initialise it in the body:
+    `def add(item, items=None): items = [] if items is None else items`.
+  examples:
+    approved:
+      - "def add(item, items: list[str] | None = None):\n    items = [] if items is None else items"
+    forbidden:
+      - "def add(item, items=[]):"
+      - "def build(options: dict = {}):"
+  checks:
+    - evaluator: regex
+      # Scans the parameter list (up to the first ")"), across lines.
+      pattern: '^[ \t]*(?:async[ \t]+)?def[ \t]+\w+[ \t]*\([^)]*?\b\w+[ \t]*(?::[^=)\n]*)?=[ \t]*(?:\[[ \t]*\]|\{[ \t]*\}|(?:list|dict|set)\(\))'
+      include: ["**/*.py"]
+      message: Mutable default argument is shared across calls
+  references:
+    - { url: "https://docs.python.org/3/reference/compound_stmts.html#function-definitions", title: "Python reference: function definitions" }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Functions that deliberately use a mutable default as a cache. Use functools.cache or an explicit module-level object instead.
+    # Defaults after a call with parentheses (e.g. def f(a=g(), b=[])) are not detected.
+  rollout:
+    recommendedStage: enforce

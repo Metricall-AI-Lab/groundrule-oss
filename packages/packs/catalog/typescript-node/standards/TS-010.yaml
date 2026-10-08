@@ -1,0 +1,33 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-010
+  title: Only entry points call process.exit
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+  intent: process.exit in library or request code kills in-flight work, skips cleanup, and truncates buffered logs.
+  requirement: >
+    Library modules, services, and request handlers never call process.exit. They throw or
+    return an error, and the entry point (CLI main, server bootstrap) decides the exit code.
+    Entry points prefer setting process.exitCode and letting the process drain over calling
+    process.exit directly.
+  examples:
+    approved:
+      - "if (!config.ok) throw new ConfigError(config.issues);"
+      - "main().catch((err) => { logger.fatal({ err }); process.exitCode = 1; });"
+    forbidden:
+      - "function loadConfig() { if (!ok) { console.error('bad config'); process.exit(1); } }"
+  agent:
+    summary: >
+      Never call process.exit outside the program's entry point. Throw an error instead and let
+      main() set process.exitCode after cleanup.
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

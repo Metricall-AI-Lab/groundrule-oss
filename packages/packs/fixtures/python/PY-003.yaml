@@ -1,0 +1,28 @@
+standard: PY-003
+cases:
+  - name: print in a service module
+    expect: violation
+    count: 2
+    files:
+      app/billing.py: |
+        def charge(order):
+            print("charging", order.id)
+            if order.total > 100: print(order)
+  - name: logging, pprint, method named print, comments, tests, and CLIs
+    expect: clean
+    files:
+      app/billing.py: |
+        import logging
+        from pprint import pformat
+        logger = logging.getLogger(__name__)
+
+        def charge(order, printer):
+            # print(order) was here for debugging
+            logger.info("charging %s", order.id)
+            printer.print(order.receipt)
+            logger.debug(pformat(order))
+            blueprint(order)
+      app/__main__.py: "print('usage: app <command>')\n"
+      app/cli.py: "print(result)\n"
+      scripts/backfill.py: "print('done')\n"
+      tests/test_billing.py: "print(charge(order))\n"

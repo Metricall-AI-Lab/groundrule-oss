@@ -1,0 +1,48 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-010
+  title: No merge conflict markers or merge leftovers
+  type: repository
+  category: agents
+spec:
+  severity: blocker
+  intent: >
+    Conflict markers break builds or, in config and data files, ship silently; .orig and .rej
+    files from merges and patches are clutter that hides what was actually resolved.
+  requirement: >
+    Resolve every merge conflict completely before committing. No file may contain conflict
+    markers (<<<<<<<, |||||||, >>>>>>>), and leftovers from merges and patches (*.orig, *.rej,
+    and git mergetool's *_BASE_*, *_LOCAL_*, *_REMOTE_*, *_BACKUP_* files) must not be committed.
+  remediation: >
+    Finish resolving the conflict, delete the marker lines and leftover files, rerun the tests,
+    and set mergetool.keepBackup false to stop git from creating .orig files.
+  agent:
+    summary: >
+      After a merge, rebase, or applied patch, search for <<<<<<< and >>>>>>> markers and delete any
+      .orig, .rej, or *_BASE_/_LOCAL_/_REMOTE_/_BACKUP_ files before committing.
+  checks:
+    - evaluator: regex
+      pattern: '^(?:<{7}|>{7}|\|{7})(?:[ \t][^\n]*)?$'
+      exclude: ["**/*.md", "**/*.mdx", "**/*.rst", "**/*.adoc", "**/*.txt", "**/*.diff", "**/*.patch", "**/fixtures/**", "**/__fixtures__/**", "**/testdata/**", "**/__snapshots__/**"]
+      maxMatchesPerFile: 5
+      message: Unresolved merge conflict marker
+    - evaluator: files
+      forbid:
+        - "**/*.orig"
+        - "**/*.rej"
+        - "**/*_BASE_[0-9]*"
+        - "**/*_LOCAL_[0-9]*"
+        - "**/*_REMOTE_[0-9]*"
+        - "**/*_BACKUP_[0-9]*"
+      allow:
+        - "**/fixtures/**"
+        - "**/__fixtures__/**"
+        - "**/testdata/**"
+      message: Merge or patch leftover committed
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Tools that parse conflict markers or patches and keep samples outside fixtures/ or testdata/. Exclude those paths with scope.exclude.
+  rollout:
+    recommendedStage: enforce

@@ -1,0 +1,23 @@
+standard: SEC-005
+cases:
+  - name: Node project without a lockfile
+    expect: violation
+    files:
+      package.json: '{ "name": "app", "dependencies": { "zod": "^4.0.0" } }'
+      src/index.ts: "export {};\n"
+  - name: Python project without a lockfile
+    expect: violation
+    files:
+      pyproject.toml: "[project]\nname = \"app\"\n"
+      app/main.py: "print('hi')\n"
+  - name: lockfiles committed
+    expect: clean
+    files:
+      package.json: '{ "name": "app" }'
+      pnpm-lock.yaml: "lockfileVersion: '9.0'\n"
+      src/index.ts: "export {};\n"
+  - name: repositories without those languages are not checked
+    expect: clean
+    files:
+      README.md: "# Docs only\n"
+      docs/guide.md: "Hello\n"

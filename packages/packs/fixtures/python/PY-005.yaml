@@ -1,0 +1,42 @@
+standard: PY-005
+cases:
+  - name: full, unsafe, and default loaders
+    expect: violation
+    count: 4
+    files:
+      app/config.py: |
+        import yaml
+
+        def load(stream):
+            a = yaml.load(stream, Loader=yaml.FullLoader)
+            b = yaml.unsafe_load(stream)
+            c = yaml.full_load(stream)
+            d = yaml.load(stream)
+            return a, b, c, d
+  - name: safe_load, SafeLoader on the same or a later line, dumps, and comments
+    expect: clean
+    files:
+      app/config.py: |
+        import yaml
+
+        def load(path, stream):
+            a = yaml.safe_load(stream)
+            b = yaml.load(stream, Loader=yaml.CSafeLoader)
+            c = yaml.load(
+                stream,
+                Loader=yaml.SafeLoader,
+            )
+            d = yaml.load(open(path), yaml.SafeLoader)
+            # Do not use yaml.load(stream) without a Loader.
+            yaml.safe_dump(a)
+            return list(yaml.safe_load_all(stream))
+  - name: ruamel.yaml, which is safe by default
+    expect: clean
+    files:
+      app/settings_loader.py: |
+        from ruamel.yaml import YAML
+
+        yaml = YAML(typ="safe")
+
+        def load(stream):
+            return yaml.load(stream)

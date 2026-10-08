@@ -1,0 +1,39 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-009
+  title: Keep secrets out of tfvars and mark secret variables sensitive
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  intent: >
+    .tfvars files are usually committed and terraform output prints unmarked values, so a
+    secret passed as an ordinary variable leaks into git, CI logs, and plan output.
+  requirement: >
+    Do not put passwords, tokens, or keys in .tfvars files. Pass secrets through TF_VAR_
+    environment variables from CI secrets, or read them from a secret manager data source.
+    Declare every variable or output that carries a secret with sensitive = true. Prefer
+    letting the platform generate and store credentials (e.g. manage_master_user_password
+    for RDS) over passing them through Terraform at all.
+  examples:
+    approved:
+      - code: |
+          variable "db_password" {
+            type      = string
+            sensitive = true
+          }
+        language: terraform
+    forbidden:
+      - 'prod.tfvars containing db_password = "S3cret!"'
+  agent:
+    summary: >
+      Never put secrets in .tfvars files. Read them from a secret manager or TF_VAR_
+      environment variables, and declare secret variables and outputs with sensitive = true.
+  references:
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+    - { id: CWE-532, title: Insertion of Sensitive Information into Log File }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

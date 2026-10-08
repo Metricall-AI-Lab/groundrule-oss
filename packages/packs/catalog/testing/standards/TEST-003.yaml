@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-003
+  title: Unit tests do not call real external services
+  type: agent-instruction
+  category: testing
+spec:
+  severity: warning
+  intent: >
+    Tests that reach the internet are slow and flaky, fail when a vendor is down, can hit
+    production or paid APIs, and may leak credentials from the developer's environment.
+  requirement: >
+    Unit tests must not make real network calls to third-party or shared services. Stub HTTP at
+    the boundary with the project's existing tool (for example msw, nock, responses, respx,
+    httptest, WireMock) or inject a fake client. Integration tests may use local dependencies
+    started for the test run (containers, emulators) but never shared or production endpoints.
+    Never read real credentials in tests.
+  agent:
+    summary: >
+      In unit tests, stub outbound HTTP with the mocking tool the project already uses (msw, nock,
+      responses, httptest, WireMock...) or inject a fake client; never call real third-party,
+      staging, or production endpoints, and never depend on real credentials.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

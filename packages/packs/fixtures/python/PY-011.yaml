@@ -1,0 +1,44 @@
+standard: PY-011
+cases:
+  - name: Flask app.run with debug=True
+    expect: violation
+    files:
+      requirements.txt: "flask==3.0.3\n"
+      app/main.py: |
+        from flask import Flask
+        app = Flask(__name__)
+
+        if __name__ == "__main__":
+            app.run(host="0.0.0.0", debug=True)
+  - name: Django settings with DEBUG = True
+    expect: violation
+    files:
+      requirements.txt: "Django==5.0.6\n"
+      project/settings.py: |
+        DEBUG = True
+        ALLOWED_HOSTS = ["*"]
+  - name: debug from the environment, dev settings, comments, and other run calls
+    expect: clean
+    files:
+      requirements.txt: "Django==5.0.6\nflask==3.0.3\n"
+      project/settings/base.py: |
+        import os
+        DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
+        # DEBUG = True
+        TEMPLATE_DEBUG = DEBUG
+      project/settings/dev.py: "DEBUG = True\n"
+      project/settings/local.py: "DEBUG = True\n"
+      app/main.py: |
+        import os
+        from flask import Flask
+        app = Flask(__name__)
+
+        if __name__ == "__main__":
+            app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
+            # app.run(debug=True)
+            DEBUG = True
+  - name: debug=True in a repository that uses neither framework
+    expect: clean
+    files:
+      requirements.txt: "requests==2.32.3\n"
+      app/main.py: "server.run(debug=True)\n"

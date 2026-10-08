@@ -1,0 +1,61 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-011
+  title: Never enable Django or Flask debug mode in deployable code
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [python]
+    frameworks: [django, flask]
+  intent: >
+    Debug mode exposes stack traces, settings, and (in Flask's Werkzeug debugger) an
+    interactive console that runs arbitrary code.
+  requirement: >
+    Do not hardcode DEBUG = True in Django settings that ship, and do not call app.run(debug=True)
+    in Flask code. Read debug flags from the environment with a False default, and keep
+    development overrides in dev or local settings files.
+  remediation: >
+    Django: `DEBUG = os.environ.get("DJANGO_DEBUG") == "1"` and put DEBUG = True only in a
+    dev/local settings module. Flask: start the dev server with `flask run --debug` and never
+    pass debug=True in code.
+  examples:
+    approved:
+      - 'DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"'
+      - "flask --app app run --debug"
+    forbidden:
+      - "DEBUG = True"
+      - "app.run(host=\"0.0.0.0\", debug=True)"
+  checks:
+    - evaluator: regex
+      # Flask (and Flask-SocketIO) .run(..., debug=True).
+      pattern: '^(?![ \t]*#)[^\n]*?\.run[ \t]*\([^\n]*\bdebug[ \t]*=[ \t]*True\b'
+      include: ["**/*.py"]
+      exclude: ["**/test_*.py", "**/*_test.py", "**/tests/**", "**/test/**", "**/conftest.py", "**/fixtures/**"]
+      message: Flask app started with debug=True
+    - evaluator: regex
+      # Django settings modules, excluding dev, local, and test settings.
+      pattern: '^[ \t]*DEBUG[ \t]*=[ \t]*True\b'
+      include: ["**/settings.py", "**/settings/**/*.py"]
+      exclude:
+        - "**/settings/dev*.py"
+        - "**/settings/local*.py"
+        - "**/settings/test*.py"
+        - "**/settings/ci*.py"
+        - "**/tests/**"
+        - "**/test/**"
+      message: Django DEBUG hardcoded to True in settings
+  references:
+    - { id: CWE-489, title: Active Debug Code }
+    - { url: "https://docs.djangoproject.com/en/stable/ref/settings/#debug", title: "Django settings: DEBUG" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V14.3.2] }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - A single settings.py used only for local development, with production configured elsewhere. Record an exception or move it to a dev settings module.
+      - "`if __name__ == \"__main__\": app.run(debug=True)` used only for local runs. Prefer flask run --debug."
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,31 @@
+standard: JAVA-003
+cases:
+  - name: controller importing a repository package
+    expect: violation
+    files:
+      src/main/java/acme/web/ClaimController.java: |
+        package acme.web;
+        import acme.repository.ClaimRepository;
+        @RestController
+        class ClaimController {}
+  - name: controller with a repository field (package by feature)
+    expect: violation
+    files:
+      src/main/java/acme/claims/ClaimController.java: |
+        @RestController
+        class ClaimController {
+          private final ClaimRepository claims;
+        }
+  - name: controller using a service, and services using repositories
+    expect: clean
+    files:
+      src/main/java/acme/web/ClaimController.java: |
+        package acme.web;
+        import acme.service.ClaimService;
+        @RestController
+        class ClaimController {
+          private final ClaimService claims;
+        }
+      src/main/java/acme/service/ClaimService.java: |
+        import acme.repository.ClaimRepository;
+        class ClaimService { private final ClaimRepository claims; }

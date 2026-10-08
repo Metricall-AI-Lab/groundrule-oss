@@ -1,0 +1,42 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-004
+  title: Pin module sources to a version
+  type: requirement
+  category: supply-chain
+spec:
+  severity: warning
+  scope:
+    languages: [terraform]
+  intent: >
+    A module sourced from a Git branch runs whatever is on that branch at the next init,
+    so an upstream push changes your infrastructure without review.
+  requirement: >
+    Pin Git module sources with ?ref= to a release tag or, preferably for third-party
+    modules, a full commit SHA. Give registry modules a version argument. Local paths
+    (./modules/...) need no pin.
+  remediation: >
+    Add ?ref=<tag or commit SHA> to the Git source (e.g.
+    git::https://github.com/acme/tf-vpc.git?ref=v2.3.1), or add version = "~> 2.3" to a
+    registry module.
+  examples:
+    approved:
+      - 'source = "git::https://github.com/acme/tf-vpc.git?ref=v2.3.1"'
+      - 'source = "terraform-aws-modules/vpc/aws" with version = "~> 5.8"'
+    forbidden:
+      - 'source = "git::https://github.com/acme/tf-vpc.git"'
+      - 'source = "github.com/acme/tf-vpc"'
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*source[ \t]*=[ \t]*"(?:git::|git@|github\.com/|bitbucket\.org/|hg::)(?![^"\n]*[?&]ref=)[^"\n]*"'
+      include: ["**/*.tf"]
+      message: Git module source is not pinned with ?ref=
+  references:
+    - { id: CWE-829, title: Inclusion of Functionality from Untrusted Control Sphere }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - The check does not verify that ?ref= points to a tag or SHA rather than a branch, and does not check registry modules for a version argument.
+  rollout:
+    recommendedStage: enforce

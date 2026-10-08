@@ -1,0 +1,62 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: K8S-001
+  title: No privileged containers
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: >
+    A privileged container has every capability and full access to the host's devices, so
+    a compromise of the container is a compromise of the node.
+  requirement: >
+    Never set securityContext.privileged: true. If a workload needs a specific kernel
+    capability, add only that capability.
+  remediation: >
+    Remove privileged: true. Add the specific capability the workload needs under
+    securityContext.capabilities.add (e.g. NET_BIND_SERVICE), or move the work to a
+    node-level component owned by the platform team.
+  examples:
+    approved:
+      - code: |
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["NET_BIND_SERVICE"]
+        language: yaml
+    forbidden:
+      - code: |
+          securityContext:
+            privileged: true
+        language: yaml
+  agent:
+    summary: >
+      Never set privileged: true in Kubernetes manifests; add only the specific capability
+      a container needs.
+  checks:
+    - evaluator: regex
+      # Only in files that declare a Kubernetes kind, so Compose and CI files are ignored.
+      pattern: '(?:^[ \t]*|[{,][ \t]*)privileged:[ \t]*["'']?true\b(?:(?<=^kind:[\s\S]*)|(?=[\s\S]*^kind:))'
+      message: Privileged container. Remove privileged true and add only the capabilities needed.
+      include:
+        - "**/k8s/**/*.y*ml"
+        - "**/kubernetes/**/*.y*ml"
+        - "**/manifests/**/*.y*ml"
+        - "**/deploy/**/*.y*ml"
+        - "**/deployment/**/*.y*ml"
+        - "**/deployments/**/*.y*ml"
+        - "**/kustomize/**/*.y*ml"
+        - "**/charts/**/templates/**/*.y*ml"
+        - "**/helm/**/templates/**/*.y*ml"
+      exclude: ["**/.github/**", "**/*compose*.y*ml"]
+  references:
+    - { id: CWE-250, title: Execution with Unnecessary Privileges }
+    - https://kubernetes.io/docs/concepts/security/pod-security-standards/
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Node-level system components (CNI and CSI drivers, some monitoring agents) that genuinely need privileged mode. Grant an exception for those manifests.
+  rollout:
+    recommendedStage: enforce

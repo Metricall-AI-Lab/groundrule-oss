@@ -1,0 +1,39 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-004
+  title: Pass context.Context as the first parameter
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [go]
+  intent: Cancellation, deadlines, and request-scoped values only work if the caller's context reaches every blocking call.
+  requirement: >
+    Functions that do I/O, block, or call functions that take a context accept
+    ctx context.Context as their first parameter and pass it on. Do not store a Context in
+    a struct, do not pass nil (use context.TODO() while migrating), and do not replace the
+    caller's context with context.Background() outside main, init, and tests. Use context
+    values only for request-scoped data, never for optional parameters.
+  examples:
+    approved:
+      - code: "func (s *Store) GetOrder(ctx context.Context, id string) (*Order, error)"
+        language: go
+    forbidden:
+      - code: "func (s *Store) GetOrder(id string) (*Order, error) { return s.get(context.Background(), id) }"
+        language: go
+      - code: "type Worker struct { ctx context.Context }"
+        language: go
+  agent:
+    summary: >
+      Functions that do I/O or block take ctx context.Context as the first parameter and pass
+      it to everything they call. Don't store contexts in structs, don't pass nil, and don't
+      swap in context.Background() outside main, init, and tests.
+  references:
+    - https://pkg.go.dev/context
+    - https://go.dev/wiki/CodeReviewComments#contexts
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

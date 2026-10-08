@@ -1,0 +1,41 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-002
+  title: Use stable IDs, not array indexes, as list keys
+  type: guidance
+  category: reliability
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: Index keys make React reuse the wrong component when items are inserted, removed, or reordered, which mixes up input values and component state.
+  requirement: >
+    Key list items by a stable, unique identifier from the data (id, slug, a natural key).
+    An index key is acceptable only for static lists that are never reordered, filtered, or
+    edited and whose items have no state.
+  remediation: >
+    Use a stable identifier from the item: key={item.id}. If the data has none, assign one when
+    the data is created or loaded, not during render.
+  examples:
+    approved: ["{todos.map((todo) => <TodoItem key={todo.id} todo={todo} />)}"]
+    forbidden: ["{todos.map((todo, index) => <TodoItem key={index} todo={todo} />)}"]
+  checks:
+    - evaluator: regex
+      pattern: '(?<![\w-])key\s*=\s*\{\s*(?:index|idx|i|ix|itemIndex|rowIndex)\s*\}'
+      include: ["**/*.jsx", "**/*.tsx", "**/*.js"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/*.stories.*", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**"]
+      message: Array index used as a React key
+  references:
+    - https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key
+  applicability:
+    frameworks: [react]
+    files: ["**/package.json"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Static lists that never change order and hold no state (e.g. skeleton placeholders). Record an exception or use a content-based key.
+      - A loop variable named i or index that holds an ID rather than a position.
+  rollout:
+    recommendedStage: advise

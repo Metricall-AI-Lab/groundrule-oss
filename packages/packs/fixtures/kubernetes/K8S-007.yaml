@@ -1,0 +1,62 @@
+standard: K8S-007
+cases:
+  - name: untagged and latest images
+    expect: violation
+    count: 3
+    files:
+      k8s/api.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              initContainers:
+                - image: busybox
+                  name: wait
+              containers:
+                - name: api
+                  image: "ghcr.io/acme/api:latest"
+                - name: proxy
+                  image: registry.example.com:5000/envoy # sidecar
+  - name: tags, digests, Helm templating, kustomize, and non-Kubernetes YAML
+    expect: clean
+    files:
+      k8s/api.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  image: ghcr.io/acme/api:1.8.2
+                  imagePullPolicy: IfNotPresent
+                - name: proxy
+                  image: registry.example.com:5000/envoy:v1.31.0
+                - name: cache
+                  image: redis@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+                # - image: nginx
+      charts/api/templates/deployment.yaml: |
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api
+                  image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+                - name: sidecar
+                  image: {{.Values.sidecarImage}}
+      k8s/kustomization.yaml: |
+        apiVersion: kustomize.config.k8s.io/v1beta1
+        kind: Kustomization
+        images:
+          - name: api
+            newTag: 1.8.2
+      deploy/docker-compose.yml: |
+        services:
+          db:
+            image: postgres
+      deploy/pipeline.yml: |
+        steps:
+          - image: node

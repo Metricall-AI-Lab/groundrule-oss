@@ -1,0 +1,31 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-014
+  title: Declare project metadata and tool settings in pyproject.toml
+  type: repository
+  category: dependencies
+spec:
+  severity: advisory
+  scope:
+    languages: [python]
+  intent: >
+    pyproject.toml is the standard place for build configuration, project metadata,
+    dependencies, and tool settings, so tools and people find everything in one file.
+  requirement: >
+    Keep the build system, project metadata, direct dependencies, and tool configuration
+    (ruff, pytest, mypy, coverage) in pyproject.toml. Do not add new setup.py, setup.cfg, or
+    standalone tool config files when pyproject.toml can hold the same settings, and do not
+    edit lockfiles by hand.
+  agent:
+    summary: >
+      Put project metadata, dependencies, and tool configuration in pyproject.toml; do not
+      create setup.py, setup.cfg, or separate tool config files when pyproject.toml can hold
+      them. Add dependencies with the project's package manager, not by editing lockfiles.
+  references:
+    - { url: "https://peps.python.org/pep-0621/", title: "PEP 621: Storing project metadata in pyproject.toml" }
+    - { url: "https://peps.python.org/pep-0518/", title: "PEP 518: Specifying Minimum Build System Requirements" }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

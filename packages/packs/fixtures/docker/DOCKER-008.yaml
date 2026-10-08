@@ -1,0 +1,22 @@
+standard: DOCKER-008
+cases:
+  - name: shell-form CMD and ENTRYPOINT
+    expect: violation
+    count: 2
+    files:
+      Dockerfile: |
+        FROM python:3.12-slim
+        ENTRYPOINT gunicorn app:app
+        CMD node server.js
+  - name: exec form, shell form with exec, multi-line HEALTHCHECK, and comments
+    expect: clean
+    files:
+      Dockerfile: |
+        FROM python:3.12-slim
+        # CMD python app.py
+        HEALTHCHECK --interval=30s --timeout=3s \
+          CMD curl -f http://localhost:8080/health || exit 1
+        HEALTHCHECK CMD curl -f http://localhost/ || exit 1
+        ENTRYPOINT ["/docker-entrypoint.sh"]
+        CMD exec gunicorn app:app
+        CMD ["gunicorn", "app:app"]

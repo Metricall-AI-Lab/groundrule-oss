@@ -1,0 +1,44 @@
+standard: GO-009
+cases:
+  - name: math/rand in auth and token code
+    expect: violation
+    count: 2
+    files:
+      internal/auth/reset.go: |
+        package auth
+
+        import (
+        	"fmt"
+        	"math/rand"
+        )
+
+        func ResetCode() string { return fmt.Sprintf("%06d", rand.Intn(1000000)) }
+      pkg/api/token.go: |
+        package api
+
+        import mrand "math/rand/v2"
+
+        func NewToken() uint64 { return mrand.Uint64() }
+  - name: crypto/rand in auth, math/rand elsewhere and in tests
+    expect: clean
+    files:
+      internal/auth/reset.go: |
+        package auth
+
+        import (
+        	"crypto/rand"
+        	"encoding/base64"
+        )
+
+        // Never use "math/rand" here.
+        func Token() string { return rand.Text() }
+      internal/retry/backoff.go: |
+        package retry
+
+        import "math/rand/v2"
+
+        func jitter(d time.Duration) time.Duration { return d + rand.N(d/2) }
+      internal/auth/reset_test.go: |
+        package auth
+
+        import "math/rand"

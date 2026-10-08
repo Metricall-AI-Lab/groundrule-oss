@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-008
+  title: No wildcard imports
+  type: prohibition
+  category: code-quality
+spec:
+  severity: advisory
+  scope:
+    languages: [python]
+  intent: >
+    `from module import *` hides where names come from, silently shadows existing names,
+    and defeats linters and static analysis.
+  requirement: >
+    Import the names you use explicitly, or import the module. Package __init__.py files
+    re-exporting a public API and Django-style settings modules are exempt.
+  remediation: >
+    Replace the wildcard with the explicit names used (`from module import a, b`) or with
+    `import module`.
+  examples:
+    approved: ["from app.models import Order, Customer"]
+    forbidden: ["from app.models import *"]
+  checks:
+    - evaluator: regex
+      pattern: '^[ \t]*from[ \t]+[\w.]+[ \t]+import[ \t]+\*'
+      include: ["**/*.py"]
+      exclude: ["**/__init__.py", "**/settings.py", "**/settings/**", "**/settings_*.py"]
+      message: Wildcard import; import names explicitly
+  references:
+    - { url: "https://peps.python.org/pep-0008/#imports", title: "PEP 8: Imports" }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Compatibility shims that re-export another module outside __init__.py. Record an exception.
+  rollout:
+    recommendedStage: enforce

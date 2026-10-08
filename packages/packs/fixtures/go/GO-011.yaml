@@ -1,0 +1,39 @@
+standard: GO-011
+cases:
+  - name: unmaintained jwt-go and satori uuid
+    expect: violation
+    count: 3
+    files:
+      go.mod: |
+        module example.com/api
+
+        go 1.22
+
+        require (
+        	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+        	github.com/satori/go.uuid v1.2.0
+        )
+
+        require github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1 // indirect
+      main.go: |
+        package main
+
+        func main() {}
+  - name: maintained successors and forks
+    expect: clean
+    files:
+      go.mod: |
+        module example.com/api
+
+        go 1.22
+
+        require (
+        	github.com/golang-jwt/jwt/v5 v5.2.1
+        	github.com/google/uuid v1.6.0
+        	github.com/gofrs/uuid v4.4.0+incompatible
+        )
+        // Replaced github.com/dgrijalva/jwt-go v3.2.0 with golang-jwt.
+      main.go: |
+        package main
+
+        func main() {}

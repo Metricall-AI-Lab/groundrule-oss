@@ -1,0 +1,25 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-003
+  title: Keep changes scoped to the task
+  type: agent-instruction
+  category: agents
+spec:
+  severity: warning
+  intent: >
+    Unrelated refactors, renames, and reformatting bury the real change, make review slow and
+    error-prone, and cause merge conflicts for everyone else.
+  requirement: >
+    Change only what the task needs. Do not refactor, rename, reorder, reformat, or upgrade code
+    you were not asked to touch, and do not rewrite working code in your preferred style. If you
+    notice an unrelated problem, mention it in your summary instead of fixing it in the same change.
+  agent:
+    summary: >
+      Touch only the code the task requires: no drive-by refactors, renames, reformatting of
+      untouched lines, or dependency upgrades. List unrelated problems you noticed in your summary
+      instead of fixing them.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

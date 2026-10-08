@@ -1,0 +1,49 @@
+standard: TEST-001
+cases:
+  - name: it.only, describe.only, and Playwright test.describe.only
+    expect: violation
+    count: 3
+    files:
+      src/cart.test.ts: |
+        describe.only("Cart", () => {
+          it.only("adds an item", () => {
+            expect(cart.add(item).count).toBe(1);
+          });
+        });
+      e2e/checkout.spec.ts: |
+        test.describe.only("checkout", () => {});
+  - name: Jasmine fit/fdescribe, test.only.each, and RSpec fit
+    expect: violation
+    count: 4
+    files:
+      spec/cart.spec.js: |
+        fdescribe("Cart", () => {
+          fit("adds an item", () => {});
+        });
+      src/__tests__/price.js: |
+        test.only.each([[1, 2]])("doubles %i", (a, b) => {});
+      spec/models/cart_spec.rb: |
+        RSpec.describe Cart do
+          fit "adds an item" do
+          end
+        end
+  - name: the word only in application code, comments, strings, and model.fit
+    expect: clean
+    files:
+      src/permissions.ts: |
+        export const only = (roles) => (user) => roles.includes(user.role);
+        router.get("/admin", only(["admin"]), handler);
+        model.fit(features, labels);
+      src/cart.test.ts: |
+        // Use it.only("...") locally, never commit it.
+        it("allows admin only access", () => {
+          expect(policy.onlyIf(isAdmin)).toBe(true);
+          expect(ruleTester.run("no-focus", rule, { invalid: ["it.only('x', fn)", 'describe.only("y")'] }));
+          const fit = scale.fit(box);
+          expect(model.fit(data)).toBeDefined();
+        });
+      tests/test_model.py: |
+        # fit("x") is the sklearn API
+        model.fit(X, y)
+      docs/testing.md: |
+        Run a single test with `it.only(...)` locally.

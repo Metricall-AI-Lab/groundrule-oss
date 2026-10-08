@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-010
+  title: Mock at the system boundary and assert on outcomes
+  type: guidance
+  category: testing
+spec:
+  severity: advisory
+  intent: >
+    Tests that mock the code's own collaborators and assert which internal methods were called
+    break on every refactor and still pass when the behavior is wrong.
+  requirement: >
+    Replace only what the test cannot control: network services, the clock, randomness, and
+    slow or external infrastructure. Use real implementations (or in-memory fakes) of your own
+    classes and modules. Assert on observable outcomes (return values, persisted state, emitted
+    events, responses) rather than on internal call sequences, unless the call itself is the
+    behavior (e.g. "sends exactly one email").
+  agent:
+    summary: >
+      Mock only external boundaries (network, clock, randomness, external infrastructure) and use
+      real code or in-memory fakes for the project's own modules. Assert on results and state, not
+      on which internal functions were called.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

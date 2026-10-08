@@ -1,0 +1,44 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-004
+  title: Do not unpickle data you did not produce
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [python]
+  intent: >
+    Unpickling runs arbitrary code chosen by whoever wrote the bytes, so pickle on
+    untrusted input is remote code execution.
+  requirement: >
+    Never call pickle.load, pickle.loads, pickle.Unpickler (or cPickle, _pickle, dill
+    equivalents) on data that crosses a trust boundary: request bodies, uploads, message
+    queues, caches or object storage shared with other systems. Use JSON, MessagePack, or
+    a schema-based format for exchanged data.
+  remediation: >
+    Switch exchanged data to JSON or another data-only format validated by a schema. If the
+    pickle is produced and consumed only by this process on trusted storage, record an
+    exception; consider signing it with hmac and verifying before loading.
+  examples:
+    approved: ["payload = Order.model_validate_json(body)"]
+    forbidden: ["obj = pickle.loads(request.body)"]
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*#)[^\n]*?(?<![\w.])(?:c?[pP]ickle|_pickle|dill)\.(?:loads?|Unpickler)[ \t]*\('
+      include: ["**/*.py"]
+      exclude: ["**/test_*.py", "**/*_test.py", "**/tests/**", "**/test/**", "**/conftest.py", "**/fixtures/**"]
+      message: Unpickling can execute arbitrary code; make sure the data is trusted
+  references:
+    - { id: CWE-502, title: Deserialization of Untrusted Data }
+    - { url: "https://docs.python.org/3/library/pickle.html", title: "pickle: security warning" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.5.3] }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Loading pickles the same application wrote to trusted local storage (e.g. a model or cache file). Record an exception.
+      - Imports aliased under another name (from pickle import loads) are not detected.
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,44 @@
+standard: GO-002
+cases:
+  - name: error formatted with %v
+    expect: violation
+    count: 2
+    files:
+      internal/config/load.go: |
+        package config
+
+        func Load(path string) (*Config, error) {
+        	b, err := os.ReadFile(path)
+        	if err != nil {
+        		return nil, fmt.Errorf("read config %s: %v", path, err)
+        	}
+        	if err := yaml.Unmarshal(b, &c); err != nil {
+        		return nil, fmt.Errorf("parse config: %v", err)
+        	}
+        	return &c, nil
+        }
+  - name: wrapped with %w, %v of non-error values, sentinel wrapping, tests and comments
+    expect: clean
+    files:
+      internal/config/load.go: |
+        package config
+
+        func Load(path string) (*Config, error) {
+        	b, err := os.ReadFile(path)
+        	if err != nil {
+        		return nil, fmt.Errorf("read config %s: %w", path, err)
+        	}
+        	if c.Port < 0 {
+        		return nil, fmt.Errorf("invalid port %v", c.Port)
+        	}
+        	if err := validate(c); err != nil {
+        		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
+        	}
+        	// Previously: fmt.Errorf("parse config: %v", err)
+        	log.Printf("loaded config: %v", err)
+        	return &c, nil
+        }
+      internal/config/load_test.go: |
+        package config
+
+        var errFake = fmt.Errorf("fake: %v", err)

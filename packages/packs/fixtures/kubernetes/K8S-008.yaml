@@ -1,0 +1,58 @@
+standard: K8S-008
+cases:
+  - name: Secret with stringData and Secret with data in a multi-document file
+    expect: violation
+    count: 2
+    files:
+      k8s/secrets.yaml: |
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: db
+        stringData:
+          password: s3cr3t
+        ---
+        apiVersion: v1
+        data:
+          token: c2VjcmV0
+        kind: Secret
+        metadata:
+          name: api
+  - name: SealedSecret, ExternalSecret, empty Secret, templated Secret, SOPS, and a ConfigMap
+    expect: clean
+    files:
+      k8s/sealed.yaml: |
+        apiVersion: bitnami.com/v1alpha1
+        kind: SealedSecret
+        metadata:
+          name: db
+        spec:
+          encryptedData:
+            password: AgBy3i4OJSWK+PiTySYZZA==
+      k8s/sa-token.yaml: |
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: build-robot
+          annotations:
+            kubernetes.io/service-account.name: build-robot
+        type: kubernetes.io/service-account-token
+        ---
+        apiVersion: v1
+        kind: ConfigMap
+        data:
+          LOG_LEVEL: info
+      k8s/sops.yaml: |
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: db
+        stringData:
+          password: ENC[AES256_GCM,data:Tr7o=,iv:abc=,tag:def=,type:str]
+      charts/api/templates/secret.yaml: |
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: {{ .Release.Name }}
+        data:
+          password: {{ .Values.password | b64enc }}

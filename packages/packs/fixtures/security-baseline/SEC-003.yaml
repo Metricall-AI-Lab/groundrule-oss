@@ -1,0 +1,19 @@
+standard: SEC-003
+cases:
+  - name: AWS access key ID in code
+    expect: violation
+    files:
+      src/s3.ts: 'const client = new S3({ accessKeyId: "AKIAIOSFOD⟨⟩NN7EXAMPLE" });'
+  - name: GitHub token in a script
+    expect: violation
+    files:
+      scripts/release.sh: "export GH_TOKEN=ghp_aBcDeFgHiJkLmNoP⟨⟩qRsTuVwXyZ0123456789\n"
+  - name: Stripe live key in config
+    expect: violation
+    files:
+      config/payments.json: '{ "stripeKey": "sk_live_51HxYzA⟨⟩bCdEfGhIjKlMnOp" }'
+  - name: tokens read from the environment
+    expect: clean
+    files:
+      src/s3.ts: "const client = new S3({ accessKeyId: process.env.AWS_ACCESS_KEY_ID });"
+      config/payments.json: '{ "stripeKey": "${STRIPE_KEY}", "testKey": "sk_test_placeholder" }'

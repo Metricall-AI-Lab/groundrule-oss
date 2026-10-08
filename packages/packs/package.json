@@ -18,7 +18,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "catalog"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@groundrule/evaluators": "workspace:*",
-    "@types/picomatch": "^4.0.3"
+    "@types/picomatch": "^4.0.3",
+    "yaml": "^2.9.1"
   }
 }

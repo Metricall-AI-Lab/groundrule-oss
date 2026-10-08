@@ -1,0 +1,26 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-009
+  title: State assumptions, open questions, and unverified parts
+  type: agent-instruction
+  category: agents
+spec:
+  severity: warning
+  intent: >
+    Reviewers can only check what they know about; an assumption made silently by an agent
+    becomes a production bug that nobody decided on.
+  requirement: >
+    In the pull request description or final summary, list the assumptions you made where the
+    task was ambiguous, what you verified and how, what you could not verify, and any follow-up
+    work. When an ambiguity would change the design or affect data, security, or public
+    behavior, ask before implementing instead of guessing.
+  agent:
+    summary: >
+      End every task with a short summary of what changed, the assumptions you made, how you
+      verified it, and what remains unverified. If an ambiguity affects data, security, or public
+      behavior, ask before implementing rather than guessing.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

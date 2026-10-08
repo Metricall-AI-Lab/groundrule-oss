@@ -1,0 +1,57 @@
+standard: SEC-012
+cases:
+  - name: database password constant in TypeScript
+    expect: violation
+    files:
+      src/db.ts: |
+        const DB_PASSWORD = "Tr0ub4dor&3x";
+        export const pool = new Pool({ user: "app", password: DB_PASSWORD });
+  - name: password keyword argument and client secret in Python
+    expect: violation
+    count: 2
+    files:
+      app/clients.py: |
+        conn = psycopg.connect(host="db", user="app", password="s3cr3t-pa55w0rd")
+        oauth = OAuth(client_id="web", client_secret='9f8e7d6c5b4a3f2e1d0c')
+  - name: password in an application YAML config
+    expect: violation
+    files:
+      config/application.yml: |
+        spring:
+          datasource:
+            username: app
+            password: "Pr0d-Db-P4ss!"
+  - name: environment lookups, templating, placeholders, field names, tests, and locales
+    expect: clean
+    files:
+      app/clients.py: |
+        conn = psycopg.connect(host="db", user="app", password=os.environ["DB_PASSWORD"])
+        PASSWORD = "password"
+        PASSWORD_MIN_LENGTH = 12
+      config/application.yml: |
+        spring:
+          datasource:
+            password: "${DB_PASSWORD}"
+      .github/workflows/release.yml: |
+        with:
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      src/LoginForm.tsx: |
+        <input type="password" name="password" placeholder="Password" />
+        const passwordLabel = "Password";
+        if (password === "") return;
+      config/settings.example.yaml: |
+        db_password: "s3cr3t-pa55w0rd"
+      config/defaults.yaml: |
+        admin_password: "changeme-now"
+        session_secret: "<generate-a-random-value>"
+      tests/test_login.py: |
+        client.post("/login", data={"user": "a", "password": "hunter2hunter2"})
+      src/locales/de.json: |
+        { "password": "Kennwort", "secret": "Geheimnis" }
+      docker-compose.yml: |
+        services:
+          db:
+            environment:
+              POSTGRES_PASSWORD: "localdevonly"
+      docs/config.md: |
+        Set `password: "s3cr3t-pa55w0rd"` in production.

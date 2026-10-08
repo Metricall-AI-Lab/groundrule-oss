@@ -40,12 +40,21 @@ async function audit(pack: string, files: Record<string, string>) {
 }
 
 describe("catalog", () => {
-  it("lists every bundled pack", async () => {
-    expect((await listPacks()).map((p) => [p.ref, p.standards])).toEqual([
-      ["groundrule:packs/java-spring", 4],
-      ["groundrule:packs/security-baseline", 6],
-      ["groundrule:packs/typescript-node", 5],
-    ]);
+  it("lists every bundled pack, sorted, each with standards and a version", async () => {
+    const packs = await listPacks();
+    const refs = packs.map((p) => p.ref);
+    expect(refs).toEqual([...refs].sort());
+    expect(refs).toEqual(
+      expect.arrayContaining([
+        "groundrule:packs/java-spring",
+        "groundrule:packs/security-baseline",
+        "groundrule:packs/typescript-node",
+      ]),
+    );
+    for (const pack of packs) {
+      expect(pack.standards, pack.id).toBeGreaterThan(0);
+      expect(pack.version, pack.id).toMatch(/^\d+\.\d+\.\d+/);
+    }
   });
 
   it("resolves only known names", () => {

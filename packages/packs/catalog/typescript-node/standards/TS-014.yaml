@@ -1,0 +1,29 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-014
+  title: No debugger statements
+  type: prohibition
+  category: code-quality
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+  intent: A leftover debugger statement pauses execution whenever devtools or an inspector is attached, in development or production.
+  requirement: >
+    Do not commit debugger statements.
+  remediation: >
+    Delete the statement. Use breakpoints in the editor or browser devtools instead.
+  checks:
+    - evaluator: regex
+      # Only a debugger statement on its own line; identifiers, strings, and comments do not match.
+      pattern: '^[ \t]*debugger[ \t]*;?[ \t]*(?://[^\n]*)?$'
+      include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.vue", "**/*.svelte"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/vendor/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**", "**/*.min.js"]
+      message: debugger statement
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: enforce

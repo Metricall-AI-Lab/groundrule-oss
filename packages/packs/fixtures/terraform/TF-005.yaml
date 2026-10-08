@@ -1,0 +1,68 @@
+standard: TF-005
+cases:
+  - name: inline ingress opening SSH to the world
+    expect: violation
+    files:
+      infra/sg.tf: |
+        resource "aws_security_group" "bastion" {
+          name = "bastion"
+          ingress {
+            description = "ssh"
+            from_port   = 22
+            to_port     = 22
+            protocol    = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+          }
+        }
+  - name: standalone rules opening RDP and SSH over IPv6
+    expect: violation
+    count: 2
+    files:
+      infra/rules.tf: |
+        resource "aws_security_group_rule" "rdp" {
+          type              = "ingress"
+          from_port         = 3389
+          to_port           = 3389
+          protocol          = "tcp"
+          cidr_blocks       = ["10.0.0.0/8", "0.0.0.0/0"]
+          security_group_id = aws_security_group.win.id
+        }
+        resource "aws_vpc_security_group_ingress_rule" "ssh6" {
+          security_group_id = aws_security_group.app.id
+          from_port         = 22
+          to_port           = 22
+          ip_protocol       = "tcp"
+          cidr_ipv6         = "::/0"
+        }
+  - name: public HTTPS, private SSH, open egress, and a commented-out rule
+    expect: clean
+    files:
+      infra/sg.tf: |
+        resource "aws_security_group" "web" {
+          ingress {
+            from_port   = 443
+            to_port     = 443
+            protocol    = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+          }
+          ingress {
+            from_port   = 22
+            to_port     = 22
+            protocol    = "tcp"
+            cidr_blocks = [var.vpn_cidr]
+            # cidr_blocks = ["0.0.0.0/0"]
+          }
+          egress {
+            from_port   = 0
+            to_port     = 0
+            protocol    = "-1"
+            cidr_blocks = ["0.0.0.0/0"]
+          }
+        }
+        resource "aws_security_group_rule" "out_ssh" {
+          type        = "egress"
+          from_port   = 22
+          to_port     = 22
+          protocol    = "tcp"
+          cidr_blocks = ["0.0.0.0/0"]
+        }

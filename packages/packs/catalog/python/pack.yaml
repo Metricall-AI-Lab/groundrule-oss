@@ -1,0 +1,14 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: python
+  title: Python
+  description: Low-noise correctness, security, and maintainability conventions for Python codebases.
+  owner: groundrule
+  version: 1.0.0
+  tags: [python, backend, security]
+spec:
+  include: ["standards/**/*.yaml"]
+  applicability:
+    languages: [python]
+    files: ["**/pyproject.toml", "**/requirements*.txt", "**/setup.py"]

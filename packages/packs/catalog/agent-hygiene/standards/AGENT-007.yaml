@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-007
+  title: Follow existing patterns before introducing new ones
+  type: agent-instruction
+  category: agents
+spec:
+  severity: warning
+  intent: >
+    A codebase with three ways to do the same thing is harder to read, test, and change; agents
+    readily invent a fourth because they did not look.
+  requirement: >
+    Before writing new code, look at how the repository already does the same kind of thing
+    (error handling, logging, configuration, data access, HTTP clients, validation, test setup,
+    file layout, naming) and follow it. Reuse existing helpers and utilities instead of writing
+    near-duplicates. Introduce a new pattern or library only when the task requires it, and say
+    why in the change summary.
+  agent:
+    summary: >
+      Before writing code, find two or three similar places in the repo and copy their structure,
+      naming, error handling, logging, and test style. Search for an existing helper before writing
+      a new one, and do not introduce a new library or pattern without saying why.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

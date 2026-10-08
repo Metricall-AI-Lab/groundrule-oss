@@ -1,0 +1,52 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-012
+  title: Close resources with defer right after acquiring them
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [go]
+  intent: Files, response bodies, rows, and locks that are not released on every path leak connections and descriptors.
+  requirement: >
+    Immediately after successfully acquiring a resource (os.Open, http response, sql.Rows,
+    sql.Tx, a mutex lock, a ticker), defer its release: Close, Rollback, Unlock, or Stop.
+    Always close http response bodies, and check rows.Err() after iterating sql.Rows. Do not
+    defer inside long loops; move the loop body into a function. For files you write, check the
+    error from Close.
+  examples:
+    approved:
+      - code: |
+          resp, err := client.Do(req)
+          if err != nil {
+              return err
+          }
+          defer resp.Body.Close()
+        language: go
+      - code: |
+          tx, err := db.BeginTx(ctx, nil)
+          if err != nil {
+              return err
+          }
+          defer tx.Rollback() // no-op after Commit
+        language: go
+    forbidden:
+      - code: |
+          f, _ := os.Open(path)
+          data, err := io.ReadAll(f)
+          f.Close()
+        language: go
+  agent:
+    summary: >
+      Right after acquiring a file, response body, sql.Rows, transaction, lock, or ticker, defer
+      its Close/Rollback/Unlock/Stop. Always close response bodies, check rows.Err(), don't defer
+      inside long loops, and check the Close error on files you write.
+  references:
+    - https://go.dev/doc/effective_go#defer
+    - https://go.dev/doc/database/querying
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

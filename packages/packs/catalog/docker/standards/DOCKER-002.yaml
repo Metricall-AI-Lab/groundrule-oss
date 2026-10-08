@@ -1,0 +1,49 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-002
+  title: Pin base images to a version tag or digest
+  type: requirement
+  category: supply-chain
+spec:
+  severity: warning
+  intent: >
+    An untagged or :latest base image changes underneath you, so the same Dockerfile
+    builds different images over time and upstream breakage ships without review.
+  requirement: >
+    Every FROM must name an explicit version tag (node:22.11-alpine) or a digest
+    (image@sha256:...). Never use :latest or omit the tag. FROM scratch, references to
+    earlier build stages, and images set through ARG are fine.
+  remediation: >
+    Replace :latest or the missing tag with the specific version you test against, ideally
+    pinned by digest, and let a dependency bot (Renovate, Dependabot) propose updates.
+  examples:
+    approved:
+      - "FROM python:3.12-slim"
+      - "FROM gcr.io/distroless/static-debian12@sha256:<digest>"
+      - "FROM builder AS test"
+    forbidden:
+      - "FROM ubuntu"
+      - "FROM node:latest"
+  agent:
+    summary: >
+      In Dockerfiles, pin every FROM image to an explicit version tag or digest; never use
+      :latest or an untagged image.
+  checks:
+    - evaluator: regex
+      # An image with no tag or :latest. Skips scratch, ARG-based images, digests, and
+      # names declared earlier in the file as a stage alias (FROM ... AS <name>).
+      pattern: '^[ \t]*FROM[ \t]+(?:--platform=\S+[ \t]+)?(?!scratch(?:[ \t]|\r?$))((?:[^\s/@$]+/)*[^\s:/@$]+)(?<![ \t]AS[ \t]+\1[ \t]*\r?\n[\s\S]*)(?::latest)?(?:[ \t]+AS[ \t]+\S+)?[ \t]*\r?$'
+      flags: i
+      message: Base image is untagged or uses :latest. Pin a version tag or digest.
+      include: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+      exclude: ["**/*.dockerignore", "**/*.md"]
+  references:
+    - { id: CWE-1357, title: Reliance on Insufficiently Trustworthy Component }
+    - https://docs.docker.com/build/building/best-practices/
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Base images supplied by an earlier ARG default (ARG BASE=node:latest) are not resolved, so they are neither checked nor flagged.
+  rollout:
+    recommendedStage: enforce

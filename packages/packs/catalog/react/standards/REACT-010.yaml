@@ -1,0 +1,35 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-010
+  title: Fetch data through the project's data layer
+  type: agent-instruction
+  category: architecture
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: Ad-hoc fetch calls in effects duplicate caching, race on fast navigation, and skip the shared auth, error, and loading handling.
+  requirement: >
+    Load and mutate server data through the project's established data layer (e.g. TanStack
+    Query, SWR, RTK Query, Apollo, framework loaders or server components) and its API client.
+    Do not call fetch or axios directly inside useEffect in components. If the project has no
+    data layer yet, add one deliberately rather than per component.
+  examples:
+    approved:
+      - "const { data: orders, isPending } = useQuery({ queryKey: ['orders', userId], queryFn: () => api.orders.list(userId) });"
+    forbidden:
+      - "useEffect(() => { fetch(`/api/orders?user=${userId}`).then((r) => r.json()).then(setOrders); }, [userId]);"
+  agent:
+    summary: >
+      Fetch and mutate server data with the project's existing data layer and API client
+      (e.g. TanStack Query, SWR, loaders), not with fetch or axios inside useEffect.
+  references:
+    - https://react.dev/learn/you-might-not-need-an-effect#fetching-data
+  applicability:
+    frameworks: [react]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

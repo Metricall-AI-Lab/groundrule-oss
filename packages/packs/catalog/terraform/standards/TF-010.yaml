@@ -1,0 +1,41 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TF-010
+  title: Use a remote backend with state locking
+  type: agent-instruction
+  category: infrastructure
+spec:
+  severity: warning
+  intent: >
+    Local state is lost with the laptop it lives on, and unlocked shared state lets two
+    concurrent applies corrupt it.
+  requirement: >
+    Every root module that manages shared infrastructure configures a remote backend
+    (S3, GCS, azurerm, Terraform Cloud, or equivalent) with locking enabled, encryption at
+    rest, versioning for recovery, and access limited to the people and pipelines that apply
+    it. Use a separate state per environment. Never run terraform force-unlock unless you
+    are sure no apply is running.
+  examples:
+    approved:
+      - code: |
+          terraform {
+            backend "s3" {
+              bucket       = "acme-tf-state"
+              key          = "network/prod.tfstate"
+              region       = "eu-west-1"
+              encrypt      = true
+              use_lockfile = true
+            }
+          }
+        language: terraform
+  agent:
+    summary: >
+      Root modules use a remote backend with locking, encryption, and versioning, with one
+      state per environment. Do not add local state or disable locking.
+  references:
+    - https://developer.hashicorp.com/terraform/language/state/locking
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

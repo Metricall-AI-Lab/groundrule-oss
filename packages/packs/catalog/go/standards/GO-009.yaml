@@ -1,0 +1,55 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-009
+  title: Use crypto/rand for security-sensitive random values
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [go]
+  intent: math/rand output is predictable, so tokens, keys, and nonces generated with it can be guessed.
+  requirement: >
+    Generate tokens, session IDs, password-reset codes, API keys, salts, and nonces with
+    crypto/rand (rand.Read, or rand.Text on Go 1.24+). Never use math/rand or math/rand/v2
+    for anything an attacker must not predict. math/rand is fine for jitter, sampling, and tests.
+  remediation: >
+    Import crypto/rand instead and use rand.Read or rand.Text. If math/rand is only used for
+    jitter or sampling here, record an exception.
+  examples:
+    approved:
+      - code: |
+          b := make([]byte, 32)
+          if _, err := rand.Read(b); err != nil { // crypto/rand
+              return "", err
+          }
+          return base64.RawURLEncoding.EncodeToString(b), nil
+        language: go
+    forbidden:
+      - code: 'token := fmt.Sprintf("%x", rand.Int63()) // math/rand'
+        language: go
+  agent:
+    summary: >
+      Generate tokens, IDs, keys, salts, and nonces with crypto/rand (rand.Read or rand.Text),
+      never math/rand. math/rand is only for jitter, sampling, and tests.
+  checks:
+    - evaluator: regex
+      # math/rand imported in files whose path suggests auth, sessions, tokens, or crypto.
+      pattern: '^[ \t]*(?:import[ \t]+)?(?:[\w.]+[ \t]+)?"math/rand(?:/v2)?"'
+      include: ["**/auth/**/*.go", "**/authn/**/*.go", "**/security/**/*.go", "**/crypto/**/*.go", "**/session/**/*.go", "**/sessions/**/*.go", "**/token/**/*.go", "**/tokens/**/*.go", "**/*token*.go", "**/*password*.go", "**/*secret*.go", "**/*session*.go"]
+      exclude: ["**/*_test.go", "**/testdata/**", "**/vendor/**"]
+      message: math/rand imported in security-sensitive code; use crypto/rand
+  references:
+    - { id: CWE-338, title: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG) }
+    - { id: CWE-330, title: Use of Insufficiently Random Values }
+    - https://pkg.go.dev/crypto/rand
+  applicability:
+    files: ["**/go.mod"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - math/rand used only for retry jitter in an auth or session package. Record an exception.
+      - The check only covers paths that look security-sensitive; math/rand used for tokens elsewhere is missed.
+  rollout:
+    recommendedStage: advise

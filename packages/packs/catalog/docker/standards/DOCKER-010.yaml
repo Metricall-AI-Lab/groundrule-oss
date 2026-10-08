@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-010
+  title: Use multi-stage builds to keep toolchains out of runtime images
+  type: guidance
+  category: infrastructure
+spec:
+  severity: advisory
+  intent: >
+    Compilers, package-manager caches, source code, and dev dependencies in the runtime
+    image make it larger and give an attacker more tools, with no benefit at runtime.
+  requirement: >
+    Build in one stage and copy only the artifacts the application needs (binaries, built
+    assets, production dependencies) into a minimal final stage, such as a slim, alpine,
+    or distroless image. Do not install build tools in the final stage.
+  agent:
+    summary: >
+      Use multi-stage Dockerfiles: build in a builder stage, then COPY --from only the
+      runtime artifacts into a minimal final image without compilers or dev dependencies.
+  examples:
+    approved:
+      - code: |
+          FROM golang:1.23 AS build
+          WORKDIR /src
+          COPY . .
+          RUN CGO_ENABLED=0 go build -o /out/app ./cmd/app
+
+          FROM gcr.io/distroless/static-debian12:nonroot
+          COPY --from=build /out/app /app
+          ENTRYPOINT ["/app"]
+        language: dockerfile
+  references:
+    - https://docs.docker.com/build/building/multi-stage/
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

@@ -1,0 +1,19 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: kubernetes
+  title: Kubernetes
+  description: Secure and reliable Kubernetes manifests, aligned with the Pod Security Standards.
+  owner: groundrule
+  version: 1.0.0
+  tags: [kubernetes, containers, security, reliability]
+spec:
+  include: ["standards/**/*.yaml"]
+  applicability:
+    files:
+      - "**/k8s/**"
+      - "**/kubernetes/**"
+      - "**/manifests/**"
+      - "**/charts/**"
+      - "**/kustomization.yaml"
+      - "**/kustomization.yml"

@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-012
+  title: Get OS patches by updating the base image
+  type: process
+  category: security
+spec:
+  severity: advisory
+  intent: >
+    Pinned base images go stale; vulnerabilities are fixed upstream but never reach an
+    image that is not rebuilt on a newer base.
+  requirement: >
+    Take OS security fixes by moving to a newer patched base image tag or digest, proposed
+    automatically by a dependency bot, and rebuild images on a schedule even when the code
+    has not changed. Prefer this over apt-get upgrade inside the Dockerfile, which makes
+    builds unreproducible and hides which packages changed.
+  agent:
+    summary: >
+      Do not add apt-get upgrade or dist-upgrade to Dockerfiles; get OS patches by bumping
+      the pinned base image version instead.
+  references:
+    - { id: CWE-1104, title: Use of Unmaintained Third Party Components }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

@@ -5,7 +5,7 @@ metadata:
   title: Java and Spring Boot
   description: Conventions for Spring Boot services.
   owner: groundrule
-  version: 1.0.0
+  version: 1.1.0
   tags: [java, spring-boot, backend]
 spec:
   include: ["standards/**/*.yaml"]

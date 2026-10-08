@@ -1,0 +1,33 @@
+standard: REACT-004
+cases:
+  - name: document queries inside components
+    expect: violation
+    count: 2
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/components/SignupForm.tsx: |
+        export function SignupForm() {
+          useEffect(() => {
+            document.getElementById("email")?.focus();
+          }, []);
+          const onSubmit = () => {
+            const el = document.querySelector(".error");
+            el?.scrollIntoView();
+          };
+          return <form onSubmit={onSubmit} />;
+        }
+  - name: entry point, portals, refs, and comments
+    expect: clean
+    files:
+      package.json: '{ "name": "web", "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }'
+      src/main.tsx: |
+        const container = document.getElementById("root")!;
+        createRoot(container).render(<App />);
+      src/components/Modal.tsx: |
+        export function Modal({ children }: Props) {
+          const ref = useRef<HTMLDivElement>(null);
+          // Previously used document.getElementById("modal-root").
+          return createPortal(<div ref={ref}>{children}</div>, document.getElementById("modal-root")!);
+        }
+      src/lib/dom.ts: |
+        export const byId = (id: string) => document.getElementById(id);

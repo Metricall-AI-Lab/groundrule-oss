@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-002
+  title: Justify every new dependency and prefer what the project already uses
+  type: agent-instruction
+  category: agents
+spec:
+  severity: warning
+  intent: >
+    Each dependency adds supply-chain risk, upgrade work, and bundle or image size; agents add
+    them casually and sometimes invent package names that do not exist or are typosquats.
+  requirement: >
+    Before adding a dependency, check whether the standard library, an existing dependency, or a
+    helper in the repository already does the job. If a new dependency is still warranted, add it
+    with the project's package manager (so the lockfile updates), verify the exact package name
+    and publisher in the registry, and state in the change summary why it is needed and which
+    alternatives you considered. Never add a dependency for a few lines of code.
+  agent:
+    summary: >
+      Do not add a dependency if the standard library, an existing dependency, or repo code can do
+      it. If you must add one, verify the exact package name exists and is the well-known one,
+      install it with the project's package manager, and explain why in your summary.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

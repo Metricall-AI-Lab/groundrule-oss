@@ -1,0 +1,24 @@
+standard: SEC-004
+cases:
+  - name: Node https agent without verification
+    expect: violation
+    files:
+      src/client.ts: "const agent = new https.Agent({ rejectUnauthorized: false });"
+  - name: Python requests with verify=False
+    expect: violation
+    files:
+      app/fetch.py: "requests.get(url, verify=False)\n"
+  - name: Go client skipping verification
+    expect: violation
+    files:
+      internal/http.go: "tls := &tls.Config{InsecureSkipVerify: true}\n"
+  - name: verification left on, and docs describing the anti-pattern
+    expect: clean
+    files:
+      src/client.ts: "const agent = new https.Agent({ rejectUnauthorized: true, ca });"
+      app/fetch.py: "requests.get(url, verify=CA_BUNDLE)\n"
+      docs/tls.md: "Never set `rejectUnauthorized: false`.\n"
+  - name: Go tests against a local TLS test server (real-repo regression, gin)
+    expect: clean
+    files:
+      gin_test.go: "client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}\n"

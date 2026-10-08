@@ -1,0 +1,18 @@
+standard: TS-001
+cases:
+  - name: console.log in a service
+    expect: violation
+    files:
+      package.json: '{ "name": "api" }'
+      src/orders/service.ts: "export function create(order) {\n  console.log(order);\n}\n"
+  - name: console.debug in a React component
+    expect: violation
+    files:
+      src/App.tsx: "export function App() { console.debug('render'); return null; }\n"
+  - name: logger calls, tests, and scripts
+    expect: clean
+    files:
+      src/orders/service.ts: 'logger.info({ orderId }, "order created");'
+      src/orders/service.test.ts: "console.log('debugging a test');\n"
+      scripts/seed.ts: "console.log('seeded');\n"
+      src/log.ts: "console.error('fatal');\n"

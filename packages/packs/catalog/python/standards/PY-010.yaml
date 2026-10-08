@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PY-010
+  title: Use timezone-aware datetimes instead of utcnow()
+  type: prohibition
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [python]
+  intent: >
+    datetime.utcnow() and utcfromtimestamp() return naive datetimes that many APIs treat as
+    local time, causing silent offset bugs; both are deprecated since Python 3.12.
+  requirement: >
+    Use datetime.now(timezone.utc) and datetime.fromtimestamp(ts, tz=timezone.utc) instead of
+    datetime.utcnow() and datetime.utcfromtimestamp(). Store and compare timestamps as
+    timezone-aware UTC values.
+  remediation: >
+    Replace datetime.utcnow() with datetime.now(timezone.utc) and
+    datetime.utcfromtimestamp(ts) with datetime.fromtimestamp(ts, tz=timezone.utc).
+    Check comparisons with existing naive values, which raise TypeError once one side is aware.
+  examples:
+    approved: ["created_at = datetime.now(timezone.utc)"]
+    forbidden: ["created_at = datetime.utcnow()"]
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*#)[^\n]*?\bdatetime\.(?:utcnow|utcfromtimestamp)[ \t]*\('
+      include: ["**/*.py"]
+      message: Naive UTC datetime; use datetime.now(timezone.utc)
+  references:
+    - { url: "https://docs.python.org/3/library/datetime.html#datetime.datetime.utcnow", title: "datetime.utcnow (deprecated since 3.12)" }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Code that must produce naive UTC values for a legacy column or API. Use datetime.now(timezone.utc).replace(tzinfo=None) to make that explicit.
+  rollout:
+    recommendedStage: enforce

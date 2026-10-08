@@ -1,0 +1,48 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-004
+  title: Do not check out pull request code in pull_request_target workflows
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: >
+    pull_request_target runs with a write token and repository secrets, even for pull
+    requests from forks. Checking out and building the PR's code there hands both to
+    anyone who opens a pull request.
+  requirement: >
+    In workflows triggered by pull_request_target, do not check out the pull request head
+    (head.sha, head.ref, github.head_ref, or refs/pull/*). Build and test untrusted code in a
+    pull_request workflow with read-only permissions, and do privileged follow-up work (labels,
+    comments) in a separate workflow_run workflow that does not execute PR code.
+  remediation: >
+    Switch the workflow to on: pull_request, or split it: run the untrusted build under
+    pull_request and move steps that need secrets or write access to a workflow_run workflow
+    that only consumes the results as data.
+  examples:
+    forbidden:
+      - code: |
+          on: pull_request_target
+          jobs:
+            test:
+              steps:
+                - uses: actions/checkout@v4
+                  with:
+                    ref: ${{ github.event.pull_request.head.sha }}
+                - run: npm ci && npm test
+        language: yaml
+  checks:
+    - evaluator: regex
+      pattern: '(?<=\bpull_request_target\b[\s\S]*)^[ \t]*(?:-[ \t]+)?ref:[ \t]*["'']?(?:refs/pull/|\$\{\{[ \t]*(?:github\.event\.pull_request\.head\.(?:sha|ref)|github\.head_ref)\b)'
+      include: [".github/workflows/*.yml", ".github/workflows/*.yaml"]
+      message: pull_request_target workflow checks out pull request code
+  references:
+    - { id: CWE-829, title: Inclusion of Functionality from Untrusted Control Sphere }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Workflows that check out PR code only to read files as data without executing anything (no build, install, or scripts from the PR). Review them carefully and record an exception.
+      - Workflows triggered by both pull_request and pull_request_target that only check out the head under pull_request.
+  rollout:
+    recommendedStage: advise

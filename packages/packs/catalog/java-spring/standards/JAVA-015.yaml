@@ -1,0 +1,53 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-015
+  title: Validate request DTOs with Bean Validation and @Valid
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [java]
+    frameworks: [spring-boot]
+  intent: >
+    Declarative constraints on request DTOs reject malformed input at the edge with a consistent
+    400 response, before it reaches business logic or the database.
+  requirement: >
+    Put Jakarta Bean Validation constraints (@NotNull, @NotBlank, @Size, @Positive, @Email,
+    @Pattern) on request DTO fields and annotate @RequestBody parameters with @Valid. Add @Valid to
+    nested objects and collection elements that need validating, and annotate the controller with
+    @Validated when constraining @PathVariable or @RequestParam values. Bound every string and
+    collection with @Size. Keep business-rule checks (e.g. "claim is still open") in the service.
+  examples:
+    approved:
+      - code: |
+          public record CreateClaimRequest(
+              @NotBlank @Size(max = 200) String title,
+              @NotNull @Positive BigDecimal amount,
+              @Valid @NotEmpty @Size(max = 20) List<LineItemRequest> items) {}
+
+          @PostMapping("/claims")
+          ResponseEntity<ClaimResponse> create(@Valid @RequestBody CreateClaimRequest body) { ... }
+        language: java
+    forbidden:
+      - code: |
+          @PostMapping("/claims")
+          ResponseEntity<ClaimResponse> create(@RequestBody CreateClaimRequest body) {
+            if (body.title() == null) throw new IllegalArgumentException("title");
+            ...
+          }
+        language: java
+  agent:
+    summary: >
+      Annotate every @RequestBody with @Valid and put Bean Validation constraints on the DTO fields
+      (@NotBlank, @Size with a max on strings and lists, @Positive...). Use @Valid on nested objects
+      and @Validated on the controller for constrained path/query params. Business rules stay in services.
+  references:
+    - { id: CWE-20, title: Improper Input Validation }
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

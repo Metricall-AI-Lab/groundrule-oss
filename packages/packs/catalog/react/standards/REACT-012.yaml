@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-012
+  title: Keep rendering pure and state immutable
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: React may render a component any number of times and skips updates when references are unchanged, so side effects in render and in-place mutation cause duplicate work and stale UI.
+  requirement: >
+    Component and hook bodies compute JSX from props, state, and context only: no network
+    calls, subscriptions, timers, logging of analytics, or writes to outside variables during
+    render. Never mutate props, state, or context values; update state with new objects and
+    arrays (spread, map, filter, toSorted) or the project's immutable helper.
+  examples:
+    approved:
+      - "setItems((items) => [...items, newItem]);"
+      - "const sorted = items.toSorted(byDate);"
+    forbidden:
+      - "items.push(newItem); setItems(items);"
+      - "props.items.sort(byDate);"
+  agent:
+    summary: >
+      Keep component bodies pure: no side effects during render. Never mutate props or state;
+      create new objects and arrays when updating state.
+  references:
+    - https://react.dev/reference/rules/components-and-hooks-must-be-pure
+  applicability:
+    frameworks: [react]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

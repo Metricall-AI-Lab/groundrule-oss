@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-013
+  title: Type caught errors as unknown, not any
+  type: requirement
+  category: code-quality
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript]
+  intent: Anything can be thrown; typing the catch variable as any lets code read err.message from a string or undefined and crash in the error path.
+  requirement: >
+    Do not annotate catch variables or promise rejection handlers with any. Leave the catch
+    variable as unknown (the default under strict) and narrow it, e.g. with instanceof Error.
+  remediation: >
+    Remove the : any annotation (or write : unknown) and narrow before use:
+    if (err instanceof Error) logger.error({ err }, err.message).
+  examples:
+    approved:
+      - "catch (err) { if (err instanceof HttpError) return err.status; throw err; }"
+      - "promise.catch((err: unknown) => logger.error({ err }))"
+    forbidden:
+      - "catch (err: any) { return err.response.status; }"
+      - "promise.catch((err: any) => res.status(500).send(err.message))"
+  checks:
+    - evaluator: regex
+      pattern: '\bcatch\s*\(\s*[\w$]+\s*:\s*any\s*\)|\.catch\s*\(\s*(?:async\s*)?\(\s*[\w$]+\s*:\s*any\s*\)'
+      include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"]
+      exclude: ["**/node_modules/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**", "**/testing/**", "**/mocks/**", "**/__mocks__/**", "**/*.d.ts"]
+      message: Catch variable typed as any; use unknown and narrow
+  applicability:
+    files: ["**/tsconfig.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: advise

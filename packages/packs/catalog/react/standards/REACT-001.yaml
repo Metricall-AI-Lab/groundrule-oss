@@ -1,0 +1,48 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: REACT-001
+  title: Sanitize HTML passed to dangerouslySetInnerHTML
+  type: prohibition
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+    frameworks: [react]
+  intent: dangerouslySetInnerHTML bypasses React's escaping, so unsanitized HTML from users, CMSs, or APIs becomes cross-site scripting.
+  requirement: >
+    Render text as JSX children instead of HTML. When HTML is unavoidable, pass it through the
+    project's sanitizer (e.g. DOMPurify.sanitize) inline, in the __html expression itself, so
+    the safety is visible at the call site.
+  remediation: >
+    Render the value as text ({value}), or wrap it: dangerouslySetInnerHTML={{ __html:
+    DOMPurify.sanitize(html) }}. For JSON-LD, escape "<" in the serialized JSON and record an exception.
+  examples:
+    approved:
+      - "<p>{comment.body}</p>"
+      - "<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.html) }} />"
+    forbidden:
+      - "<div dangerouslySetInnerHTML={{ __html: post.html }} />"
+  checks:
+    - evaluator: regex
+      # Flags every use whose __html is not a direct call to a sanitize*/purify* function.
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?\bdangerouslySetInnerHTML\s*(?:=\s*\{|:)(?!\s*\{\s*__html\s*:\s*(?:[\w$]+\.)?(?:sanitize|purify)\w*\s*\()'
+      include: ["**/*.jsx", "**/*.tsx", "**/*.js", "**/*.ts", "**/*.mjs"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/*.stories.*", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**", "**/*.d.ts"]
+      message: dangerouslySetInnerHTML without inline sanitization
+  references:
+    - { id: CWE-79, title: "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')" }
+    - https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.3.3] }
+  applicability:
+    frameworks: [react]
+    files: ["**/package.json"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - HTML sanitized earlier and stored in a variable (const clean = DOMPurify.sanitize(x)). Move the call inline or record an exception.
+      - Trusted static HTML such as build-time Markdown output or JSON-LD script tags. Record an exception for those files.
+  rollout:
+    recommendedStage: advise

@@ -1,0 +1,11 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: http-api
+  title: HTTP API design
+  description: Error handling, status codes, pagination, idempotency, versioning, and access control for HTTP APIs, in any language.
+  owner: groundrule
+  version: 1.0.0
+  tags: [api, http, rest, backend]
+spec:
+  include: ["standards/**/*.yaml"]

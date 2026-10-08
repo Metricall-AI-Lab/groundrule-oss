@@ -1,0 +1,50 @@
+standard: GHA-006
+cases:
+  - name: static AWS keys and a GCP service-account key
+    expect: violation
+    count: 3
+    files:
+      .github/workflows/deploy.yml: |
+        on: push
+        jobs:
+          aws:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: aws-actions/configure-aws-credentials@v4
+                with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: eu-west-1
+              - run: aws s3 sync dist s3://site
+                env:
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          gcp:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: google-github-actions/auth@v2
+                with:
+                  credentials_json: ${{ secrets.GCP_SA_KEY }}
+  - name: OIDC role assumption and workload identity federation
+    expect: clean
+    files:
+      .github/workflows/deploy.yml: |
+        on: push
+        permissions:
+          id-token: write
+          contents: read
+        jobs:
+          aws:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: aws-actions/configure-aws-credentials@v4
+                with:
+                  role-to-assume: arn:aws:iam::123456789012:role/deploy
+                  aws-region: eu-west-1
+                  # aws-secret-access-key: removed after moving to OIDC
+          gcp:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: google-github-actions/auth@v2
+                with:
+                  workload_identity_provider: projects/1/locations/global/workloadIdentityPools/gh/providers/gh
+                  service_account: deploy@acme.iam.gserviceaccount.com

@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GHA-009
+  title: Bound job runtime and cancel superseded runs
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: advisory
+  intent: >
+    The default job timeout is six hours, so a hung test or deploy burns runner minutes and
+    blocks queues. Without concurrency control, two deploys of the same environment can run
+    at once.
+  requirement: >
+    Set timeout-minutes on every job, sized to a few times its normal duration. Use a
+    concurrency group for pull request workflows with cancel-in-progress: true, and for
+    deployments use a per-environment group without cancel-in-progress so deploys queue
+    instead of overlapping or being cut off halfway.
+  examples:
+    approved:
+      - code: |
+          concurrency:
+            group: ci-${{ github.workflow }}-${{ github.ref }}
+            cancel-in-progress: true
+          jobs:
+            test:
+              runs-on: ubuntu-latest
+              timeout-minutes: 20
+        language: yaml
+  agent:
+    summary: >
+      Give every workflow job timeout-minutes. Add a concurrency group: cancel-in-progress
+      for PR CI, queued (no cancel) per environment for deploys.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

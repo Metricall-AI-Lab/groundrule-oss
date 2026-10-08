@@ -1,0 +1,31 @@
+standard: GHA-005
+cases:
+  - name: installer scripts piped into a shell
+    expect: violation
+    count: 3
+    files:
+      .github/workflows/ci.yml: |
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - run: curl -fsSL https://example.com/install.sh | bash
+              - run: |
+                  wget -qO- https://example.com/get.sh | sudo -E sh -s -- --version 1.2
+                  bash <(curl -s https://example.com/setup)
+  - name: verified download, curl into jq or sha256sum, and a commented-out pipe
+    expect: clean
+    files:
+      .github/workflows/ci.yml: |
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  curl -fsSLo tool.tar.gz https://example.com/tool/v1.4.2/tool.tar.gz
+                  curl -fsSL https://example.com/tool/v1.4.2/SHA256SUMS | sha256sum -c --ignore-missing
+                  curl -s https://api.github.com/repos/acme/app | jq .stargazers_count
+                  # curl -fsSL https://example.com/install.sh | bash
+                  ./scripts/setup.sh

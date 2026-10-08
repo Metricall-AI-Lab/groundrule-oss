@@ -1,0 +1,33 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-009
+  title: Use unambiguous formats for timestamps and money
+  type: guidance
+  category: api-design
+spec:
+  severity: advisory
+  intent: >
+    Local-time strings, epoch numbers of unknown unit, and floating-point money produce
+    off-by-hours bugs and rounding errors that are expensive to fix once clients depend on them.
+  requirement: >
+    Send timestamps as RFC 3339 (ISO 8601) strings in UTC with an explicit offset, e.g.
+    2026-03-01T14:30:00Z, and calendar dates as YYYY-MM-DD. Never send local times without an
+    offset or ambiguous epoch numbers. Send money as an integer in minor units or a decimal
+    string, always with an ISO 4217 currency code, never as a binary floating-point number.
+  examples:
+    approved:
+      - '{ "createdAt": "2026-03-01T14:30:00Z", "dueDate": "2026-03-15", "total": { "amountMinor": 1999, "currency": "EUR" } }'
+    forbidden:
+      - '{ "createdAt": "03/01/2026 2:30 PM", "total": 19.99 }'
+  agent:
+    summary: >
+      Serialize timestamps as UTC RFC 3339 strings (2026-03-01T14:30:00Z) and dates as
+      YYYY-MM-DD. Represent money as integer minor units or a decimal string plus a currency
+      code, never a float. Follow the API's existing convention if it already has one.
+  references:
+    - { id: RFC-3339, title: "Date and Time on the Internet: Timestamps", url: "https://www.rfc-editor.org/rfc/rfc3339" }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

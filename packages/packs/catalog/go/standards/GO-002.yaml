@@ -1,0 +1,44 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-002
+  title: Wrap errors with %w, not %v
+  type: requirement
+  category: error-handling
+spec:
+  severity: advisory
+  scope:
+    languages: [go]
+  intent: Formatting an error with %v flattens it to text, so callers can no longer use errors.Is or errors.As on it.
+  requirement: >
+    When adding context to an error with fmt.Errorf, wrap it with %w so callers can inspect the
+    cause with errors.Is and errors.As. Use %v only when you deliberately hide the cause at an
+    API boundary, and say so in a comment.
+  remediation: >
+    Change the verb for the error argument from %v to %w, e.g. fmt.Errorf("load config: %w", err).
+  examples:
+    approved:
+      - code: 'return fmt.Errorf("load config %s: %w", path, err)'
+        language: go
+    forbidden:
+      - code: 'return fmt.Errorf("load config %s: %v", path, err)'
+        language: go
+  checks:
+    - evaluator: regex
+      # fmt.Errorf whose format uses %v, contains no %w, and whose last argument is err.
+      pattern: '^(?![ \t]*//)[^\n]*?\bfmt\.Errorf\(\s*"(?![^"\n]*%w)[^"\n]*%v[^"\n]*"[^\n]*?,\s*err\s*\)'
+      include: ["**/*.go"]
+      exclude: ["**/*_test.go", "**/testdata/**", "**/vendor/**"]
+      message: Error formatted with %v; wrap it with %w so callers can use errors.Is and errors.As
+  references:
+    - https://go.dev/blog/go1.13-errors
+    - https://pkg.go.dev/fmt#Errorf
+  applicability:
+    files: ["**/go.mod"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Deliberately opaque errors at a package boundary, where the cause is an implementation detail. Record an exception or add an explanatory comment and exclude the file.
+      - Only single-line calls whose last argument is named err are checked; other names and multi-line calls are missed.
+  rollout:
+    recommendedStage: advise

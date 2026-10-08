@@ -1,0 +1,70 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-001
+  title: Return one documented error shape and never expose internals
+  type: requirement
+  category: security
+spec:
+  severity: warning
+  intent: >
+    Clients can only handle errors they can parse, and stack traces, SQL errors, and file
+    paths in responses hand attackers a map of the system.
+  requirement: >
+    Every error response uses the API's single documented error shape (RFC 9457 problem
+    details unless the project already defines another) with a stable machine-readable code.
+    Never put stack traces, exception class names, SQL or driver messages, file paths, or
+    internal hostnames in a response body. Log the details server-side with a correlation ID
+    and return that ID instead.
+  remediation: >
+    Return the documented error shape from a central error handler. Log the exception with a
+    request or correlation ID and include only that ID in the response.
+  examples:
+    approved:
+      - code: |
+          logger.error({ err, requestId }, "order lookup failed");
+          res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, requestId });
+        language: typescript
+    forbidden:
+      - code: |
+          res.status(500).json({ message: err.message, stack: err.stack });
+        language: typescript
+      - code: |
+          server.error.include-stacktrace=always
+        language: properties
+  agent:
+    summary: >
+      Return errors only through the project's central error handler and its documented shape
+      (RFC 9457 problem details if none exists), with a stable error code. Never send stack
+      traces, exception messages from the database or libraries, or file paths to clients;
+      log them with a request ID and return the ID.
+  checks:
+    - evaluator: regex
+      # Express, Fastify, Hono, Next.js, and Web Response bodies that include err.stack.
+      # Only error-like names (err, error, e, ex, cause, apiError...) are matched, and a `?`
+      # between the call and .stack (a dev-only ternary) is not flagged.
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?\b(?:res|reply|response|c|Response|NextResponse)(?:\.(?:status|code)\([^()\n]*\))?\.(?:json|send|end|write)\(\s*(?:\{[^;()?]{0,400}?)?\b(?:e|ex|exc|exception|cause|\w*(?:err|Err|error|Error))\.stack\b|^(?![ \t]*(?://|/?\*))[^\n]*?\bctx\.body\s*=\s*(?:\{[^;()?]{0,400}?)?\b(?:e|ex|exc|exception|cause|\w*(?:err|Err|error|Error))\.stack\b'
+      include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**", "**/scripts/**"]
+      message: Stack trace sent in an HTTP response
+    - evaluator: regex
+      pattern: '^(?![ \t]*#)[^\n]*?\b(?:jsonify|make_response|JSONResponse|JsonResponse|HttpResponse|Response|HTTPException)\s*\([^\n]*?traceback\.format_exc\(\)'
+      include: ["**/*.py"]
+      exclude: ["**/test_*.py", "**/*_test.py", "**/tests/**", "**/test/**", "**/docs/**", "**/examples/**", "**/conftest.py"]
+      message: Python traceback sent in an HTTP response
+    - evaluator: regex
+      # Spring Boot: server.error.include-stacktrace=always (properties or YAML).
+      pattern: '^[ \t]*(?:server\.error\.)?include-stacktrace[ \t]*[:=][ \t]*["'']?always\b'
+      include: ["**/application*.properties", "**/application*.yml", "**/application*.yaml", "**/bootstrap*.yml", "**/bootstrap*.yaml", "**/bootstrap*.properties"]
+      exclude: ["**/src/test/**"]
+      message: Spring Boot is configured to send stack traces to clients
+  references:
+    - { id: CWE-209, title: Generation of Error Message Containing Sensitive Information }
+    - { id: RFC-9457, title: Problem Details for HTTP APIs, url: "https://www.rfc-editor.org/rfc/rfc9457" }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Internal debugging or admin endpoints that deliberately return stack traces. Exclude those files with scope.exclude.
+      - The checks only see stack traces passed directly to a response call; leaks through custom error handlers are not detected.
+  rollout:
+    recommendedStage: advise

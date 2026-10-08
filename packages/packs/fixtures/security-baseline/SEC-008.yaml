@@ -1,0 +1,21 @@
+standard: SEC-008
+cases:
+  - name: webhook URL in an alerting script
+    expect: violation
+    files:
+      scripts/notify.py: |
+        SLACK_WEBHOOK = "https://hooks.slack.com/⟨⟩services/T024BE7LD/⟨⟩B05QX8M2K7N/K5FjUckI8eJjsvBfJX9KgKrY"
+  - name: webhook URL in CI configuration
+    expect: violation
+    files:
+      .github/workflows/deploy.yml: |
+        - run: curl -X POST -d '{"text":"deployed"}' https://hooks.slack.com/⟨⟩services/T024BE7LD/⟨⟩B05QX8M2K7N/K5FjUckI8eJjsvBfJX9KgKrY
+  - name: Slack's documented placeholder and an environment lookup
+    expect: clean
+    files:
+      src/notify.ts: |
+        const url = process.env.SLACK_WEBHOOK_URL;
+        // e.g. https://hooks.slack.com/⟨⟩services/T00000000⟨⟩/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+        if (!url?.startsWith("https://hooks.slack.com/⟨⟩services/")) throw new Error("bad webhook");
+      docs/alerts.md: |
+        Paste a URL like https://hooks.slack.com/⟨⟩services/T00000000⟨⟩/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX

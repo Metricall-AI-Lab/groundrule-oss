@@ -1,0 +1,60 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-007
+  title: Do not build SQL or JPQL by string concatenation
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+  intent: >
+    Concatenating values into SQL or JPQL lets attacker-controlled input change the query.
+    Bind parameters keep data and query structure separate.
+  requirement: >
+    Never concatenate variables into SQL or JPQL strings passed to JdbcTemplate, EntityManager,
+    or JDBC. Use bind parameters (?, :name), Spring Data query methods, or the Criteria API.
+    Dynamic identifiers such as sort columns must come from a fixed allow-list.
+  remediation: >
+    Replace the concatenated value with a bind parameter (jdbcTemplate.query(sql, mapper, id),
+    query.setParameter("id", id)). For dynamic ORDER BY, map the user's choice to a known column
+    name from an allow-list, or use Spring Data's Sort.
+  examples:
+    approved:
+      - code: |
+          jdbcTemplate.query("SELECT * FROM claims WHERE owner_id = ?", mapper, ownerId);
+        language: java
+      - code: |
+          em.createQuery("SELECT c FROM Claim c WHERE c.status = :status", Claim.class)
+            .setParameter("status", status);
+        language: java
+    forbidden:
+      - code: |
+          jdbcTemplate.query("SELECT * FROM claims WHERE owner_id = " + ownerId, mapper);
+        language: java
+      - code: |
+          em.createQuery("SELECT c FROM Claim c ORDER BY " + sortField);
+        language: java
+  checks:
+    - evaluator: regex
+      # A string literal containing SQL clause keywords, followed by + and a non-literal,
+      # non-CONSTANT operand. Concatenating literals or UPPER_CASE constants is not flagged.
+      pattern: '^(?![ \t]*(?://|/?\*))[^\n]*?"[^"\n]*\b(?:SELECT\b[^"\n]*\bFROM\b|UPDATE\s+\w+\s+SET\b|DELETE\s+FROM\b|INSERT\s+INTO\b|VALUES\b|WHERE\b|AND\b|SET\s+\w+\s*=|LIKE\b|IN\s*\(|ORDER\s+BY\b|GROUP\s+BY\b|HAVING\b)[^"\n]*"\s*\+(?!\s*(?:"|[A-Z][A-Z0-9_]*\b(?!\s*\()))'
+      include: ["**/*.java"]
+      message: SQL built by string concatenation; use bind parameters
+  references:
+    - { id: CWE-89, title: "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.3.4] }
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Messages that happen to contain upper-case SQL words (e.g. "Retry AND notify " + x). Rare; suppress with an exception.
+      - Concatenation of trusted values held in lower- or mixed-case variables (e.g. a table name from configuration). Prefer constants or an allow-list.
+    # Not detected: lower-case SQL, StringBuilder.append, String.format, and text blocks with .formatted().
+  rollout:
+    recommendedStage: advise

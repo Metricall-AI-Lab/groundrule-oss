@@ -1,0 +1,36 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-011
+  title: No unmaintained JWT and UUID modules
+  type: forbidden-tech
+  category: security
+spec:
+  severity: warning
+  scope:
+    languages: [go]
+  intent: These modules are unmaintained and have known security issues that will never be fixed.
+  requirement: >
+    Do not depend on github.com/dgrijalva/jwt-go (unmaintained, with a known audience
+    validation bypass) or github.com/satori/go.uuid (unmaintained, with a known weak-randomness
+    issue). Use github.com/golang-jwt/jwt/v5 and github.com/google/uuid.
+  remediation: >
+    Migrate to github.com/golang-jwt/jwt/v5 (the maintained successor of jwt-go) and
+    github.com/google/uuid, then run go mod tidy. If the module is only an indirect dependency,
+    upgrade the module that pulls it in.
+  checks:
+    - evaluator: dependencies
+      ecosystems: [go]
+      forbid: ["github.com/dgrijalva/jwt-go", "github.com/dgrijalva/jwt-go/*", "github.com/satori/go.uuid"]
+      allowInstead: ["github.com/golang-jwt/jwt/v5", "github.com/google/uuid"]
+  references:
+    - { id: CWE-1104, title: Use of Unmaintained Third Party Components }
+    - { id: CVE-2020-26160, title: jwt-go audience claim validation bypass }
+  applicability:
+    files: ["**/go.mod"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Indirect requirements pulled in by another module are flagged too; fix them by upgrading that module.
+  rollout:
+    recommendedStage: enforce

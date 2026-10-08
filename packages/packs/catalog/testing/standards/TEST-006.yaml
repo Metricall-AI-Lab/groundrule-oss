@@ -1,0 +1,27 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TEST-006
+  title: Control time, randomness, and shared state in tests
+  type: agent-instruction
+  category: testing
+spec:
+  severity: warning
+  intent: >
+    Tests that depend on the current date, time zone, random values, execution order, or state
+    left by other tests pass locally and fail at midnight, at month end, or in parallel CI.
+  requirement: >
+    Inject or fake the clock instead of reading the real current time; seed or inject random
+    generators and ID factories; do not depend on the machine's time zone or locale. Each test
+    creates the data it needs and does not depend on other tests running first, so the suite
+    passes in any order and in parallel. Clean up global state (environment variables, singletons,
+    mocks, temp files) after each test.
+  agent:
+    summary: >
+      Make tests deterministic: fake or inject the clock (no real "now"), seed or inject randomness
+      and ID generators, pin time zone and locale, and give each test its own data so tests pass
+      in any order. Restore env vars, mocks, and globals after each test.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

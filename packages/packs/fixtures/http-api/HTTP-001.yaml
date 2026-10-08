@@ -1,0 +1,73 @@
+standard: HTTP-001
+cases:
+  - name: Express error handler sends err.stack
+    expect: violation
+    count: 2
+    files:
+      src/middleware/errors.ts: |
+        export function onError(err, req, res, next) {
+          res.status(500).json({
+            message: err.message,
+            stack: err.stack,
+          });
+        }
+        export function legacy(err, req, res) {
+          res.send(err.stack);
+        }
+  - name: Fastify, Next.js, and Koa responses with a stack
+    expect: violation
+    count: 3
+    files:
+      src/server.js: |
+        app.setErrorHandler((error, request, reply) => {
+          reply.code(500).send({ error: error.stack });
+        });
+      app/api/orders/route.ts: |
+        export async function GET() {
+          try { return NextResponse.json(await load()); }
+          catch (e) { return NextResponse.json({ trace: e.stack }, { status: 500 }); }
+        }
+      src/koa.js: |
+        app.use(async (ctx, next) => {
+          try { await next(); } catch (err) { ctx.body = { error: err.stack }; }
+        });
+  - name: Flask returns a traceback
+    expect: violation
+    files:
+      app/views.py: |
+        @app.errorhandler(Exception)
+        def handle(e):
+            return jsonify(error=str(e), trace=traceback.format_exc()), 500
+  - name: Spring Boot always includes stack traces
+    expect: violation
+    files:
+      src/main/resources/application.yml: |
+        server:
+          error:
+            include-stacktrace: always
+  - name: stack logged server-side, dev-only ternary, comments, and tests
+    expect: clean
+    files:
+      src/middleware/errors.ts: |
+        // Never do res.json({ stack: err.stack }) in production.
+        export function onError(err, req, res, next) {
+          logger.error({ stack: err.stack, requestId: req.id }, "unhandled error");
+          res.status(500).json({ title: "Internal Server Error", status: 500, requestId: req.id });
+          res.locals.error = { stack: isDev ? err.stack : undefined };
+          res.json({ details: isDev ? err.stack : undefined });
+        }
+      src/stack.ts: |
+        export const top = res.json(queue.stack);
+        const callStack = parser.stackTrace;
+        res.json({ size: stack.length });
+      src/middleware/errors.test.ts: |
+        expect(res.json).toHaveBeenCalledWith({ stack: err.stack });
+      app/views.py: |
+        logger.error("failed: %s", traceback.format_exc())
+        return jsonify(error="internal error", request_id=request_id), 500
+        # return jsonify(trace=traceback.format_exc())
+      src/main/resources/application.yml: |
+        server:
+          error:
+            include-stacktrace: never
+            include-message: on_param

@@ -1,0 +1,49 @@
+standard: GHA-002
+cases:
+  - name: workflows without top-level permissions, including one with job-level only
+    expect: violation
+    count: 2
+    files:
+      .github/workflows/ci.yml: |
+        on: push
+        jobs:
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - run: make test
+      .github/workflows/release.yaml: |
+        on:
+          push:
+            tags: ["v*"]
+        jobs:
+          release:
+            permissions:
+              contents: write
+            runs-on: ubuntu-latest
+            steps:
+              - run: make release
+  - name: top-level permissions in each form, and non-workflow YAML
+    expect: clean
+    files:
+      .github/workflows/ci.yml: |
+        on: push
+        permissions:
+          contents: read
+        jobs:
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - run: make test
+      .github/workflows/lint.yml: |
+        on: pull_request
+        permissions: {}
+        jobs:
+          lint:
+            permissions:
+              contents: read
+            runs-on: ubuntu-latest
+            steps:
+              - run: make lint
+      .github/dependabot.yml: |
+        version: 2
+        updates: []

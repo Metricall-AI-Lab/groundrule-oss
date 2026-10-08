@@ -1,0 +1,51 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-007
+  title: Set timeouts on HTTP servers
+  type: requirement
+  category: reliability
+spec:
+  severity: warning
+  scope:
+    languages: [go]
+  intent: http.ListenAndServe uses a server with no timeouts, so slow or idle clients can hold connections open indefinitely.
+  requirement: >
+    Do not serve with http.ListenAndServe or http.ListenAndServeTLS. Construct an
+    http.Server with at least ReadHeaderTimeout set (and ReadTimeout, WriteTimeout, and
+    IdleTimeout where they fit the handlers), and call its ListenAndServe.
+  remediation: >
+    Replace the call with an http.Server that sets ReadHeaderTimeout (and the other timeouts
+    as appropriate), then call srv.ListenAndServe().
+  examples:
+    approved:
+      - code: |
+          srv := &http.Server{
+              Addr:              ":8080",
+              Handler:           mux,
+              ReadHeaderTimeout: 5 * time.Second,
+              IdleTimeout:       120 * time.Second,
+          }
+          err := srv.ListenAndServe()
+        language: go
+    forbidden:
+      - code: 'log.Fatal(http.ListenAndServe(":8080", mux))'
+        language: go
+  checks:
+    - evaluator: regex
+      pattern: '^(?![ \t]*//)[^\n]*?\bhttp\.ListenAndServe(?:TLS)?\('
+      include: ["**/*.go"]
+      exclude: ["**/*_test.go", "**/testdata/**", "**/vendor/**", "**/examples/**", "**/example/**"]
+      message: http.ListenAndServe has no timeouts; use an http.Server with ReadHeaderTimeout
+  references:
+    - { id: CWE-400, title: Uncontrolled Resource Consumption }
+    - https://pkg.go.dev/net/http#Server
+  applicability:
+    files: ["**/go.mod"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Debug listeners bound to localhost (e.g. pprof). Record an exception for them.
+      - An http.Server literal without timeouts is not detected.
+  rollout:
+    recommendedStage: advise

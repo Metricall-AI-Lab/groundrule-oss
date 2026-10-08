@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DOCKER-011
+  title: Order Dockerfile steps for layer caching
+  type: guidance
+  category: performance
+spec:
+  severity: info
+  intent: >
+    Copying the whole source tree before installing dependencies invalidates the
+    dependency layer on every code change, making builds slow and CI expensive.
+  requirement: >
+    Copy dependency manifests and lockfiles first, install dependencies, then copy the rest
+    of the source. Put steps that change rarely above steps that change often, and use
+    lockfile-based installs (npm ci, pip install -r with hashes, go mod download).
+  agent:
+    summary: >
+      In Dockerfiles, copy lockfiles and install dependencies before copying the rest of the
+      source, so code changes do not invalidate the dependency layer.
+  examples:
+    approved:
+      - code: |
+          COPY package.json package-lock.json ./
+          RUN npm ci --omit=dev
+          COPY . .
+        language: dockerfile
+    forbidden:
+      - code: |
+          COPY . .
+          RUN npm ci --omit=dev
+        language: dockerfile
+  references:
+    - https://docs.docker.com/build/building/best-practices/
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

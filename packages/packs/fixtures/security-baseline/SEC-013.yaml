@@ -1,0 +1,50 @@
+standard: SEC-013
+cases:
+  - name: Python context pinned to TLS 1.0
+    expect: violation
+    files:
+      app/client.py: |
+        import ssl
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+  - name: Go minimum version TLS 1.0 and Node TLSv1 method
+    expect: violation
+    count: 2
+    files:
+      internal/server.go: |
+        cfg := &tls.Config{MinVersion: tls.VersionTLS10}
+      src/agent.ts: |
+        const agent = new https.Agent({ secureProtocol: "TLSv1_method" });
+  - name: nginx and Java enabling legacy protocols
+    expect: violation
+    count: 2
+    files:
+      deploy/nginx.conf: |
+        server {
+          ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        }
+      src/main/java/com/acme/Tls.java: |
+        SSLContext ctx = SSLContext.getInstance("TLSv1.1");
+  - name: modern versions, disabling options, and tests asserting rejection
+    expect: clean
+    files:
+      app/client.py: |
+        import ssl
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        ctx.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+      internal/server.go: |
+        cfg := &tls.Config{MinVersion: tls.VersionTLS12}
+      src/agent.ts: |
+        const agent = new https.Agent({ minVersion: "TLSv1.2", secureProtocol: "TLSv1_2_method" });
+      deploy/nginx.conf: |
+        server {
+          ssl_protocols TLSv1.2 TLSv1.3;
+        }
+      src/Startup.cs: |
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+      conf/java.security: |
+        jdk.tls.disabledAlgorithms=SSLv3, TLSv1, TLSv1.1, RC4
+      internal/server_test.go: |
+        cfg := &tls.Config{MaxVersion: tls.VersionTLS10} // must be rejected
+      docs/tls.md: |
+        Never use `ssl.PROTOCOL_TLSv1`.

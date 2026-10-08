@@ -1,0 +1,28 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AGENT-001
+  title: Regenerate generated files; never edit them by hand
+  type: agent-instruction
+  category: agents
+spec:
+  severity: warning
+  intent: >
+    Hand edits to generated files are overwritten on the next generation run and leave the
+    source of truth (schema, spec, manifest) out of sync with what ships.
+  requirement: >
+    Do not hand-edit generated files: lockfiles (package-lock.json, pnpm-lock.yaml, yarn.lock,
+    poetry.lock, Cargo.lock, go.sum), build output (dist/, build/, out/, target/), generated
+    code (*.gen.*, *.pb.go, *_pb2.py, generated API clients and SDKs), and any
+    file marked "Code generated ... DO NOT EDIT" or "@generated". Change the source (manifest,
+    schema, .proto, OpenAPI spec, template) and run the project's generator or package manager,
+    then commit the regenerated output only if the project commits it.
+  agent:
+    summary: >
+      Never edit lockfiles, build output, or files marked generated / DO NOT EDIT by hand. Change
+      the source (package manifest, schema, .proto, spec) and rerun the project's generator or
+      package manager command, and mention which command you ran.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

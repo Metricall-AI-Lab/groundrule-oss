@@ -1,0 +1,52 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GO-003
+  title: Do not panic in library code
+  type: prohibition
+  category: error-handling
+spec:
+  severity: advisory
+  scope:
+    languages: [go]
+  intent: A panic in a library crashes every program that imports it; callers can only handle errors they are given.
+  requirement: >
+    Return errors from library (non-main) packages instead of calling panic. Panics are
+    acceptable only for programmer errors that cannot happen in a correct program, in
+    Must-style helpers used with constant input at init time, and in package main.
+  remediation: >
+    Return an error to the caller instead. If the panic guards an impossible state or a
+    Must-style helper, document it and record an exception.
+  examples:
+    approved:
+      - code: |
+          if cfg.Addr == "" {
+              return nil, errors.New("server: Addr is required")
+          }
+        language: go
+    forbidden:
+      - code: |
+          if cfg.Addr == "" {
+              panic("server: Addr is required")
+          }
+        language: go
+  checks:
+    - evaluator: regex
+      # Skips comment lines and files declaring package main.
+      pattern: '^(?![ \t]*//)[^\n]*?(?<![\w.])panic\((?<!^package[ \t]+main\b[\s\S]*)'
+      include: ["**/*.go"]
+      exclude: ["**/*_test.go", "**/testdata/**", "**/vendor/**", "**/cmd/**", "**/main.go", "**/examples/**", "**/example/**", "**/tools/**", "**/magefiles/**", "**/*.pb.go", "**/zz_generated*.go"]
+      message: panic in library code; return an error instead
+  references:
+    - https://go.dev/wiki/CodeReviewComments#dont-panic
+    - https://go.dev/doc/effective_go#panic
+  applicability:
+    files: ["**/go.mod"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Must-style helpers (like regexp.MustCompile) that panic by design on constant input.
+      - Guards for states that are impossible in a correct program (e.g. an unreachable switch default).
+      - Re-panicking a recovered value after cleanup.
+  rollout:
+    recommendedStage: advise

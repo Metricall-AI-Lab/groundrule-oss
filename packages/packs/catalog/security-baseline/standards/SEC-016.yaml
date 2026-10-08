@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-016
+  title: Never deserialize untrusted data with native object serializers
+  type: agent-instruction
+  category: security
+spec:
+  severity: blocker
+  intent: Native deserializers can instantiate arbitrary types, so untrusted input becomes remote code execution.
+  requirement: >
+    Do not pass data from users, the network, queues, or shared storage to deserializers that
+    can construct arbitrary objects: Python pickle/marshal/shelve and yaml.load with an unsafe
+    loader, Java ObjectInputStream, .NET BinaryFormatter, PHP unserialize, Ruby Marshal.load and
+    YAML.unsafe_load, or JSON libraries with polymorphic type handling enabled. Use a data-only
+    format (JSON, protobuf) parsed into explicit types and validated against a schema.
+  examples:
+    approved:
+      - { code: "data = yaml.safe_load(body)", language: python }
+      - { code: "const order = OrderSchema.parse(JSON.parse(body));", language: typescript }
+    forbidden:
+      - { code: "obj = pickle.loads(request.data)", language: python }
+      - { code: "new ObjectInputStream(socket.getInputStream()).readObject()", language: java }
+  agent:
+    summary: >
+      Never deserialize untrusted data with pickle, yaml.load, ObjectInputStream, BinaryFormatter,
+      unserialize, or Marshal; parse JSON or protobuf into explicit types and validate it.
+  references:
+    - { id: CWE-502, title: Deserialization of Untrusted Data }
+    - { id: OWASP-A08:2021, title: Software and Data Integrity Failures, url: "https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.5.3] }
+    - { framework: iso-27001, controls: ["8.28"] }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

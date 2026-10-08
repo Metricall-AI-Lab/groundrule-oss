@@ -1,0 +1,41 @@
+standard: GO-006
+cases:
+  - name: package-level helpers and the default client
+    expect: violation
+    count: 3
+    files:
+      internal/billing/client.go: |
+        package billing
+
+        func Fetch(url string) (*http.Response, error) {
+        	resp, err := http.Get(url)
+        	if err != nil {
+        		return nil, err
+        	}
+        	return http.DefaultClient.Do(req)
+        }
+
+        var client = &http.Client{}
+  - name: client with timeout, methods named Get, and http constants
+    expect: clean
+    files:
+      internal/billing/client.go: |
+        package billing
+
+        var client = &http.Client{Timeout: 10 * time.Second}
+
+        // Do not use http.Get here; it has no timeout.
+        func Fetch(ctx context.Context, url string) (*http.Response, error) {
+        	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+        	if err != nil {
+        		return nil, err
+        	}
+        	if r.Method == http.MethodPost {
+        		cache.Get(url)
+        	}
+        	return client.Do(req)
+        }
+      internal/billing/client_test.go: |
+        package billing
+
+        func TestFetch(t *testing.T) { http.Get(srv.URL) }

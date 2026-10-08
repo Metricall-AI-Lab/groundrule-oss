@@ -1,0 +1,34 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: HTTP-004
+  title: Make side-effecting POST requests safe to retry with idempotency keys
+  type: agent-instruction
+  category: reliability
+spec:
+  severity: warning
+  intent: >
+    Networks time out after the server has acted. Without idempotency, a client retry
+    charges a card twice, sends two emails, or creates duplicate orders.
+  requirement: >
+    POST (and PATCH) endpoints that move money, create orders or accounts, send messages, or
+    trigger other external side effects accept an Idempotency-Key header. The server stores
+    the key with the request fingerprint and the first response, scoped to the caller, and
+    replays that response for repeats; a reused key with a different payload is rejected
+    (422 or 409). Keys expire after a documented window (typically 24 hours). PUT and DELETE
+    handlers are idempotent by design.
+  examples:
+    approved:
+      - "POST /payments with Idempotency-Key: 5f1c... → second identical request returns the original 201 and does not charge again"
+    forbidden:
+      - "Client retries a timed-out POST /payments and the customer is charged twice"
+  agent:
+    summary: >
+      When an endpoint charges money, creates orders, sends messages, or calls external systems,
+      support an Idempotency-Key header: persist key, request hash, and first response per caller,
+      replay the stored response on repeats, and reject the same key with a different body. Keep
+      PUT and DELETE idempotent.
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach
