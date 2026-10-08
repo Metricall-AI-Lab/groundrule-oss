@@ -21,3 +21,12 @@ spec:
       pattern: "^import\\s+[\\w.]+\\.(?:repository|repositories|repo)\\.[\\w.*]+;|^[ \\t]*(?:private|protected|public)?[ \\t]*(?:final\\s+)?[A-Z]\\w*(?:Repository|Repo)(?:<[^>]*>)?\\s+\\w+\\s*;"
       include: ["**/*Controller.java", "**/*Resource.java"]
       message: Controller uses a repository directly
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+    frameworks: [spring-boot]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Read-only query controllers that read repositories by design (e.g. CQRS). Exclude those paths with scope.exclude.
+  rollout:
+    recommendedStage: advise

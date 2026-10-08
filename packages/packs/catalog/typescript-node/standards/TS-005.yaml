@@ -9,6 +9,7 @@ spec:
   severity: warning
   scope:
     languages: [typescript]
+  intent: Type holes and unvalidated input are where runtime crashes and injection bugs start.
   requirement: >
     Do not use any. Validate untrusted input (HTTP bodies, environment, files, third-party
     responses) with the project's schema library at the boundary, and use the inferred types inside.
@@ -16,3 +17,9 @@ spec:
     summary: >
       Avoid any. Validate untrusted input at the boundary with the project's schema library
       (e.g. zod) and use the inferred types. Reuse existing types and helpers before adding new ones.
+  applicability:
+    files: ["**/tsconfig.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

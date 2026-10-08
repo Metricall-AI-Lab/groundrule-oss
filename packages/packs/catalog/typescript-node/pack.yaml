@@ -5,5 +5,10 @@ metadata:
   title: TypeScript and Node.js
   description: Low-noise conventions for TypeScript and JavaScript codebases.
   owner: groundrule
+  version: 1.0.0
+  tags: [typescript, javascript, node]
 spec:
   include: ["standards/**/*.yaml"]
+  applicability:
+    languages: [typescript, javascript]
+    files: ["**/package.json", "**/tsconfig.json"]

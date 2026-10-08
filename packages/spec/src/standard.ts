@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { ApiVersion, Confidence, Glob, Severity, StandardId } from "./common.js";
+import {
+  ApiVersion,
+  Confidence,
+  Glob,
+  NoiseLevel,
+  RolloutStage,
+  Severity,
+  Slug,
+  StandardId,
+} from "./common.js";
 
 /** The semantic kind of a standard. Drives defaults and how it is presented. */
 export const STANDARD_TYPES = [
@@ -101,6 +110,84 @@ export const ExceptionPolicy = z.strictObject({
 });
 export type ExceptionPolicy = z.infer<typeof ExceptionPolicy>;
 
+/**
+ * A reference: a bare URL, or an entry in a public catalog (e.g. CWE-798) with an
+ * optional title and URL. Catalog IDs let tools link and group references.
+ */
+export const Reference = z.union([
+  z.url(),
+  z
+    .strictObject({
+      id: z
+        .string()
+        .min(1)
+        .max(64)
+        .optional()
+        .describe("Identifier in a public catalog, e.g. CWE-798, OWASP-A02:2021."),
+      title: z.string().min(1).max(200).optional(),
+      url: z.url().optional(),
+    })
+    .refine((r) => r.id !== undefined || r.url !== undefined, {
+      message: "A reference needs an id, a url, or both",
+    }),
+]);
+export type Reference = z.infer<typeof Reference>;
+
+/**
+ * Compliance controls this standard supports. A mapping means following the
+ * standard contributes evidence for the control; it never satisfies it alone.
+ */
+export const ComplianceMapping = z.strictObject({
+  framework: Slug.describe(
+    "Framework ID, e.g. soc2, iso-27001, owasp-asvs, pci-dss, hipaa. See COMPLIANCE_FRAMEWORKS.",
+  ),
+  controls: z
+    .array(z.string().min(1).max(64))
+    .min(1)
+    .describe("Control IDs within the framework, e.g. CC6.1 or 8.28."),
+});
+export type ComplianceMapping = z.infer<typeof ComplianceMapping>;
+
+/**
+ * Which repositories this standard is relevant to, used to recommend it. Unlike
+ * scope, applicability never limits where an adopted standard is checked.
+ * Every field widens relevance; when all are omitted, the standard is relevant to
+ * any repository its scope (languages, frameworks) fits.
+ */
+export const Applicability = z
+  .strictObject({
+    languages: z.array(z.string().min(1)).optional().describe("e.g. java, typescript."),
+    frameworks: z.array(z.string().min(1)).optional().describe("e.g. spring-boot, react."),
+    files: z
+      .array(Glob)
+      .optional()
+      .describe("Files whose presence makes the standard relevant, e.g. **/pom.xml."),
+    dependencies: z
+      .array(z.string().min(1))
+      .optional()
+      .describe("Package names whose presence makes the standard relevant, e.g. react."),
+  })
+  .describe("Which repositories the standard is relevant to. Used for recommendations only.");
+export type Applicability = z.infer<typeof Applicability>;
+
+/** What adopters can expect from a standard's checks. */
+export const Quality = z.strictObject({
+  noise: NoiseLevel,
+  knownFalsePositives: z
+    .array(z.string().min(1))
+    .optional()
+    .describe(
+      "Situations where the check is known to flag correct code, and how to scope them out.",
+    ),
+});
+export type Quality = z.infer<typeof Quality>;
+
+/** How the author recommends rolling the standard out. Organizations decide the actual stage. */
+export const Rollout = z.strictObject({
+  recommendedStage: RolloutStage.describe("The stage to start at when adopting this standard."),
+});
+export type Rollout = z.infer<typeof Rollout>;
+
 export const StandardMetadata = z.strictObject({
   id: StandardId,
   title: z.string().min(1).max(120),
@@ -128,7 +215,17 @@ export const StandardSpec = z.strictObject({
   agent: AgentDelivery.default({ instruction: true }),
   checks: z.array(Check).default([]).describe("Automated checks. Empty means guidance only."),
   exceptions: ExceptionPolicy.optional(),
-  references: z.array(z.url()).optional().describe("Links to ADRs, docs, incidents."),
+  references: z
+    .array(Reference)
+    .optional()
+    .describe("Links to ADRs, docs, incidents, or catalog entries such as CWE-798."),
+  compliance: z
+    .array(ComplianceMapping)
+    .optional()
+    .describe("Compliance controls this standard supports (evidence, not certification)."),
+  applicability: Applicability.optional(),
+  quality: Quality.optional().describe("Expected noise of the checks, for adopters."),
+  rollout: Rollout.optional().describe("Recommended starting stage when adopting."),
 });
 export type StandardSpec = z.infer<typeof StandardSpec>;
 

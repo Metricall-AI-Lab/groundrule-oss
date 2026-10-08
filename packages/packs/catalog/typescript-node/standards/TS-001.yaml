@@ -24,3 +24,11 @@ spec:
       include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
       exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/benchmarks/**", "**/scripts/**", "**/*.config.*", "**/bin/**"]
       message: console.log in application code
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Command-line tools and build scripts outside the excluded folders. Add their paths to scope.exclude.
+  rollout:
+    recommendedStage: advise

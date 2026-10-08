@@ -7,6 +7,7 @@ metadata:
   category: security
 spec:
   severity: warning
+  intent: Logs are copied widely and kept for a long time, so anything sensitive in them is effectively leaked.
   requirement: >
     Never log passwords, tokens, API keys, session cookies, full request or response
     bodies, or personal data. Log identifiers and outcomes instead, and redact before logging.
@@ -14,3 +15,12 @@ spec:
     summary: >
       Never log secrets, tokens, cookies, full request/response bodies, or personal data.
       Log IDs and outcomes, and redact before logging.
+  references:
+    - { id: CWE-532, title: Insertion of Sensitive Information into Log File }
+  compliance:
+    - { framework: owasp-asvs, controls: [V7.1.1, V7.1.2] }
+    - { framework: iso-27001, controls: ["8.11", "8.15"] }
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

@@ -137,6 +137,13 @@ describe("groundrule CLI", () => {
     const explain = await cli(r.root, "explain", "sec-002");
     expect(explain.stdout).toContain("SEC-002  No environment files in the repository");
     expect(explain.stdout).toContain("How to fix");
+    expect(explain.stdout).toContain("Recommended starting stage: enforce");
+    expect(explain.stdout).toContain("Expected noise: low");
+    expect(explain.stdout).toContain(
+      "OWASP Application Security Verification Standard 4.0: V2.10.4",
+    );
+    expect(explain.stdout).toContain("CWE-538 Insertion of Sensitive Information");
+    expect(explain.stdout).toContain("https://cwe.mitre.org/data/definitions/538.html");
     const missing = await cli(r.root, "explain", "SEC-999");
     expect(missing.code).toBe(2);
     expect(missing.stderr).toContain("Did you mean SEC-001");

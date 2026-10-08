@@ -10,6 +10,7 @@ spec:
   scope:
     languages: [java]
     frameworks: [spring-boot]
+  intent: Thin controllers keep business rules testable and reusable outside HTTP.
   requirement: >
     Controllers handle HTTP concerns only: routing, validation, mapping DTOs, and status codes.
     Business decisions belong in the service or domain layer.
@@ -17,3 +18,9 @@ spec:
     summary: >
       Controllers only route, validate, map DTOs, and set status codes. Put business decisions
       in services. Return DTOs, never JPA entities.
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: teach

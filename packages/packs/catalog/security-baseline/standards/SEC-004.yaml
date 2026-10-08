@@ -23,3 +23,17 @@ spec:
       pattern: "rejectUnauthorized\\s*:\\s*false|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*['\"]?0|verify\\s*=\\s*False\\b|InsecureSkipVerify\\s*:\\s*true"
       message: TLS certificate verification is disabled
       exclude: ["**/*.md"]
+  references:
+    - { id: CWE-295, title: Improper Certificate Validation }
+  compliance:
+    - { framework: owasp-asvs, controls: [V9.2.1] }
+    - { framework: pci-dss, controls: ["4.2.1"] }
+    - { framework: hipaa, controls: ["164.312(e)(1)"] }
+    - { framework: soc2, controls: [CC6.7] }
+    - { framework: iso-27001, controls: ["8.24"] }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Unrelated APIs that take a verify=False argument (e.g. some Python libraries). Exclude those files with scope.exclude.
+  rollout:
+    recommendedStage: advise

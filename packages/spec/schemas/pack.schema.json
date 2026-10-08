@@ -31,6 +31,19 @@
         "owner": {
           "type": "string",
           "minLength": 1
+        },
+        "version": {
+          "description": "Semantic version of the pack. Bump it whenever a standard changes.",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+        },
+        "tags": {
+          "description": "Discovery tags, e.g. security, compliance, frontend.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       },
       "required": [
@@ -63,6 +76,46 @@
             "type": "string",
             "minLength": 1
           }
+        },
+        "applicability": {
+          "description": "Which repositories the pack is relevant to. Used for recommendations only.",
+          "type": "object",
+          "properties": {
+            "languages": {
+              "description": "e.g. java, typescript.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "frameworks": {
+              "description": "e.g. spring-boot, react.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "files": {
+              "description": "Files whose presence makes the standard relevant, e.g. **/pom.xml.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Glob pattern, e.g. src/main/**/*.java"
+              }
+            },
+            "dependencies": {
+              "description": "Package names whose presence makes the standard relevant, e.g. react.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

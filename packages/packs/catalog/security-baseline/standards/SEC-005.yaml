@@ -28,3 +28,14 @@ spec:
         - "**/Cargo.lock"
         - "**/go.sum"
       message: No dependency lockfile is committed
+  references:
+    - { id: CWE-1357, title: Reliance on Insufficiently Trustworthy Component }
+    - { id: OWASP-A08:2021, title: Software and Data Integrity Failures, url: "https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/" }
+  applicability:
+    files: ["**/package.json", "**/pyproject.toml", "**/requirements*.txt", "**/Cargo.toml", "**/go.mod"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Libraries that deliberately do not commit a lockfile. Disable the standard for those repositories.
+  rollout:
+    recommendedStage: enforce

@@ -16,3 +16,16 @@ spec:
     - evaluator: regex
       pattern: "-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----"
       message: Private key committed to the repository
+  references:
+    - { id: CWE-321, title: Use of Hard-coded Cryptographic Key }
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+  compliance:
+    - { framework: owasp-asvs, controls: [V2.10.4, V6.4.1] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.24", "5.17"] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Test fixtures or docs that contain sample keys. Exclude those paths with scope.exclude.
+  rollout:
+    recommendedStage: enforce

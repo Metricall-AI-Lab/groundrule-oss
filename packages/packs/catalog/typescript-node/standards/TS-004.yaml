@@ -20,3 +20,9 @@ spec:
       include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"]
       exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/benchmarks/**"]
       message: Use @ts-expect-error with a reason instead of @ts-ignore
+  applicability:
+    files: ["**/tsconfig.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: advise

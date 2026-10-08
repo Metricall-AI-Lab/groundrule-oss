@@ -314,12 +314,153 @@
               "additionalProperties": false
             },
             "references": {
-              "description": "Links to ADRs, docs, incidents.",
+              "description": "Links to ADRs, docs, incidents, or catalog entries such as CWE-798.",
               "type": "array",
               "items": {
-                "type": "string",
-                "format": "uri"
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "description": "Identifier in a public catalog, e.g. CWE-798, OWASP-A02:2021.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "url": {
+                        "type": "string",
+                        "format": "uri"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
               }
+            },
+            "compliance": {
+              "description": "Compliance controls this standard supports (evidence, not certification).",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "framework": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Framework ID, e.g. soc2, iso-27001, owasp-asvs, pci-dss, hipaa. See COMPLIANCE_FRAMEWORKS."
+                  },
+                  "controls": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "description": "Control IDs within the framework, e.g. CC6.1 or 8.28."
+                  }
+                },
+                "required": [
+                  "framework",
+                  "controls"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "applicability": {
+              "type": "object",
+              "properties": {
+                "languages": {
+                  "description": "e.g. java, typescript.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "frameworks": {
+                  "description": "e.g. spring-boot, react.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "files": {
+                  "description": "Files whose presence makes the standard relevant, e.g. **/pom.xml.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Glob pattern, e.g. src/main/**/*.java"
+                  }
+                },
+                "dependencies": {
+                  "description": "Package names whose presence makes the standard relevant, e.g. react.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "description": "Which repositories the standard is relevant to. Used for recommendations only."
+            },
+            "quality": {
+              "description": "Expected noise of the checks, for adopters.",
+              "type": "object",
+              "properties": {
+                "noise": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "description": "low: findings are almost always real. medium: occasional false positives. high: expect to tune scope or exclusions."
+                },
+                "knownFalsePositives": {
+                  "description": "Situations where the check is known to flag correct code, and how to scope them out.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "noise"
+              ],
+              "additionalProperties": false
+            },
+            "rollout": {
+              "description": "Recommended starting stage when adopting.",
+              "type": "object",
+              "properties": {
+                "recommendedStage": {
+                  "type": "string",
+                  "enum": [
+                    "observe",
+                    "teach",
+                    "advise",
+                    "enforce"
+                  ],
+                  "description": "The stage to start at when adopting this standard."
+                }
+              },
+              "required": [
+                "recommendedStage"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
@@ -369,6 +510,19 @@
             "owner": {
               "type": "string",
               "minLength": 1
+            },
+            "version": {
+              "description": "Semantic version of the pack. Bump it whenever a standard changes.",
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+            },
+            "tags": {
+              "description": "Discovery tags, e.g. security, compliance, frontend.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           },
           "required": [
@@ -401,6 +555,46 @@
                 "type": "string",
                 "minLength": 1
               }
+            },
+            "applicability": {
+              "description": "Which repositories the pack is relevant to. Used for recommendations only.",
+              "type": "object",
+              "properties": {
+                "languages": {
+                  "description": "e.g. java, typescript.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "frameworks": {
+                  "description": "e.g. spring-boot, react.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "files": {
+                  "description": "Files whose presence makes the standard relevant, e.g. **/pom.xml.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Glob pattern, e.g. src/main/**/*.java"
+                  }
+                },
+                "dependencies": {
+                  "description": "Package names whose presence makes the standard relevant, e.g. react.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false

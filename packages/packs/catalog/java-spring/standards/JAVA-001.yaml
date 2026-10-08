@@ -32,3 +32,11 @@ spec:
       pattern: "@Autowired\\s+(?:@\\w+(?:\\([^)]*\\))?\\s+)*(?:private|protected|public)?\\s*(?:final\\s+)?[\\w.]+(?:<[^;(){}]*>)?\\s+\\w+\\s*;"
       include: ["**/*.java"]
       message: Field injection with @Autowired
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Legacy code that uses field injection throughout. Start at advise and migrate class by class.
+  rollout:
+    recommendedStage: advise

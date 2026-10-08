@@ -23,3 +23,11 @@ spec:
       pattern: "System\\.(?:out|err)\\.print|\\.printStackTrace\\(\\s*\\)"
       include: ["**/*.java"]
       message: Console output instead of the logger
+  applicability:
+    files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - main() methods of small command-line utilities. Exclude them with scope.exclude.
+  rollout:
+    recommendedStage: advise

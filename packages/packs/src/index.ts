@@ -22,6 +22,8 @@ export interface PackInfo {
   ref: string;
   title: string;
   description?: string;
+  version?: string;
+  tags?: string[];
   standards: number;
 }
 
@@ -38,6 +40,8 @@ export async function listPacks(): Promise<PackInfo[]> {
       ...(result.document.metadata.description
         ? { description: result.document.metadata.description }
         : {}),
+      ...(result.document.metadata.version ? { version: result.document.metadata.version } : {}),
+      ...(result.document.metadata.tags ? { tags: result.document.metadata.tags } : {}),
       standards: files.filter((f) => f.endsWith(".yaml")).length,
     });
   }

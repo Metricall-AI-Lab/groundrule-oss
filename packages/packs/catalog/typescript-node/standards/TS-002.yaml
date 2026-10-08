@@ -18,3 +18,15 @@ spec:
       ecosystems: [npm]
       forbid: [request, request-promise, request-promise-native, node-uuid]
       allowInstead: ["fetch", "crypto.randomUUID()"]
+  remediation: >
+    Remove the package. Use fetch (built into Node 18+) for HTTP and crypto.randomUUID() for UUIDs.
+  references:
+    - { id: CWE-1104, title: Use of Unmaintained Third Party Components }
+  compliance:
+    - { framework: owasp-asvs, controls: [V14.2.1] }
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: low
+  rollout:
+    recommendedStage: enforce

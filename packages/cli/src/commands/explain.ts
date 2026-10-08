@@ -1,5 +1,11 @@
 import { displayPath } from "@groundrule/core";
-import { type Example, isExceptionActive } from "@groundrule/spec";
+import {
+  complianceFrameworkTitle,
+  type Example,
+  isExceptionActive,
+  referenceLabel,
+  referenceUrl,
+} from "@groundrule/spec";
 import { EXIT, eprintln, type IO, println, style } from "../io.js";
 import { openWorkspace } from "../workspace.js";
 
@@ -117,9 +123,28 @@ export async function explain(io: IO, id: string): Promise<number> {
     );
   }
 
+  if (spec.quality || spec.rollout) {
+    section("Adopting it");
+    if (spec.rollout)
+      println(io, `   Recommended starting stage: ${spec.rollout.recommendedStage}`);
+    if (spec.quality) println(io, `   Expected noise: ${spec.quality.noise}`);
+    for (const fp of spec.quality?.knownFalsePositives ?? [])
+      println(io, `   ${s.dim(`Known false positive: ${text(fp)}`)}`);
+  }
+
+  if (spec.compliance?.length) {
+    section("Supports compliance controls");
+    for (const c of spec.compliance)
+      println(io, `   ${complianceFrameworkTitle(c.framework)}: ${c.controls.join(", ")}`);
+  }
+
   if (spec.references?.length) {
     section("References");
-    for (const ref of spec.references) println(io, `   ${ref}`);
+    for (const ref of spec.references) {
+      const label = referenceLabel(ref);
+      const url = referenceUrl(ref);
+      println(io, `   ${label}${url && url !== label ? s.dim(`  ${url}`) : ""}`);
+    }
   }
   println(io);
   println(

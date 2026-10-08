@@ -17,3 +17,16 @@ spec:
     - evaluator: regex
       pattern: "\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b|\\bgh[pousr]_[A-Za-z0-9]{36,}\\b|\\bxox[abprs]-[A-Za-z0-9-]{10,}|\\bsk_live_[A-Za-z0-9]{20,}"
       message: Access token or key found in code
+  references:
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+  compliance:
+    - { framework: owasp-asvs, controls: [V2.10.4] }
+    - { framework: pci-dss, controls: ["8.6.2"] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Revoked example tokens in documentation or tests. Exclude those paths with scope.exclude.
+  rollout:
+    recommendedStage: enforce

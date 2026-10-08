@@ -20,3 +20,18 @@ spec:
       include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
       exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/benchmarks/**", "**/scripts/**", "**/*.config.*", "**/bin/**"]
       message: eval or new Function in application code
+  references:
+    - { id: CWE-95, title: Eval Injection }
+    - { id: CWE-94, title: Improper Control of Generation of Code }
+    - { id: OWASP-A03:2021, title: Injection, url: "https://owasp.org/Top10/A03_2021-Injection/" }
+  compliance:
+    - { framework: owasp-asvs, controls: [V5.2.4] }
+    - { framework: iso-27001, controls: ["8.28"] }
+  applicability:
+    files: ["**/package.json"]
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Sandboxes or code generators that need dynamic evaluation by design. Record an exception for them.
+  rollout:
+    recommendedStage: enforce

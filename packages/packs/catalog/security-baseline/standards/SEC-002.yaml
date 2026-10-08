@@ -30,3 +30,16 @@ spec:
         - "**/testdata/**"
         - "**/fixtures/**"
       message: Environment file committed to the repository
+  references:
+    - { id: CWE-538, title: Insertion of Sensitive Information into Externally-Accessible File or Directory }
+    - { id: CWE-798, title: Use of Hard-coded Credentials }
+  compliance:
+    - { framework: owasp-asvs, controls: [V2.10.4] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Env files that intentionally hold only non-secret defaults (e.g. .env.defaults). Add them to the check's allow list.
+  rollout:
+    recommendedStage: enforce

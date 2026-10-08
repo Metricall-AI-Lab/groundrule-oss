@@ -52,6 +52,35 @@ export function compareConfidence(a: Confidence, b: Confidence): number {
   return CONFIDENCES.indexOf(a) - CONFIDENCES.indexOf(b);
 }
 
+/**
+ * How far a standard is rolled out in an organization, from least to most strict.
+ * observe: checks run silently and results are only recorded.
+ * teach: the standard is delivered to coding agents; checks still run silently.
+ * advise: findings are shown, but never fail a check.
+ * enforce: findings count at the standard's severity; blockers fail the check.
+ */
+export const ROLLOUT_STAGES = ["observe", "teach", "advise", "enforce"] as const;
+export const RolloutStage = z
+  .enum(ROLLOUT_STAGES)
+  .describe(
+    "observe: checked silently. teach: delivered to coding agents. advise: findings shown, never failing. enforce: findings count at the standard's severity.",
+  );
+export type RolloutStage = z.infer<typeof RolloutStage>;
+
+/** Compare two rollout stages. Negative when a < b, zero when equal, positive when a > b. */
+export function compareRolloutStage(a: RolloutStage, b: RolloutStage): number {
+  return ROLLOUT_STAGES.indexOf(a) - ROLLOUT_STAGES.indexOf(b);
+}
+
+/** Expected false-positive rate of a standard's checks on typical repositories. */
+export const NOISE_LEVELS = ["low", "medium", "high"] as const;
+export const NoiseLevel = z
+  .enum(NOISE_LEVELS)
+  .describe(
+    "low: findings are almost always real. medium: occasional false positives. high: expect to tune scope or exclusions.",
+  );
+export type NoiseLevel = z.infer<typeof NoiseLevel>;
+
 /** A glob pattern matched against repository-relative POSIX paths. */
 export const Glob = z.string().min(1).describe("Glob pattern, e.g. src/main/**/*.java");
 
