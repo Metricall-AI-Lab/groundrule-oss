@@ -68,6 +68,7 @@ More in [`examples/foundation`](examples/foundation/.groundrule/standards).
 | `groundrule explain <ID>` | Why a standard exists, examples, how to comply, exceptions |
 | `groundrule doctor` | Check configuration, tools, and agent files |
 | `groundrule packs` | List bundled packs |
+| `groundrule scan [--json] [--upload]` | Observe this repository against the whole catalog: stack, agent files, tools, and how every rule would do today. Changes nothing |
 | `groundrule login` | Sign in to your organization on the Groundrule platform (browser approval) |
 | `groundrule whoami` / `logout` | Show or remove (and revoke) your saved sign-in |
 
@@ -82,6 +83,8 @@ npx @groundrule/cli login               # approve this computer in your browser
 npx @groundrule/cli init --org acme     # writes platform: { org: acme } to .groundrule/config.yaml
 npx @groundrule/cli sync                # your organization's rules, with every customization
 ```
+
+`groundrule scan --upload` shares a scan with your organization so it can see which rules fit each repository. Reports contain counts and at most three one-line, redacted snippets per rule (none for security rules, none at all with `--no-snippets`); `--json` shows exactly what would be sent.
 
 What each command takes from the platform depends on the rule's rollout stage: `sync` writes rules at Teach, Advise, and Enforce into your agent files; `check` runs Enforce rules as set and Advise rules as warnings. Rules your repository defines in `.groundrule/standards/` still apply. In CI, set `GROUNDRULE_TOKEN` to a token from Settings → API tokens. Sign-ins are saved in `~/.config/groundrule/credentials.json`, readable only by you.
 

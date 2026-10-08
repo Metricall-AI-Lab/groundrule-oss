@@ -7,6 +7,7 @@ import { explain } from "./commands/explain.js";
 import { init } from "./commands/init.js";
 import { login, logout, whoami } from "./commands/login.js";
 import { packs } from "./commands/packs.js";
+import { scan } from "./commands/scan.js";
 import { standards } from "./commands/standards.js";
 import { sync } from "./commands/sync.js";
 import { EXIT, eprintln, type IO, VERSION } from "./io.js";
@@ -77,6 +78,30 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
           ...(o.org ? { org: o.org } : {}),
           ...(o.url ? { url: o.url } : {}),
         });
+      },
+    );
+
+  program
+    .command("scan")
+    .description("observe this repository against the whole catalog (changes nothing)")
+    .option("--json", "print the report as JSON instead of a summary")
+    .option("-o, --output <file>", "also write the report to a file")
+    .option("--upload", "share the report with your organization on Groundrule")
+    .option("--no-snippets", "leave code snippets out of the report")
+    .option("--repository <name>", "repository name, e.g. acme/api (default: from the git remote)")
+    .option("--org <slug>", "organization to upload to")
+    .option("--url <url>", "Groundrule platform address")
+    .action(
+      async (o: {
+        json?: boolean;
+        output?: string;
+        upload?: boolean;
+        snippets?: boolean;
+        repository?: string;
+        org?: string;
+        url?: string;
+      }) => {
+        code = await scan(ctx(), o);
       },
     );
 

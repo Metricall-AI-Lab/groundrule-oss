@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { DOCUMENT_SCHEMAS, Finding, GroundruleDocument } from "../src/index.js";
+import { DOCUMENT_SCHEMAS, Finding, GroundruleDocument, ScanReport } from "../src/index.js";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outDir = join(packageRoot, "schemas");
@@ -14,6 +14,7 @@ const targets: Record<string, z.ZodType> = {
   ...DOCUMENT_SCHEMAS,
   Finding,
   GroundruleDocument,
+  ScanReport,
 };
 
 for (const [name, schema] of Object.entries(targets)) {

@@ -10,3 +10,4 @@ Changes to the Groundrule document format go through an RFC.
 |-----|-------|--------|
 | [0001](0001-catalog-metadata.md) | Catalog metadata for standards and packs | Accepted |
 | [0002](0002-platform-config.md) | Connecting a repository to the Groundrule platform | Accepted |
+| [0003](0003-scan-report.md) | Scan reports | Accepted |
