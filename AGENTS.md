@@ -101,6 +101,41 @@ For the reasoning and examples behind a rule, run `npx groundrule explain <ID>`.
   Never disable TLS certificate verification, not even "temporarily" or in scripts. Fix the trust store or certificate instead.
   - Don't: `rejectUnauthorized: false`
 
+- **SEC-008** No Slack webhook URLs in code · _blocker_
+  Treat Slack incoming-webhook URLs as secrets. Never commit them; read them from the environment or a secret manager.
+  - Do: `const url = process.env.SLACK_WEBHOOK_URL;`
+  - Don't: `SLACK_WEBHOOK = "https://hooks.slack.com/services/T.../B.../..."`
+
+- **SEC-009** No npm access tokens in code or .npmrc · _blocker_
+  Never commit npm access tokens (npm_...), including as a literal _authToken in .npmrc. Reference an environment variable instead, e.g. //registry.npmjs.org/:_authToken=${NPM_TOKEN}.
+  - Do: `//registry.npmjs.org/:_authToken=${NPM_TOKEN}`
+  - Don't: `//registry.npmjs.org/:_authToken=npm_...`
+
+- **SEC-010** No Azure storage or Service Bus keys in connection strings · _blocker_
+  Never commit Azure connection strings that embed an AccountKey or SharedAccessKey. Prefer managed identity; otherwise read the connection string from Key Vault or the environment.
+  - Do: `new BlobServiceClient(url, new DefaultAzureCredential())`
+  - Don't: `DefaultEndpointsProtocol=https;AccountName=prod;AccountKey=<88-character key>;EndpointSuffix=core.windows.net`
+
+- **SEC-011** No SSH keys or key stores in the repository · _blocker_
+  Do not commit SSH private keys (id_rsa, id_ecdsa, id_ed25519, PuTTY .ppk) or key stores (.p12, .pfx, .jks, .keystore). Load signing and TLS keys from a secret manager at build or run time.
+  - Do: `id_ed25519.pub (public keys are fine)`
+  - Don't: `deploy/id_rsa`
+
+- **SEC-015** Use parameterized queries, never string-built SQL · _blocker_
+  Always pass values to SQL and other queries as bound parameters; never concatenate, interpolate, or format input into query text. Pick table/column names from a fixed allow list.
+  - Do: `db.query("SELECT * FROM users WHERE id = $1", [id])`
+  - Don't: `db.query(`SELECT * FROM users WHERE id = ${id}`)`
+
+- **SEC-016** Never deserialize untrusted data with native object serializers · _blocker_
+  Never deserialize untrusted data with pickle, yaml.load, ObjectInputStream, BinaryFormatter, unserialize, or Marshal; parse JSON or protobuf into explicit types and validate it.
+  - Do: `data = yaml.safe_load(body)`
+  - Don't: `obj = pickle.loads(request.data)`
+
+- **SEC-019** Verify JWT signature, algorithm, and expiry · _blocker_
+  Always verify JWTs with a pinned algorithm list (never "none") and validate exp, iss, and aud; never trust claims from a decode-only call or disable signature or expiry checks.
+  - Do: `jwt.verify(token, key, { algorithms: ["RS256"], issuer, audience })`
+  - Don't: `const claims = jwt.decode(token);` (Decodes without verifying.)
+
 - **TS-003** No eval or new Function · _blocker_
   Never use eval() or new Function() in application code. (typescript, javascript)
 
@@ -116,6 +151,41 @@ For the reasoning and examples behind a rule, run `npx groundrule explain <ID>`.
 - **SEC-006** Never log secrets or personal data · _warning_
   Never log secrets, tokens, cookies, full request/response bodies, or personal data. Log IDs and outcomes, and redact before logging.
 
+- **SEC-007** No Google API keys in code · _warning_
+  Do not hard-code Google API keys (AIza...). Read server-side keys from the environment or a secret manager. Keys that must ship to browsers or mobile apps must be restricted by referrer or app and by API, and injected from build configuration rather than source.
+  - Do: `const key = process.env.GOOGLE_API_KEY;`
+  - Don't: `const key = "AIzaSy...";  // a real 39-character key in source`
+
+- **SEC-012** No hard-coded passwords or secrets in string literals · _warning_
+  Do not assign literal passwords or secrets to password, passwd, or secret fields and variables. Read them from the environment or a secret manager; use obvious placeholders in examples and keep test credentials in test code.
+  - Do: `password = os.environ["DB_PASSWORD"]`
+  - Don't: `const DB_PASSWORD = "Tr0ub4dor&3";`
+
+- **SEC-013** Do not enable SSLv3, TLS 1.0, or TLS 1.1 · _warning_
+  Use TLS 1.2 or later. Do not select or allow SSLv3, TLS 1.0, or TLS 1.1 as a protocol or minimum version; let the platform default negotiate, or pin a minimum of TLS 1.2.
+  - Do: `ctx = ssl.create_default_context()`
+  - Don't: `ssl.SSLContext(ssl.PROTOCOL_TLSv1)`
+
+- **SEC-017** Set Secure, HttpOnly, and SameSite on session cookies · _warning_
+  When setting session, auth, or CSRF cookies, always set Secure, HttpOnly, and SameSite=Lax or Strict (None only with Secure and a real cross-site need).
+  - Do: `res.cookie("__Host-session", id, { secure: true, httpOnly: true, sameSite: "lax", path: "/" })`
+  - Don't: `res.cookie("session", id)` (No Secure, HttpOnly, or SameSite.)
+
+- **SEC-018** Restrict CORS to an allow list of trusted origins · _warning_
+  Configure CORS with an explicit allow list of origins; never reflect the request Origin, allow "null", or use a wildcard together with credentials.
+  - Do: `cors({ origin: ["https://app.example.com"], credentials: true })`
+  - Don't: `cors({ origin: true, credentials: true })` (Reflects any origin with credentials.)
+
+- **SEC-020** Validate destinations before making server-side requests to user-supplied URLs · _warning_
+  Before fetching any URL that comes from input, allow only http(s), reject hosts that resolve to private, loopback, or link-local addresses, and validate every redirect.
+  - Do: `Fetch webhook URLs through an egress proxy or helper that blocks internal address ranges and re-checks redirects.`
+  - Don't: `const res = await fetch(req.body.url);`
+
+- **SEC-021** Generate tokens and secrets with a cryptographically secure random generator · _warning_
+  Generate tokens, session IDs, nonces, and keys only with a CSPRNG (crypto.randomBytes, secrets, SecureRandom, crypto/rand); never Math.random, random, java.util.Random, or math/rand.
+  - Do: `const token = crypto.randomBytes(32).toString("base64url");`
+  - Don't: `const token = Math.random().toString(36).slice(2);`
+
 - **TS-001** No console.log in application code · _warning_
   Use the project's logger instead of console.log or console.debug in application code. Tests, scripts, and CLIs may print. (typescript, javascript)
   - Do: `logger.info({ orderId }, "order created")`
@@ -127,8 +197,56 @@ For the reasoning and examples behind a rule, run `npx groundrule explain <ID>`.
 - **TS-005** Type and validate at the boundaries · _warning_
   Avoid any. Validate untrusted input at the boundary with the project's schema library (e.g. zod) and use the inferred types. Reuse existing types and helpers before adding new ones. (typescript)
 
+- **TS-006** Await or handle every promise · _warning_
+  Await, return, or .catch every promise; mark deliberate fire-and-forget calls with void and handle their errors. Never pass an async callback to forEach; use for...of or Promise.all. (typescript, javascript)
+  - Do: `await sendEmail(user);`
+  - Don't: `sendEmail(user); // not awaited`
+
+- **TS-007** Keep TypeScript strict mode on · _warning_
+  The root tsconfig.json sets "compilerOptions.strict": true, or extends a shared config that does. No tsconfig may set "strict": false. (typescript)
+  - Do: `{ "compilerOptions": { "strict": true } }`
+  - Don't: `{ "compilerOptions": { "strict": false } }`
+
+- **TS-010** Only entry points call process.exit · _warning_
+  Never call process.exit outside the program's entry point. Throw an error instead and let main() set process.exitCode after cleanup. (typescript, javascript)
+  - Do: `if (!config.ok) throw new ConfigError(config.issues);`
+  - Don't: `function loadConfig() { if (!ok) { console.error('bad config'); process.exit(1); } }`
+
+- **TS-011** No deprecated Buffer() constructor · _warning_
+  Do not call Buffer() or new Buffer(). Use Buffer.from, Buffer.alloc, or Buffer.allocUnsafe (only when every byte is overwritten immediately). (typescript, javascript)
+  - Do: `Buffer.from(token, "base64")`
+  - Don't: `new Buffer(token, "base64")`
+
+- **TS-012** No blocking synchronous I/O on request paths · _warning_
+  In request handlers, middleware, and consumers use async APIs (fs/promises, async child_process, async crypto); keep *Sync calls to startup code, CLIs, and scripts. (typescript, javascript)
+  - Do: `const template = await readFile(path, 'utf8');`
+  - Don't: `app.get('/report', (req, res) => { res.send(readFileSync(path, 'utf8')); });`
+
+- **TS-014** No debugger statements · _warning_
+  Do not commit debugger statements. (typescript, javascript)
+
 - **TS-004** Prefer @ts-expect-error over @ts-ignore · _advisory_
   Use // @ts-expect-error with a reason instead of // @ts-ignore. (typescript)
+
+- **TS-008** Narrow types instead of asserting them · _advisory_
+  Do not use ! non-null assertions or as-casts to silence type errors. Narrow with a check, type guard, or schema parse and handle the missing case explicitly. (typescript)
+  - Do: `const user = users.get(id); if (!user) throw new NotFoundError(id);`
+  - Don't: `const user = users.get(id)!;`
+
+- **TS-013** Type caught errors as unknown, not any · _advisory_
+  Do not annotate catch variables or promise rejection handlers with any. Leave the catch variable as unknown (the default under strict) and narrow it, e.g. with instanceof Error. (typescript)
+  - Do: `catch (err) { if (err instanceof HttpError) return err.status; throw err; }`
+  - Don't: `catch (err: any) { return err.response.status; }`
+
+- **TS-015** Declare the supported Node.js version in package.json · _advisory_
+  Keep engines.node in the root package.json and the pinned version in .nvmrc (or .node-version) in step with CI and production; don't use APIs newer than that range. (typescript, javascript)
+  - Do: `{ "name": "api", "engines": { "node": ">=20.11" } }`
+  - Don't: `{ "name": "api", "engines": { "npm": ">=10" } }`
+
+- **TS-009** Import Node.js built-ins with the node: prefix · _info_
+  Import Node.js built-in modules with the node: prefix (node:fs, node:path, node:crypto, ...) in code that runs on Node.js 16 or later. (typescript, javascript)
+  - Do: `import { readFile } from "node:fs/promises";`
+  - Don't: `import { readFile } from "fs/promises";`
 
 ### `packages/*/src/**` (except `packages/cli/src/**`)
 

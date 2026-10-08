@@ -22,3 +22,7 @@ cases:
     expect: clean
     files:
       gin_test.go: "client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}\n"
+  - name: test fixtures that describe the anti-pattern (regression, groundrule's own repo)
+    expect: clean
+    files:
+      fixtures/tls/insecure-client.yaml: 'code: "const agent = new https.Agent({ rejectUnauthorized: false });"'
