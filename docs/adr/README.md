@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 Short records of decisions that are expensive to reverse. Format: context, decision, consequences.
-Platform decisions live in the private `groundrule-backend` repository (`docs/adr`).
+Platform decisions live in the private `groundrule-backend` repository (local folder `../backend`) (`docs/adr`).
 
 | ADR | Title | Status |
 |-----|-------|--------|
