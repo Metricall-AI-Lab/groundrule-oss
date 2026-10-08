@@ -1,0 +1,23 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-003
+  title: Controllers must not use repositories directly
+  type: invariant
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+  intent: Going through the service layer keeps transactions, authorization, and business rules in one place.
+  requirement: >
+    Controllers call services. They must not import or use repositories directly.
+  remediation: >
+    Move the repository call into a service method and call that from the controller.
+  checks:
+    - evaluator: regex
+      # Imports from a repository package, or (package-by-feature) a repository field.
+      pattern: "^import\\s+[\\w.]+\\.(?:repository|repositories|repo)\\.[\\w.*]+;|^[ \\t]*(?:private|protected|public)?[ \\t]*(?:final\\s+)?[A-Z]\\w*(?:Repository|Repo)(?:<[^>]*>)?\\s+\\w+\\s*;"
+      include: ["**/*Controller.java", "**/*Resource.java"]
+      message: Controller uses a repository directly

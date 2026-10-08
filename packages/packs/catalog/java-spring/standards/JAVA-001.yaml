@@ -1,0 +1,34 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-001
+  title: Use constructor injection
+  type: requirement
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+    frameworks: [spring-boot]
+  intent: Constructor injection makes dependencies explicit, immutable, and testable without Spring.
+  requirement: >
+    Inject dependencies through the constructor (final fields). Do not use @Autowired on fields.
+  remediation: >
+    Make the field final and set it in the constructor (Lombok @RequiredArgsConstructor works too).
+  examples:
+    approved:
+      - code: |
+          private final ClaimRepository claims;
+          public ClaimService(ClaimRepository claims) { this.claims = claims; }
+        language: java
+    forbidden:
+      - code: |
+          @Autowired
+          private ClaimRepository claims;
+        language: java
+  checks:
+    - evaluator: regex
+      pattern: "@Autowired\\s+(?:@\\w+(?:\\([^)]*\\))?\\s+)*(?:private|protected|public)?\\s*(?:final\\s+)?[\\w.]+(?:<[^;(){}]*>)?\\s+\\w+\\s*;"
+      include: ["**/*.java"]
+      message: Field injection with @Autowired

@@ -1,0 +1,36 @@
+{
+  "name": "@groundrule/spec",
+  "version": "0.0.0",
+  "description": "The Groundrule specification: schemas and types for standards, packs, config, exceptions, and findings.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/groundrule/groundrule.git",
+    "directory": "packages/spec"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./schemas/*": "./schemas/*"
+  },
+  "files": [
+    "dist",
+    "schemas"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node dist/scripts/generate-json-schema.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts"
+}

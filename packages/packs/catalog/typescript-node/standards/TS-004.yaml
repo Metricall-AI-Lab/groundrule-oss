@@ -1,0 +1,22 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-004
+  title: Prefer @ts-expect-error over @ts-ignore
+  type: guidance
+  category: code-quality
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript]
+  intent: "@ts-ignore silently outlives the problem it hid; @ts-expect-error fails once the error is fixed."
+  requirement: >
+    Use // @ts-expect-error with a reason instead of // @ts-ignore.
+  remediation: >
+    Replace it with // @ts-expect-error followed by the reason.
+  checks:
+    - evaluator: regex
+      pattern: "@ts-ignore"
+      include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/benchmarks/**"]
+      message: Use @ts-expect-error with a reason instead of @ts-ignore

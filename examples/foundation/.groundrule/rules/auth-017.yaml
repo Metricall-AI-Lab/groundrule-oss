@@ -1,0 +1,19 @@
+# Semgrep rule used by AUTH-017. Rule files live outside standards/ so they are
+# not loaded as standards.
+rules:
+  - id: auth-017-mutating-endpoint-without-preauthorize
+    languages: [java]
+    severity: ERROR
+    message: >-
+      State-changing endpoint without @PreAuthorize. Authorize at the service
+      boundary before calling business logic (AUTH-017).
+    patterns:
+      - pattern: |
+          @$MAPPING(...)
+          $RET $METHOD(...) { ... }
+      - metavariable-regex:
+          metavariable: $MAPPING
+          regex: ^(PostMapping|PutMapping|PatchMapping|DeleteMapping)$
+      - pattern-not: |
+          @PreAuthorize(...)
+          $RET $METHOD(...) { ... }

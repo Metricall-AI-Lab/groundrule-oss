@@ -1,0 +1,19 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-004
+  title: Keep business logic out of controllers
+  type: agent-instruction
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    languages: [java]
+    frameworks: [spring-boot]
+  requirement: >
+    Controllers handle HTTP concerns only: routing, validation, mapping DTOs, and status codes.
+    Business decisions belong in the service or domain layer.
+  agent:
+    summary: >
+      Controllers only route, validate, map DTOs, and set status codes. Put business decisions
+      in services. Return DTOs, never JPA entities.

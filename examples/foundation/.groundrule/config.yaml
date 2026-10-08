@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/config.schema.json
+apiVersion: groundrule.dev/v1alpha1
+kind: Config
+
+# Foundation example: four deliberately different standards that must all run
+# through the same pipeline with no special cases (Build Plan §4.5).
+extends: []
+
+tags:
+  - multi-tenant
+  - backend
+
+targets:
+  - agents-md
+  - claude-code
+  - cursor
+
+enforcement:
+  scope: changed-lines
+  legacy: report
+  failOn: blocker

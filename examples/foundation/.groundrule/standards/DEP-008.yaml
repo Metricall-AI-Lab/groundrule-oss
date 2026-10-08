@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/standard.schema.json
+# Kind: deterministic. A forbidden dependency is a yes/no question.
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: DEP-008
+  title: Use the platform HTTP client
+  type: forbidden-tech
+  owner: team:platform
+  category: dependencies
+  version: 2
+spec:
+  severity: warning
+  scope:
+    tags: [backend]
+  intent: >
+    One HTTP client means one place for retries, timeouts, tracing, and auth headers.
+  requirement: >
+    Backend services must use @acme/http-client for outbound HTTP calls.
+    Do not add axios, request, got, or node-fetch.
+  remediation: >
+    Replace the dependency with @acme/http-client and use createClient() from it.
+  examples:
+    approved:
+      - code: "import { createClient } from '@acme/http-client'"
+        language: typescript
+    forbidden:
+      - "import axios from 'axios'"
+  checks:
+    - evaluator: dependencies
+      ecosystems: [npm]
+      forbid: [axios, request, got, node-fetch]
+      allowInstead: ["@acme/http-client"]

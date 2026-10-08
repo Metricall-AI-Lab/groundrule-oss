@@ -1,0 +1,32 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-002
+  title: No environment files in the repository
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: .env files hold real credentials and are the most common source of leaked secrets.
+  requirement: >
+    Do not commit .env files. Commit a .env.example with placeholder values instead.
+  remediation: >
+    Remove the file from git (git rm --cached), add it to .gitignore, and rotate any secrets it contained.
+  examples:
+    approved: [".env.example with placeholder values"]
+    forbidden: [".env with real values"]
+  checks:
+    - evaluator: files
+      forbid: ["**/.env", "**/.env.*"]
+      allow:
+        - "**/.env.example"
+        - "**/.env.sample"
+        - "**/.env.template"
+        - "**/.env.*.example"
+        # Fixtures for code that loads .env files (e.g. Flask's tests/test_apps/.env).
+        - "**/test/**"
+        - "**/tests/**"
+        - "**/__tests__/**"
+        - "**/testdata/**"
+        - "**/fixtures/**"
+      message: Environment file committed to the repository

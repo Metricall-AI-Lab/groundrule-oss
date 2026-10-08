@@ -1,0 +1,16 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-006
+  title: Never log secrets or personal data
+  type: agent-instruction
+  category: security
+spec:
+  severity: warning
+  requirement: >
+    Never log passwords, tokens, API keys, session cookies, full request or response
+    bodies, or personal data. Log identifiers and outcomes instead, and redact before logging.
+  agent:
+    summary: >
+      Never log secrets, tokens, cookies, full request/response bodies, or personal data.
+      Log IDs and outcomes, and redact before logging.

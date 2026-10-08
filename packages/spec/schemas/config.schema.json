@@ -1,0 +1,140 @@
+{
+  "$id": "https://groundrule.dev/schemas/v1alpha1/config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "groundrule.dev/v1alpha1",
+      "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+    },
+    "kind": {
+      "type": "string",
+      "const": "Config"
+    },
+    "extends": {
+      "default": [],
+      "description": "Packs or standard directories this repository inherits.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "standards": {
+      "default": [
+        "standards/**/*.yaml"
+      ],
+      "description": "Repository-local standard files, relative to the .groundrule directory.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Glob pattern, e.g. src/main/**/*.java"
+      }
+    },
+    "tags": {
+      "default": [],
+      "description": "Repository tags matched by standard scopes, e.g. multi-tenant.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "targets": {
+      "default": [
+        "agents-md"
+      ],
+      "description": "Agent formats to generate.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "agents-md",
+          "claude-code",
+          "cursor",
+          "copilot"
+        ]
+      }
+    },
+    "enforcement": {
+      "default": {
+        "scope": "changed-lines",
+        "legacy": "report",
+        "failOn": "blocker"
+      },
+      "type": "object",
+      "properties": {
+        "scope": {
+          "default": "changed-lines",
+          "description": "Which code is evaluated by `check`.",
+          "type": "string",
+          "enum": [
+            "changed-lines",
+            "changed-files",
+            "all"
+          ]
+        },
+        "legacy": {
+          "default": "report",
+          "description": "How pre-existing (baseline) violations are treated.",
+          "type": "string",
+          "enum": [
+            "report",
+            "ignore",
+            "enforce"
+          ]
+        },
+        "failOn": {
+          "default": "blocker",
+          "description": "Lowest severity that makes `check` exit non-zero.",
+          "type": "string",
+          "enum": [
+            "blocker",
+            "warning",
+            "none"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "overrides": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+        "description": "Unique, stable standard identifier, e.g. AUTH-017."
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "advisory",
+              "warning",
+              "blocker"
+            ],
+            "description": "info: context only. advisory: non-blocking recommendation. warning: visible, needs acknowledgment. blocker: fails the check."
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind"
+  ],
+  "additionalProperties": false,
+  "description": "Repository configuration, stored at .groundrule/config.yaml."
+}

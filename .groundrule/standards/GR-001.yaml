@@ -1,0 +1,22 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GR-001
+  title: Library packages never print
+  type: prohibition
+  owner: team:maintainers
+  category: architecture
+spec:
+  severity: blocker
+  scope:
+    paths: ["packages/*/src/**"]
+    exclude: ["packages/cli/src/**"]
+  intent: Libraries are embedded in the CLI, the cloud workers, and third-party tools; only the CLI owns the terminal.
+  requirement: >
+    Library packages never write to stdout or stderr. Return data and diagnostics; the CLI prints.
+  remediation: >
+    Return the information (a Diagnostic, a result field, or the injected log function) and let the CLI print it.
+  checks:
+    - evaluator: regex
+      pattern: "\\bconsole\\.(?:log|info|warn|error|debug)\\(|process\\.(?:stdout|stderr)\\.write\\("
+      message: Library code writes to the terminal

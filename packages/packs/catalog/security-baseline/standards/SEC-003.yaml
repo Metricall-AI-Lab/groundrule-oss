@@ -1,0 +1,19 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-003
+  title: No access tokens in code
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: Tokens in code end up in logs, forks, and AI training sets.
+  requirement: >
+    Never hard-code cloud keys or API tokens (AWS, GitHub, Slack, Stripe live keys).
+    Read them from the environment or a secret manager.
+  remediation: >
+    Revoke the token now, then read it from the environment or your secret manager.
+  checks:
+    - evaluator: regex
+      pattern: "\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b|\\bgh[pousr]_[A-Za-z0-9]{36,}\\b|\\bxox[abprs]-[A-Za-z0-9-]{10,}|\\bsk_live_[A-Za-z0-9]{20,}"
+      message: Access token or key found in code

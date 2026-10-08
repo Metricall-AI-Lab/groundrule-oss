@@ -1,0 +1,25 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: JAVA-002
+  title: Log with the logging framework
+  type: prohibition
+  category: observability
+spec:
+  severity: warning
+  scope:
+    paths: ["**/src/main/**"]
+    languages: [java]
+  intent: System.out and printStackTrace bypass log levels, structure, and correlation IDs.
+  requirement: >
+    Use SLF4J (or the project's logger). Do not use System.out, System.err, or printStackTrace() in main code.
+  remediation: >
+    Use an SLF4J logger, e.g. private static final Logger log = LoggerFactory.getLogger(MyService.class).
+  examples:
+    approved: ['log.warn("Claim {} rejected", claimId, e);']
+    forbidden: ["e.printStackTrace();"]
+  checks:
+    - evaluator: regex
+      pattern: "System\\.(?:out|err)\\.print|\\.printStackTrace\\(\\s*\\)"
+      include: ["**/*.java"]
+      message: Console output instead of the logger

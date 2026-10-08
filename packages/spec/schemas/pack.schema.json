@@ -1,0 +1,79 @@
+{
+  "$id": "https://groundrule.dev/schemas/v1alpha1/pack.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "groundrule.dev/v1alpha1",
+      "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+    },
+    "kind": {
+      "type": "string",
+      "const": "Pack"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "default": [
+            "standards/**/*.yaml"
+          ],
+          "description": "Standard files to include, relative to the pack file.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Glob pattern, e.g. src/main/**/*.java"
+          }
+        },
+        "extends": {
+          "default": [],
+          "description": "Other packs this pack builds on. Same reference syntax as config extends.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "additionalProperties": false,
+  "description": "A reusable, named group of standards."
+}

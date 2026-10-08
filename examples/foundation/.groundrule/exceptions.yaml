@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/exception-list.schema.json
+apiVersion: groundrule.dev/v1alpha1
+kind: ExceptionList
+spec:
+  exceptions:
+    - id: EX-1042
+      standard: DEP-008
+      paths: ["services/legacy-billing/**"]
+      reason: Migration to the platform client is scheduled after the billing rewrite.
+      requestedBy: team:billing
+      approvedBy: team:platform
+      expires: "2027-01-31"
+      remediation: Replace axios during the billing rewrite.

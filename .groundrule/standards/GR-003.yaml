@@ -1,0 +1,14 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GR-003
+  title: Protected interfaces change only with review
+  type: agent-instruction
+  owner: team:maintainers
+  category: governance
+spec:
+  severity: warning
+  requirement: >
+    Do not change packages/spec/src, the Evaluator interface (packages/core/src/evaluator.ts),
+    tsconfig.base.json, biome.json, or CI workflows as a side effect of other work. Propose the
+    change separately and flag it for human review.

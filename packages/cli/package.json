@@ -1,0 +1,45 @@
+{
+  "name": "@groundrule/cli",
+  "version": "0.1.0",
+  "description": "Groundrule: define engineering standards once, enforce them everywhere.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/groundrule/groundrule.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://groundrule.dev",
+  "bin": {
+    "groundrule": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && chmod +x dist/bin.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@groundrule/adapters": "workspace:*",
+    "@groundrule/core": "workspace:*",
+    "@groundrule/evaluators": "workspace:*",
+    "@groundrule/packs": "workspace:*",
+    "@groundrule/reporters": "workspace:*",
+    "@groundrule/spec": "workspace:*",
+    "commander": "^15.0.0",
+    "yaml": "^2.9.1"
+  }
+}

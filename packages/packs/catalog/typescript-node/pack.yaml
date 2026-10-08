@@ -1,0 +1,9 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: typescript-node
+  title: TypeScript and Node.js
+  description: Low-noise conventions for TypeScript and JavaScript codebases.
+  owner: groundrule
+spec:
+  include: ["standards/**/*.yaml"]

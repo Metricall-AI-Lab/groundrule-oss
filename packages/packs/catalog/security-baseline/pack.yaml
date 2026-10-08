@@ -1,0 +1,9 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: security-baseline
+  title: Security baseline
+  description: Secrets, credentials, TLS, and supply-chain basics every repository should follow.
+  owner: groundrule
+spec:
+  include: ["standards/**/*.yaml"]

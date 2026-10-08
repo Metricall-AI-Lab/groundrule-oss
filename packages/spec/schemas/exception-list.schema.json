@@ -1,0 +1,91 @@
+{
+  "$id": "https://groundrule.dev/schemas/v1alpha1/exception-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "groundrule.dev/v1alpha1",
+      "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+    },
+    "kind": {
+      "type": "string",
+      "const": "ExceptionList"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "exceptions": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^EX-[0-9]+$",
+                "description": "Unique exception identifier."
+              },
+              "standard": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+                "description": "Unique, stable standard identifier, e.g. AUTH-017."
+              },
+              "paths": {
+                "default": [
+                  "**"
+                ],
+                "description": "Where the exception applies.",
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Glob pattern, e.g. src/main/**/*.java"
+                }
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "requestedBy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "approvedBy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expires": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "description": "After this date the exception no longer applies."
+              },
+              "remediation": {
+                "description": "Plan to remove the need for the exception.",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "standard",
+              "reason",
+              "expires"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "spec"
+  ],
+  "additionalProperties": false,
+  "description": "Time-boxed exceptions, stored at .groundrule/exceptions.yaml."
+}

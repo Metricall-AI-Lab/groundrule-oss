@@ -1,0 +1,25 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-004
+  title: Do not disable TLS verification
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: Disabling certificate checks makes every connection open to interception.
+  requirement: >
+    Never disable TLS certificate verification, not even "temporarily" or in scripts.
+    Fix the trust store or certificate instead.
+  remediation: >
+    Remove the override and fix the certificate or trust store instead.
+  examples:
+    forbidden:
+      - "rejectUnauthorized: false"
+      - "requests.get(url, verify=False)"
+      - "InsecureSkipVerify: true"
+  checks:
+    - evaluator: regex
+      pattern: "rejectUnauthorized\\s*:\\s*false|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*['\"]?0|verify\\s*=\\s*False\\b|InsecureSkipVerify\\s*:\\s*true"
+      message: TLS certificate verification is disabled
+      exclude: ["**/*.md"]

@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/exception-list.schema.json
+apiVersion: groundrule.dev/v1alpha1
+kind: ExceptionList
+spec:
+  exceptions:
+    - id: EX-1
+      standard: SEC-001
+      paths: ["packages/packs/test/**"]
+      reason: Test fixture proving SEC-001 detects private keys. The key is a fake placeholder.
+      approvedBy: team:maintainers
+      expires: "2027-06-30"
+      remediation: Generate fixture content at test time so no key-shaped text is committed.
+    - id: EX-2
+      standard: SEC-003
+      paths: ["packages/packs/test/**"]
+      reason: Test fixture proving SEC-003 detects AWS keys. The key ID is fake.
+      approvedBy: team:maintainers
+      expires: "2027-06-30"
+      remediation: Generate fixture content at test time.
+    - id: EX-3
+      standard: SEC-004
+      paths: ["packages/packs/test/**", "packages/core/test/generated.test.ts"]
+      reason: Test fixtures exercising TLS detection and managed-block stripping.
+      approvedBy: team:maintainers
+      expires: "2027-06-30"
+      remediation: Generate fixture content at test time.

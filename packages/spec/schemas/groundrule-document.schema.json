@@ -1,0 +1,646 @@
+{
+  "$id": "https://groundrule.dev/schemas/v1alpha1/groundrule-document.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "const": "groundrule.dev/v1alpha1",
+          "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+        },
+        "kind": {
+          "type": "string",
+          "const": "Standard"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+              "description": "Unique, stable standard identifier, e.g. AUTH-017."
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "guidance",
+                "requirement",
+                "prohibition",
+                "invariant",
+                "approved-tech",
+                "forbidden-tech",
+                "process",
+                "repository",
+                "agent-instruction"
+              ]
+            },
+            "status": {
+              "default": "active",
+              "type": "string",
+              "enum": [
+                "draft",
+                "active",
+                "deprecated",
+                "retired"
+              ]
+            },
+            "version": {
+              "default": 1,
+              "description": "Bump on every semantic change.",
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "owner": {
+              "description": "Who owns and can change this standard, e.g. team:security-engineering.",
+              "type": "string",
+              "minLength": 1
+            },
+            "category": {
+              "description": "Free-form grouping, e.g. security, data.",
+              "type": "string",
+              "minLength": 1
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "advisory",
+                "warning",
+                "blocker"
+              ],
+              "description": "info: context only. advisory: non-blocking recommendation. warning: visible, needs acknowledgment. blocker: fails the check."
+            },
+            "scope": {
+              "default": {},
+              "type": "object",
+              "properties": {
+                "repositories": {
+                  "description": "Repository name globs, e.g. backend-*.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Glob pattern, e.g. src/main/**/*.java"
+                  }
+                },
+                "paths": {
+                  "description": "Path globs the standard applies to.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Glob pattern, e.g. src/main/**/*.java"
+                  }
+                },
+                "exclude": {
+                  "description": "Path globs excluded even if matched by paths.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Glob pattern, e.g. src/main/**/*.java"
+                  }
+                },
+                "languages": {
+                  "description": "e.g. java, typescript.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "frameworks": {
+                  "description": "e.g. spring-boot, react.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "tags": {
+                  "description": "Repository tags declared in config, e.g. multi-tenant.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "description": "Where the standard applies. Omitted fields do not restrict scope."
+            },
+            "intent": {
+              "description": "Why the standard exists, in one or two lines.",
+              "type": "string",
+              "minLength": 1
+            },
+            "rationale": {
+              "description": "Longer background, trade-offs, history.",
+              "type": "string",
+              "minLength": 1
+            },
+            "requirement": {
+              "type": "string",
+              "minLength": 1,
+              "description": "What must (or must not) be true. Be specific."
+            },
+            "examples": {
+              "type": "object",
+              "properties": {
+                "approved": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "language": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "forbidden": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "language": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "remediation": {
+              "description": "How to fix a violation.",
+              "type": "string",
+              "minLength": 1
+            },
+            "agent": {
+              "default": {
+                "instruction": true
+              },
+              "type": "object",
+              "properties": {
+                "instruction": {
+                  "default": true,
+                  "description": "Include this standard in generated agent context (AGENTS.md, CLAUDE.md, ...).",
+                  "type": "boolean"
+                },
+                "summary": {
+                  "description": "One or two sentences written for an agent. Defaults to the requirement.",
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "checks": {
+              "default": [],
+              "description": "Automated checks. Empty means guidance only.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "evaluator": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:[-/][a-z0-9]+)*$",
+                    "description": "Evaluator plugin ID, e.g. dependencies, semgrep, llm."
+                  },
+                  "minConfidence": {
+                    "description": "Findings below this confidence are reported as concerns, not violations.",
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "certain"
+                    ]
+                  }
+                },
+                "required": [
+                  "evaluator"
+                ],
+                "additionalProperties": {},
+                "description": "An automated check. Extra keys are options for the selected evaluator."
+              }
+            },
+            "exceptions": {
+              "type": "object",
+              "properties": {
+                "allowed": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "approvers": {
+                  "description": "Who may approve exceptions, e.g. team:security-engineering.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "maxDurationDays": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "additionalProperties": false
+            },
+            "references": {
+              "description": "Links to ADRs, docs, incidents.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "required": [
+            "severity",
+            "requirement"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "additionalProperties": false,
+      "description": "A Groundrule standard: one engineering rule with scope, intent, and checks."
+    },
+    {
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "const": "groundrule.dev/v1alpha1",
+          "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+        },
+        "kind": {
+          "type": "string",
+          "const": "Pack"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "owner": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "id",
+            "title"
+          ],
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "include": {
+              "default": [
+                "standards/**/*.yaml"
+              ],
+              "description": "Standard files to include, relative to the pack file.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Glob pattern, e.g. src/main/**/*.java"
+              }
+            },
+            "extends": {
+              "default": [],
+              "description": "Other packs this pack builds on. Same reference syntax as config extends.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "additionalProperties": false,
+      "description": "A reusable, named group of standards."
+    },
+    {
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "const": "groundrule.dev/v1alpha1",
+          "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+        },
+        "kind": {
+          "type": "string",
+          "const": "Config"
+        },
+        "extends": {
+          "default": [],
+          "description": "Packs or standard directories this repository inherits.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "standards": {
+          "default": [
+            "standards/**/*.yaml"
+          ],
+          "description": "Repository-local standard files, relative to the .groundrule directory.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Glob pattern, e.g. src/main/**/*.java"
+          }
+        },
+        "tags": {
+          "default": [],
+          "description": "Repository tags matched by standard scopes, e.g. multi-tenant.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "targets": {
+          "default": [
+            "agents-md"
+          ],
+          "description": "Agent formats to generate.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "agents-md",
+              "claude-code",
+              "cursor",
+              "copilot"
+            ]
+          }
+        },
+        "enforcement": {
+          "default": {
+            "scope": "changed-lines",
+            "legacy": "report",
+            "failOn": "blocker"
+          },
+          "type": "object",
+          "properties": {
+            "scope": {
+              "default": "changed-lines",
+              "description": "Which code is evaluated by `check`.",
+              "type": "string",
+              "enum": [
+                "changed-lines",
+                "changed-files",
+                "all"
+              ]
+            },
+            "legacy": {
+              "default": "report",
+              "description": "How pre-existing (baseline) violations are treated.",
+              "type": "string",
+              "enum": [
+                "report",
+                "ignore",
+                "enforce"
+              ]
+            },
+            "failOn": {
+              "default": "blocker",
+              "description": "Lowest severity that makes `check` exit non-zero.",
+              "type": "string",
+              "enum": [
+                "blocker",
+                "warning",
+                "none"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "overrides": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+            "description": "Unique, stable standard identifier, e.g. AUTH-017."
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "advisory",
+                  "warning",
+                  "blocker"
+                ],
+                "description": "info: context only. advisory: non-blocking recommendation. warning: visible, needs acknowledgment. blocker: fails the check."
+              },
+              "disabled": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "description": "Repository configuration, stored at .groundrule/config.yaml."
+    },
+    {
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "const": "groundrule.dev/v1alpha1",
+          "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+        },
+        "kind": {
+          "type": "string",
+          "const": "ExceptionList"
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "exceptions": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^EX-[0-9]+$",
+                    "description": "Unique exception identifier."
+                  },
+                  "standard": {
+                    "type": "string",
+                    "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+                    "description": "Unique, stable standard identifier, e.g. AUTH-017."
+                  },
+                  "paths": {
+                    "default": [
+                      "**"
+                    ],
+                    "description": "Where the exception applies.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Glob pattern, e.g. src/main/**/*.java"
+                    }
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "requestedBy": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "approvedBy": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                    "description": "After this date the exception no longer applies."
+                  },
+                  "remediation": {
+                    "description": "Plan to remove the need for the exception.",
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "id",
+                  "standard",
+                  "reason",
+                  "expires"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "spec"
+      ],
+      "additionalProperties": false,
+      "description": "Time-boxed exceptions, stored at .groundrule/exceptions.yaml."
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/standard.schema.json
+# Kind: semantic. Needs reasoning over the execution path, so it combines a
+# static-analysis check with an AI check that reports its confidence.
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AUTH-017
+  title: Authorization checks must occur at the service boundary
+  type: requirement
+  owner: team:security-engineering
+  category: security
+  version: 4
+spec:
+  severity: blocker
+  scope:
+    paths: ["src/main/**"]
+    languages: [java]
+    frameworks: [spring-boot]
+  intent: >
+    Authorization must never rely only on frontend checks or client-supplied roles.
+  requirement: >
+    Every state-changing operation must validate authorization at the backend
+    service boundary before business logic executes.
+  remediation: >
+    Annotate the endpoint with @PreAuthorize or call AuthorizationService.authorize()
+    before invoking the service method.
+  examples:
+    approved:
+      - code: |
+          @PreAuthorize("hasPermission(#id, 'claim', 'approve')")
+          @PostMapping("/claims/{id}/approve")
+          public ClaimDto approve(@PathVariable UUID id) { ... }
+        language: java
+    forbidden:
+      - code: |
+          @PostMapping("/claims/{id}/approve")
+          public ClaimDto approve(@PathVariable UUID id, @RequestHeader("X-Role") String role) { ... }
+        language: java
+        note: Trusts a client-supplied role.
+  agent:
+    summary: >
+      Every mutating endpoint must enforce authorization on the server, via @PreAuthorize
+      or AuthorizationService.authorize(), before calling business logic.
+  checks:
+    - evaluator: semgrep
+      rules: ../rules/auth-017.yaml
+    - evaluator: llm
+      minConfidence: high
+      question: >
+        Does any new or modified state-changing endpoint reach business logic without
+        a server-side authorization check, or trust a role supplied by the client?
+  exceptions:
+    approvers: [team:security-engineering]
+    maxDurationDays: 90

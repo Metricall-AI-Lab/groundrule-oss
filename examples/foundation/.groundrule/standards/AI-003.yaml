@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/standard.schema.json
+# Kind: agent instruction only. Shapes agent behavior before code exists; no check.
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: AI-003
+  title: Do not invent internal APIs
+  type: agent-instruction
+  owner: team:developer-experience
+  category: ai-development
+  version: 1
+spec:
+  severity: warning
+  intent: >
+    Agents confidently invent endpoints and fields that do not exist.
+  requirement: >
+    Before calling an internal service, search the repository or approved documentation
+    for an existing client or interface. Do not invent endpoint paths, request fields,
+    or response fields. If none exists, stop and ask.
+  agent:
+    instruction: true

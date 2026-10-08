@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/config.schema.json
+# Groundrule checks its own repository.
+apiVersion: groundrule.dev/v1alpha1
+kind: Config
+
+extends:
+  - groundrule:packs/security-baseline
+  - groundrule:packs/typescript-node
+
+targets:
+  - agents-md
+  - claude-code
+
+enforcement:
+  scope: changed-lines
+  legacy: report
+  failOn: blocker

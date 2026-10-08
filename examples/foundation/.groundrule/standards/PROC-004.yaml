@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/standard.schema.json
+# Kind: process. About the shape of a change, not the content of one file.
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PROC-004
+  title: Schema changes must include a migration
+  type: process
+  owner: team:data-platform
+  category: data
+  version: 1
+spec:
+  severity: blocker
+  intent: >
+    Entity changes without a migration break deployments and drift environments apart.
+  requirement: >
+    Any change to persistence entities must include a new migration in the same change.
+  remediation: >
+    Generate a migration (./gradlew flywayMigrateGenerate) and commit it with the entity change.
+  checks:
+    - evaluator: change-set
+      when:
+        changed: ["src/main/**/entity/**/*.java"]
+      require:
+        added: ["src/main/resources/db/migration/V*__*.sql"]

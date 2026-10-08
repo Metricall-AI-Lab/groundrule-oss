@@ -1,0 +1,22 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-003
+  title: No eval or new Function
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  scope:
+    languages: [typescript, javascript]
+  intent: Evaluating strings as code turns any injection bug into remote code execution.
+  requirement: >
+    Never use eval() or new Function() in application code.
+  remediation: >
+    Parse the input instead: JSON.parse, a schema, or a lookup table of allowed operations.
+  checks:
+    - evaluator: regex
+      pattern: "(?<![\\w.])eval\\s*\\(|\\bnew\\s+Function\\s*\\("
+      include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/benchmarks/**", "**/scripts/**", "**/*.config.*", "**/bin/**"]
+      message: eval or new Function in application code

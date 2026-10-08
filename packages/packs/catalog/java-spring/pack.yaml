@@ -1,0 +1,9 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: java-spring
+  title: Java and Spring Boot
+  description: Conventions for Spring Boot services.
+  owner: groundrule
+spec:
+  include: ["standards/**/*.yaml"]

@@ -1,0 +1,30 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-005
+  title: Commit a dependency lockfile
+  type: repository
+  category: supply-chain
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript, python, rust, go]
+  intent: Without a lockfile, every install can pull different, possibly compromised, versions.
+  requirement: >
+    Commit the lockfile your package manager produces.
+  remediation: >
+    Run your package manager's install and commit the lockfile it creates.
+  checks:
+    - evaluator: files
+      requireAny:
+        - "**/package-lock.json"
+        - "**/pnpm-lock.yaml"
+        - "**/yarn.lock"
+        - "**/bun.lock"
+        - "**/bun.lockb"
+        - "**/poetry.lock"
+        - "**/uv.lock"
+        - "**/Pipfile.lock"
+        - "**/Cargo.lock"
+        - "**/go.sum"
+      message: No dependency lockfile is committed

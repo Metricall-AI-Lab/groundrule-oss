@@ -1,0 +1,21 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: GR-002
+  title: Spec changes need an RFC
+  type: process
+  owner: team:maintainers
+  category: governance
+spec:
+  severity: warning
+  intent: The document format is a public contract that other tools build on.
+  requirement: >
+    Changes to packages/spec/src come with an RFC in rfcs/ (new or updated) in the same change.
+  remediation: >
+    Add or update an RFC in rfcs/ describing the change and its compatibility.
+  checks:
+    - evaluator: change-set
+      when:
+        changed: ["packages/spec/src/**"]
+      require:
+        changed: ["rfcs/[0-9]*.md"]

@@ -1,0 +1,26 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-001
+  title: No console.log in application code
+  type: prohibition
+  category: observability
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+  intent: Ad-hoc console output is unstructured, unsearchable, and leaks data in production.
+  requirement: >
+    Use the project's logger instead of console.log or console.debug in application code.
+    Tests, scripts, and CLIs may print.
+  remediation: >
+    Replace it with the project's logger, or remove it.
+  examples:
+    approved: ['logger.info({ orderId }, "order created")']
+    forbidden: ["console.log(order)"]
+  checks:
+    - evaluator: regex
+      pattern: "\\bconsole\\.(?:log|debug)\\("
+      include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/demo/**", "**/docs/**", "**/fixtures/**", "**/benchmarks/**", "**/scripts/**", "**/*.config.*", "**/bin/**"]
+      message: console.log in application code

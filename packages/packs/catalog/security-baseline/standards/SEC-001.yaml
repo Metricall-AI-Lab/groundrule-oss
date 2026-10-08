@@ -1,0 +1,18 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: SEC-001
+  title: No private keys in the repository
+  type: prohibition
+  category: security
+spec:
+  severity: blocker
+  intent: A committed private key must be treated as leaked, even after it is deleted from history.
+  requirement: >
+    Never commit private keys. Load them at runtime from a secret manager or the environment.
+  remediation: >
+    Remove the key, rotate it immediately, and load it from your secret manager instead.
+  checks:
+    - evaluator: regex
+      pattern: "-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----"
+      message: Private key committed to the repository

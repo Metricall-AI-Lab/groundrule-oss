@@ -1,0 +1,77 @@
+name: Groundrule
+description: Check pull requests against your engineering standards and keep agent instructions in sync.
+author: Groundrule
+branding:
+  icon: check-square
+  color: gray-dark
+
+inputs:
+  version:
+    description: Groundrule CLI version to run.
+    default: latest
+  base:
+    description: Git ref to compare against. Defaults to the pull request base, or the previous commit on push.
+    default: ""
+  fail-on:
+    description: Lowest severity that fails the check (blocker, warning, none). Defaults to the repository config.
+    default: ""
+  sarif:
+    description: Upload findings to GitHub code scanning (needs security-events write permission).
+    default: "true"
+  check-sync:
+    description: Fail if generated agent instructions are out of date.
+    default: "true"
+  working-directory:
+    description: Directory containing the repository to check.
+    default: "."
+
+outputs:
+  exit-code:
+    description: 0 passed, 1 failed, 2 configuration error.
+    value: ${{ steps.check.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v5
+      with:
+        node-version: 24
+
+    - id: check
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GROUNDRULE: npx --yes @groundrule/cli@${{ inputs.version }}
+        INPUT_BASE: ${{ inputs.base }}
+        PR_BASE: ${{ github.event.pull_request.base.sha }}
+        PUSH_BEFORE: ${{ github.event.before }}
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        set +e
+        base="${INPUT_BASE:-${PR_BASE:-$PUSH_BEFORE}}"
+        args=(check --format sarif --output groundrule.sarif --summary "$GITHUB_STEP_SUMMARY")
+        if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ]; then
+          git fetch --no-tags --quiet origin "$base" 2>/dev/null
+          args+=(--base "$base")
+        else
+          args+=(--all)
+        fi
+        [ -n "$FAIL_ON" ] && args+=(--fail-on "$FAIL_ON")
+        $GROUNDRULE "${args[@]}"
+        code=$?
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        exit 0
+
+    - if: inputs.check-sync == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npx --yes @groundrule/cli@${{ inputs.version }} sync --check
+
+    - if: always() && inputs.sarif == 'true' && hashFiles(format('{0}/groundrule.sarif', inputs.working-directory)) != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.working-directory }}/groundrule.sarif
+        category: groundrule
+
+    - shell: bash
+      run: exit ${{ steps.check.outputs.exit-code }}

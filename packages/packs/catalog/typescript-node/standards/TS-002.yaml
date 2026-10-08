@@ -1,0 +1,20 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: TS-002
+  title: No deprecated HTTP and UUID packages
+  type: forbidden-tech
+  category: dependencies
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+  intent: These packages are deprecated and no longer receive security fixes.
+  requirement: >
+    Do not add request, request-promise, or node-uuid. Use fetch (built into Node 18+)
+    and crypto.randomUUID() instead.
+  checks:
+    - evaluator: dependencies
+      ecosystems: [npm]
+      forbid: [request, request-promise, request-promise-native, node-uuid]
+      allowInstead: ["fetch", "crypto.randomUUID()"]

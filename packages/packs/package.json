@@ -1,0 +1,41 @@
+{
+  "name": "@groundrule/packs",
+  "version": "0.0.0",
+  "description": "Community standard packs for Groundrule.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/groundrule/groundrule.git",
+    "directory": "packages/packs"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@groundrule/core": "workspace:*",
+    "@groundrule/spec": "workspace:*",
+    "picomatch": "^4.0.7",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@groundrule/evaluators": "workspace:*",
+    "@types/picomatch": "^4.0.3"
+  }
+}
