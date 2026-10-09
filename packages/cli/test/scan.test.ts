@@ -43,7 +43,24 @@ interface Call {
   body?: unknown;
 }
 
-function fakePlatform(status = 201) {
+/** An organization rule written on the platform, still a draft. */
+const DRAFT_RULE = {
+  apiVersion: "groundrule.dev/v1alpha1",
+  kind: "Standard",
+  metadata: {
+    id: "ACME-001",
+    title: "No direct Stripe calls",
+    type: "prohibition",
+    status: "draft",
+  },
+  spec: {
+    severity: "warning",
+    requirement: "Call payments through PaymentsGateway, never the Stripe SDK directly.",
+    checks: [{ evaluator: "regex", pattern: "from ['\"]stripe['\"]", include: ["src/**"] }],
+  },
+};
+
+function fakePlatform(status = 201, scanRules: number | object[] = []) {
   const calls: Call[] = [];
   const respond = (async (input: string, init?: RequestInit) => {
     const url = new URL(input);
@@ -52,6 +69,18 @@ function fakePlatform(status = 201) {
       auth: (init?.headers as Record<string, string>)?.authorization,
       body: init?.body ? JSON.parse(String(init.body)) : undefined,
     });
+    if (url.pathname.endsWith("/v1/cli/scan-rules"))
+      return typeof scanRules === "number"
+        ? new Response(JSON.stringify({ error: { code: "x", message: "Not here." } }), {
+            status: scanRules,
+          })
+        : new Response(
+            JSON.stringify({
+              org: { slug: "acme" },
+              standards: scanRules.map((document) => ({ document })),
+            }),
+            { status: 200 },
+          );
     if (status !== 201)
       return new Response(
         JSON.stringify({ error: { code: "forbidden", message: "This token can't scans:write." } }),
@@ -180,12 +209,52 @@ describe("groundrule scan", () => {
     });
     expect(r.code).toBe(0);
     expect(r.stdout).toContain(`Uploaded to Acme: ${URL_}/acme/scans/s1`);
-    expect(platform.calls).toHaveLength(1);
-    expect(platform.calls[0]).toMatchObject({
-      path: "/v1/cli/scans?org=acme",
-      auth: `Bearer grt_${"a".repeat(43)}`,
+    expect(platform.calls.map((c) => c.path)).toEqual([
+      "/v1/cli/scan-rules?org=acme",
+      "/v1/cli/scans?org=acme",
+    ]);
+    expect(platform.calls[1]).toMatchObject({ auth: `Bearer grt_${"a".repeat(43)}` });
+    expect(ScanReport.safeParse(platform.calls[1]?.body).success).toBe(true);
+  });
+
+  it("tests the organization's own rules, drafts included, when uploading", async () => {
+    const root = await repo({
+      ...APP,
+      ".groundrule/config.yaml":
+        "apiVersion: groundrule.dev/v1alpha1\nkind: Config\nplatform:\n  org: acme\n",
+      "src/pay.ts": 'import Stripe from "stripe";\nexport const s = new Stripe("x");\n',
     });
-    expect(ScanReport.safeParse(platform.calls[0]?.body).success).toBe(true);
+    const platform = fakePlatform(201, [DRAFT_RULE, { not: "a standard" }]);
+    const r = await cli(root, ["scan", "--upload"], platform.fetch, {
+      GROUNDRULE_TOKEN: `grt_${"c".repeat(43)}`,
+    });
+    expect(r.code).toBe(0);
+    expect(r.stdout).toMatch(/Your rules\s+1 with checks \(1 draft\) · 1 with findings here/);
+    const report = ScanReport.parse(platform.calls[1]?.body);
+    expect(report.rules.find((x) => x.id === "ACME-001")).toMatchObject({
+      pack: "platform:acme",
+      outcome: "violations",
+      findings: 1,
+      examples: [{ file: "src/pay.ts", line: 1 }],
+    });
+  });
+
+  it("scans the catalog alone when the platform can't list the organization's rules", async () => {
+    const root = await repo({
+      ...APP,
+      ".groundrule/config.yaml":
+        "apiVersion: groundrule.dev/v1alpha1\nkind: Config\nplatform:\n  org: acme\n",
+    });
+    const old = await cli(root, ["scan", "--upload"], fakePlatform(201, 404).fetch, {
+      GROUNDRULE_TOKEN: `grt_${"d".repeat(43)}`,
+    });
+    expect(old.code).toBe(0);
+    expect(old.stderr).toBe("");
+    const failing = await cli(root, ["scan", "--upload"], fakePlatform(201, 500).fetch, {
+      GROUNDRULE_TOKEN: `grt_${"d".repeat(43)}`,
+    });
+    expect(failing.code).toBe(0);
+    expect(failing.stderr).toContain("Scanning the catalog only");
   });
 
   it("explains what to do when it can't upload", async () => {

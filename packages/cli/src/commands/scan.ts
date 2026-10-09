@@ -9,7 +9,7 @@ import {
 } from "@groundrule/core";
 import { builtinEvaluators } from "@groundrule/evaluators";
 import { CATALOG_DIR, listPacks, TOOL_MAPPING } from "@groundrule/packs";
-import type { Config, ScanReport, ScanRule } from "@groundrule/spec";
+import { type Config, type ScanReport, type ScanRule, Standard } from "@groundrule/spec";
 import { EXIT, eprintln, type IO, println, style, VERSION } from "../io.js";
 import { call, detectRepository, PlatformError, platformUrl, tokenFor } from "../platform.js";
 
@@ -41,6 +41,41 @@ async function catalogStandards(): Promise<LoadedStandard[]> {
     }
   }
   return out;
+}
+
+/**
+ * The organization's own rules with checks, drafts included, so a scan tests them against
+ * this repository before anyone publishes them. Only asked for when uploading; an older
+ * platform without this endpoint, or any error, leaves the scan to the catalog.
+ */
+async function organizationStandards(
+  io: IO,
+  upload: { url: string; token: string; org?: string },
+): Promise<{ standards: LoadedStandard[]; drafts: number; warning?: string }> {
+  const query = upload.org ? `?org=${encodeURIComponent(upload.org)}` : "";
+  let res: { org: { slug: string }; standards: { document: unknown }[] };
+  try {
+    res = await call(io, upload.url, `/v1/cli/scan-rules${query}`, { token: upload.token });
+  } catch (error) {
+    if (error instanceof PlatformError && error.status === 404) return { standards: [], drafts: 0 };
+    if (!(error instanceof PlatformError)) throw error;
+    return { standards: [], drafts: 0, warning: error.message };
+  }
+  const standards: LoadedStandard[] = [];
+  let drafts = 0;
+  for (const entry of res.standards) {
+    const parsed = Standard.safeParse(entry.document);
+    if (!parsed.success) continue;
+    if (parsed.data.metadata.status === "draft") drafts += 1;
+    standards.push({
+      // Evaluated like an active rule; the platform knows which ones are drafts.
+      standard: { ...parsed.data, metadata: { ...parsed.data.metadata, status: "active" } },
+      file: `${upload.url}/${res.org.slug}/standards/${parsed.data.metadata.id}`,
+      origin: `platform:${res.org.slug}`,
+      disabled: false,
+    });
+  }
+  return { standards, drafts };
 }
 
 async function repoConfig(cwd: string): Promise<Config | undefined> {
@@ -87,9 +122,14 @@ export async function scan(io: IO, options: ScanOptions): Promise<number> {
     }
   }
 
+  const own = upload ? await organizationStandards(io, upload) : { standards: [], drafts: 0 };
+  if (own.warning) eprintln(io, `! Scanning the catalog only: ${own.warning}`);
+  const catalog = await catalogStandards();
+  const ownIds = new Set(own.standards.map((o) => o.standard.metadata.id));
   const report = await scanRepository({
     root,
-    standards: await catalogStandards(),
+    // An organization's rule replaces a catalog rule with the same ID.
+    standards: [...catalog.filter((c) => !ownIds.has(c.standard.metadata.id)), ...own.standards],
     evaluators: builtinEvaluators,
     cliVersion: VERSION,
     snippets: options.snippets !== false,
@@ -101,7 +141,7 @@ export async function scan(io: IO, options: ScanOptions): Promise<number> {
   const json = `${JSON.stringify(report, null, 2)}\n`;
   if (options.output) await writeFile(resolve(io.cwd, options.output), json);
   if (options.json) io.stdout.write(json);
-  else printSummary(io, report, options);
+  else printSummary(io, report, options, own);
 
   if (!upload) return EXIT.ok;
   try {
@@ -139,7 +179,12 @@ const LANGUAGE: Record<string, string> = {
   csharp: "C#",
 };
 
-function printSummary(io: IO, report: ScanReport, options: ScanOptions) {
+function printSummary(
+  io: IO,
+  report: ScanReport,
+  options: ScanOptions,
+  own: { standards: LoadedStandard[]; drafts: number } = { standards: [], drafts: 0 },
+) {
   const s = style(io);
   const { summary, stack } = report;
   const applies = summary.rules - summary.notApplicable;
@@ -185,8 +230,17 @@ function printSummary(io: IO, report: ScanReport, options: ScanOptions) {
   println(io);
   println(
     io,
-    ` ${label("Rules")}${summary.rules} in the catalog · ${s.bold(String(applies))} apply here`,
+    ` ${label("Rules")}${own.standards.length ? `${summary.rules} (catalog and yours)` : `${summary.rules} in the catalog`} · ${s.bold(String(applies))} apply here`,
   );
+  if (own.standards.length) {
+    const ids = new Set(own.standards.map((o) => o.standard.metadata.id));
+    const mine = report.rules.filter((r) => ids.has(r.id));
+    const hits = mine.filter((r) => r.outcome === "violations");
+    println(
+      io,
+      ` ${label("Your rules")}${own.standards.length} with checks${own.drafts ? ` (${own.drafts} ${own.drafts === 1 ? "draft" : "drafts"})` : ""} · ${hits.length ? s.yellow(`${hits.length} with findings here`) : s.green("no findings here")}`,
+    );
+  }
   println(
     io,
     ` ${" ".repeat(12)}${s.green(`✓ ${summary.clean} already pass`)}   ${s.yellow(`! ${summary.violations} with findings (${summary.findings})`)}   ${s.dim(`◇ ${summary.guidance} guidance only`)}`,
