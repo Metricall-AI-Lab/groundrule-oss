@@ -6,7 +6,9 @@ import { doctor } from "./commands/doctor.js";
 import { explain } from "./commands/explain.js";
 import { init } from "./commands/init.js";
 import { login, logout, whoami } from "./commands/login.js";
+import { mcp } from "./commands/mcp.js";
 import { packs } from "./commands/packs.js";
+import { propose } from "./commands/propose.js";
 import { scan } from "./commands/scan.js";
 import { standards } from "./commands/standards.js";
 import { sync } from "./commands/sync.js";
@@ -109,6 +111,41 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
         code = await scan(ctx(), o);
       },
     );
+
+  program
+    .command("propose")
+    .description("propose a rule for your team to review on Groundrule")
+    .argument("<rule...>", 'the rule, e.g. "Never call Stripe directly; use PaymentsGateway"')
+    .option("--why <reason>", "why the team should follow it")
+    .option("--example <code>", "a short example of the right or wrong way")
+    .option("--file <path[:line]>", "where it came up, e.g. src/pay.ts:42")
+    .option("--org <slug>", "organization (default: from .groundrule/config.yaml)")
+    .option("--url <url>", "Groundrule platform address")
+    .option("--json", "machine-readable output")
+    .action(
+      async (
+        rule: string[],
+        o: {
+          why?: string;
+          example?: string;
+          file?: string;
+          org?: string;
+          url?: string;
+          json?: boolean;
+        },
+      ) => {
+        code = await propose(ctx(), rule.join(" "), o);
+      },
+    );
+
+  program
+    .command("mcp")
+    .description(
+      "serve your standards to coding agents over MCP (stdio), and let them propose rules",
+    )
+    .action(async () => {
+      code = await mcp(ctx());
+    });
 
   program
     .command("login")

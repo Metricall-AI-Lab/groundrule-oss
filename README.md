@@ -69,6 +69,8 @@ More in [`examples/foundation`](examples/foundation/.groundrule/standards).
 | `groundrule doctor` | Check configuration, tools, and agent files |
 | `groundrule packs` | List bundled packs |
 | `groundrule scan [--json] [--upload]` | Observe this repository against the whole catalog: stack, agent files, tools, and how every rule would do today. Changes nothing |
+| `groundrule propose "<rule>"` | Propose a rule for your team to review on the platform. `--why`, `--example`, `--file path[:line]` |
+| `groundrule mcp` | Serve your standards to coding agents over MCP, and let them propose rules (see below) |
 | `groundrule login` | Sign in to your organization on the Groundrule platform (browser approval) |
 | `groundrule whoami` / `logout` | Show or remove (and revoke) your saved sign-in |
 
@@ -84,9 +86,28 @@ npx @groundrule/cli init --org acme     # writes platform: { org: acme } to .gro
 npx @groundrule/cli sync                # your organization's rules, with every customization
 ```
 
-`groundrule scan --upload` shares a scan with your organization so it can see which rules fit each repository. It also imports what you already have as proposals: instructions from AGENTS.md, CLAUDE.md, Cursor, and Copilot files; ESLint, Biome, Ruff, golangci-lint, Checkstyle, PMD, and tsconfig settings that match catalog rules; and CODEOWNERS (use `--no-import` to leave these out). Reports contain counts and at most three one-line, redacted snippets per rule (none for security rules, none at all with `--no-snippets`); `--json` shows exactly what would be sent.
+`groundrule scan --upload` shares a scan with your organization so it can see which rules fit each repository. It also imports what you already have as proposals: instructions from AGENTS.md, CLAUDE.md, Cursor, and Copilot files; ESLint, Biome, Ruff, golangci-lint, Checkstyle, PMD, and tsconfig settings that match catalog rules; and CODEOWNERS (use `--no-import` to leave these out). Reports contain counts and at most three one-line, redacted snippets per rule (none for security rules, none at all with `--no-snippets`); `--json` shows exactly what would be sent. When uploading, the scan also tests your organization's own rules that have checks, drafts included, so you see their impact before publishing them.
 
 What each command takes from the platform depends on the rule's rollout stage: `sync` writes rules at Teach, Advise, and Enforce into your agent files; `check` runs Enforce rules as set and Advise rules as warnings. Rules your repository defines in `.groundrule/standards/` still apply. In CI, set `GROUNDRULE_TOKEN` to a token from Settings → API tokens. Sign-ins are saved in `~/.config/groundrule/credentials.json`, readable only by you.
+
+### Coding agents (MCP)
+
+`groundrule mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server (stdio) with two tools:
+
+- `list_standards`: the rules in effect in the repository, so the agent follows them. Works offline.
+- `propose_rule`: when you correct your agent and say (or agree) that it should apply to everyone, it proposes the rule to your organization's review inbox, with where it came up. Nothing changes until a reviewer accepts it. Needs a connected repository and `groundrule login`.
+
+Add it to your agent once per repository or user:
+
+```bash
+claude mcp add groundrule -- npx -y @groundrule/cli mcp          # Claude Code
+```
+
+```json
+{ "mcpServers": { "groundrule": { "command": "npx", "args": ["-y", "@groundrule/cli", "mcp"] } } }
+```
+
+The JSON form goes in `.cursor/mcp.json` for Cursor, `.vscode/mcp.json` for VS Code (as `servers`), or your agent's MCP settings. Proposals carry the rule, your reason, and a file and line if given; nothing else from the repository is sent.
 
 ## Checks
 

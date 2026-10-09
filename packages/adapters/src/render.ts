@@ -86,8 +86,8 @@ function renderExample(label: string, example: Example): string[] {
 
 export const PREAMBLE = [
   "These are this repository's engineering ground rules. Follow them in every change.",
-  "Before you finish a task, run `npx groundrule check` and fix what it reports.",
-  "For the reasoning and examples behind a rule, run `npx groundrule explain <ID>`.",
+  "Before you finish a task, run `npx @groundrule/cli check` and fix what it reports.",
+  "For the reasoning and examples behind a rule, run `npx @groundrule/cli explain <ID>`.",
 ].join("\n");
 
 export const SOURCE_NOTE =

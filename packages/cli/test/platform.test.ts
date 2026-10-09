@@ -6,6 +6,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { groundruleTools } from "../src/commands/mcp.js";
 import { type IO, run } from "../src/index.js";
 import { platformUrl, repositoryFromRemote } from "../src/platform.js";
 
@@ -281,6 +282,26 @@ describe("whoami and logout", () => {
     expect(fake.revoked).toHaveLength(1);
     expect((await cli(root, fake, home, ["whoami"])).code).toBe(1);
   });
+
+  it("finds a login made with --url when run outside a connected repository", async () => {
+    const fake = fakePlatform();
+    const home = await temp("groundrule-home-");
+    const outside = await temp("groundrule-elsewhere-");
+    const noEnv = { GROUNDRULE_URL: "" };
+    await cli(outside, fake, home, ["login", "--url", URL_], noEnv);
+
+    const who = await cli(outside, fake, home, ["whoami"], noEnv);
+    expect(who.code).toBe(0);
+    expect(who.stdout).toContain("Acme (acme) as ada@acme.test");
+    expect(who.stdout).toContain(URL_);
+    const json = JSON.parse((await cli(outside, fake, home, ["whoami", "--json"], noEnv)).stdout);
+    expect(json.logins[0]).toMatchObject({ ok: true, url: URL_ });
+
+    await cli(outside, fake, home, ["logout", "--url", URL_], noEnv);
+    const none = await cli(outside, fake, home, ["whoami"], noEnv);
+    expect(none.code).toBe(1);
+    expect(none.stderr).toContain("Not signed in");
+  });
 });
 
 describe("sync and check with platform:", () => {
@@ -300,6 +321,28 @@ describe("sync and check with platform:", () => {
     await cli(root, fake, home, ["login"]);
     return { fake, home, root };
   }
+
+  it("tells coding agents each organization rule's stage over MCP", async () => {
+    const { fake, home, root } = await connected();
+    const io: IO = {
+      cwd: root,
+      env: { NO_COLOR: "1", GROUNDRULE_URL: URL_ },
+      stdout: { write: () => {} },
+      stderr: { write: () => {} },
+      fetch: fake.fetch,
+      sleep: async () => {},
+      configDir: home,
+    };
+    const list = groundruleTools(io).find((t) => t.name === "list_standards");
+    if (!list) throw new Error("list_standards is missing");
+    const result = await list.handler({}, { client: null });
+    expect(result.text).toContain("ORG-002 (blocker · advise: findings warn, never fail)");
+    expect(result.text).toContain("ORG-001 (blocker · enforce)");
+    expect(result.text).toMatch(/LOCAL-001 \(blocker\) /);
+    const rows = (result.structured as { standards: { id: string; stage?: string }[] }).standards;
+    expect(rows.find((r) => r.id === "ORG-003")?.stage).toBe("teach");
+    expect(rows.find((r) => r.id === "LOCAL-001")?.stage).toBeUndefined();
+  });
 
   it("writes the organization's rules (Teach and above) plus the repository's own", async () => {
     const { fake, home, root } = await connected();

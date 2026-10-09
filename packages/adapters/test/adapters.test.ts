@@ -82,7 +82,7 @@ describe("renderTargets", () => {
     expect(agents.indexOf("SEC-1")).toBeLessThan(agents.indexOf("STYLE-1"));
     expect(agents.indexOf("STYLE-1")).toBeLessThan(agents.indexOf("AUTH-17"));
     expect(agents).not.toContain("HIDDEN-1");
-    expect(agents).toContain("run `npx groundrule check`");
+    expect(agents).toContain("run `npx @groundrule/cli check`");
   });
 
   it("CLAUDE.md imports AGENTS.md instead of duplicating it", () => {

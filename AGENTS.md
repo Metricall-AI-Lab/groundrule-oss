@@ -16,13 +16,14 @@ Product context: `../Groundrule_Product_Vision.md` and `../Groundrule_Build_Plan
 | `packages/adapters` | Agent instructions: AGENTS.md, CLAUDE.md, Cursor rules, Copilot instructions |
 | `packages/packs` | Bundled standard packs in `catalog/` (`groundrule:packs/<name>`) |
 | `packages/cli` | The `groundrule` command |
+| `packages/mcp` | Minimal Model Context Protocol server (stdio, tools only) behind `groundrule mcp` |
 | `action/` | GitHub Action |
 | `examples/foundation` | The four foundation standards (Build Plan §4.5). Must always pass end to end |
 | `.groundrule/` | Groundrule's own standards (dogfooding) |
 | `docs/adr/` | Architecture decision records |
 | `rfcs/` | Proposals for spec changes |
 
-Planned: `packages/mcp` (Milestone 2), `evals/` (Milestone 2).
+Planned: `evals/` (Milestone 2).
 
 ## Commands
 
@@ -81,8 +82,8 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 ## Engineering standards
 
 These are this repository's engineering ground rules. Follow them in every change.
-Before you finish a task, run `npx groundrule check` and fix what it reports.
-For the reasoning and examples behind a rule, run `npx groundrule explain <ID>`.
+Before you finish a task, run `npx @groundrule/cli check` and fix what it reports.
+For the reasoning and examples behind a rule, run `npx @groundrule/cli explain <ID>`.
 
 ### Everywhere
 
