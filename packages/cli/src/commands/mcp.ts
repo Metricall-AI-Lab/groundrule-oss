@@ -16,12 +16,19 @@ const agentName = (name: string | undefined) =>
     .trim()
     .slice(0, 60) || undefined;
 
+/** How each rollout stage changes what `groundrule check` does with a rule's findings. */
+const STAGE_NOTE: Record<string, string> = {
+  advise: "advise: findings warn, never fail",
+  enforce: "enforce",
+  teach: "teach: guidance only",
+};
+
 export function groundruleTools(io: IO): Tool[] {
   const listStandards: Tool = {
     name: "list_standards",
     title: "List engineering standards",
     description:
-      "List the engineering standards in effect in this repository: ID, title, severity, and what each requires. Use it to follow the team's rules, and to check whether a rule already exists before proposing one.",
+      "List the engineering standards in effect in this repository: ID, title, severity, rollout stage for organization rules, and what each requires. Follow every rule listed; at advise, checks report findings as warnings, and at enforce they fail at the rule's severity. Also use it to check whether a rule already exists before proposing one.",
     inputSchema: {
       type: "object",
       properties: {
@@ -49,6 +56,7 @@ export function groundruleTools(io: IO): Tool[] {
           id: l.standard.metadata.id,
           title: l.standard.metadata.title,
           severity: l.standard.spec.severity,
+          ...(l.stage ? { stage: l.stage } : {}),
           requirement: (l.standard.spec.agent?.summary ?? l.standard.spec.requirement)
             .replace(/\s+/g, " ")
             .trim(),
@@ -66,7 +74,7 @@ export function groundruleTools(io: IO): Tool[] {
         ? rows
             .map(
               (r) =>
-                `${r.id} (${r.severity}) ${r.title}: ${r.requirement}${r.paths ? ` [applies to ${r.paths.join(", ")}]` : ""}`,
+                `${r.id} (${r.severity}${r.stage ? ` · ${STAGE_NOTE[r.stage] ?? r.stage}` : ""}) ${r.title}: ${r.requirement}${r.paths ? ` [applies to ${r.paths.join(", ")}]` : ""}`,
             )
             .join("\n")
         : query

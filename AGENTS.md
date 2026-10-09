@@ -82,8 +82,8 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 ## Engineering standards
 
 These are this repository's engineering ground rules. Follow them in every change.
-Before you finish a task, run `npx groundrule check` and fix what it reports.
-For the reasoning and examples behind a rule, run `npx groundrule explain <ID>`.
+Before you finish a task, run `npx @groundrule/cli check` and fix what it reports.
+For the reasoning and examples behind a rule, run `npx @groundrule/cli explain <ID>`.
 
 ### Everywhere
 

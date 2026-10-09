@@ -29,7 +29,12 @@ export class PlatformError extends Error {
 
 /** The platform origin, e.g. https://app.groundrule.dev. Plain http only for localhost. */
 export function platformUrl(io: IO, explicit?: string, config?: Config): string {
-  const raw = explicit ?? io.env.GROUNDRULE_URL ?? config?.platform?.url ?? DEFAULT_PLATFORM_URL;
+  // An empty GROUNDRULE_URL counts as unset.
+  const raw =
+    explicit ??
+    (io.env.GROUNDRULE_URL || undefined) ??
+    config?.platform?.url ??
+    DEFAULT_PLATFORM_URL;
   let url: URL;
   try {
     url = new URL(raw);

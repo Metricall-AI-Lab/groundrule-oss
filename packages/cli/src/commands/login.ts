@@ -175,14 +175,23 @@ export async function whoami(io: IO, options: { url?: string; json?: boolean }):
   try {
     const config = await repoConfig(io);
     const url = platformUrl(io, options.url, config);
+    // With no platform named anywhere (flag, GROUNDRULE_URL, or this repository), show
+    // every saved login, so one made with `login --url` is found from any folder.
+    const anywhere =
+      !options.url && !io.env.GROUNDRULE_URL && !config?.platform?.url && !io.env.GROUNDRULE_TOKEN;
+    const hosts = (await readCredentials(io)).hosts;
     const tokens = io.env.GROUNDRULE_TOKEN
-      ? [{ token: io.env.GROUNDRULE_TOKEN.trim(), label: "GROUNDRULE_TOKEN" }]
-      : Object.values((await readCredentials(io)).hosts[url]?.orgs ?? {}).map((c) => ({
-          token: c.token,
-          label: "saved login",
-        }));
+      ? [{ url, token: io.env.GROUNDRULE_TOKEN.trim(), label: "GROUNDRULE_TOKEN" }]
+      : Object.entries(hosts)
+          .filter(([host]) => anywhere || host === url)
+          .flatMap(([host, { orgs }]) =>
+            Object.values(orgs).map((c) => ({ url: host, token: c.token, label: "saved login" })),
+          );
     if (tokens.length === 0) {
-      eprintln(io, `Not signed in to ${url}. Run \`groundrule login\`.`);
+      eprintln(
+        io,
+        `${anywhere ? "Not signed in" : `Not signed in to ${url}`}. Run \`groundrule login\`.`,
+      );
       return EXIT.failed;
     }
     const rows = [];
@@ -190,11 +199,16 @@ export async function whoami(io: IO, options: { url?: string; json?: boolean }):
       try {
         const who = await call<
           Identity & { token: { name: string; prefix: string; expiresAt: string | null } }
-        >(io, url, "/v1/cli/whoami", { token: t.token });
-        rows.push({ ok: true as const, source: t.label, ...who });
+        >(io, t.url, "/v1/cli/whoami", { token: t.token });
+        rows.push({ ok: true as const, url: t.url, source: t.label, ...who });
       } catch (error) {
         if (!(error instanceof PlatformError) || error.status !== 401) throw error;
-        rows.push({ ok: false as const, source: t.label, prefix: t.token.slice(0, 12) });
+        rows.push({
+          ok: false as const,
+          url: t.url,
+          source: t.label,
+          prefix: t.token.slice(0, 12),
+        });
       }
     }
     if (options.json) {
@@ -213,7 +227,7 @@ export async function whoami(io: IO, options: { url?: string; json?: boolean }):
         );
         println(
           io,
-          `   ${s.dim(`${r.token.prefix}… · ${r.token.name} · ${expires} · ${r.source}`)}`,
+          `   ${s.dim(`${r.token.prefix}… · ${r.token.name} · ${expires} · ${r.source} · ${r.url}`)}`,
         );
       } else {
         println(
