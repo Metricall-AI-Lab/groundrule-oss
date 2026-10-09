@@ -7,6 +7,8 @@ export interface IO {
   env: NodeJS.ProcessEnv;
   stdout: { write(text: string): void; isTTY?: boolean };
   stderr: { write(text: string): void; isTTY?: boolean };
+  /** Standard input, for `groundrule mcp`. */
+  stdin?: AsyncIterable<string | Uint8Array>;
   /** Network access to the Groundrule platform. Defaults to global fetch. */
   fetch?: typeof fetch;
   /** Open a URL in the browser; resolves false if it couldn't. */

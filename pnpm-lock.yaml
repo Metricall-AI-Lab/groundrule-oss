@@ -57,6 +57,9 @@ importers:
       '@groundrule/evaluators':
         specifier: workspace:*
         version: link:../evaluators
+      '@groundrule/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@groundrule/packs':
         specifier: workspace:*
         version: link:../packs
@@ -72,6 +75,9 @@ importers:
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
 
   packages/core:
     dependencies:
@@ -110,6 +116,8 @@ importers:
       '@types/picomatch':
         specifier: ^4.0.3
         version: 4.0.3
+
+  packages/mcp: {}
 
   packages/packs:
     dependencies:
