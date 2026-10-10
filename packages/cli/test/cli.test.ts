@@ -65,7 +65,10 @@ describe("groundrule CLI", () => {
   it("prints help and version", async () => {
     const r = await repo();
     expect((await cli(r.root, "--help")).stdout).toContain("Define engineering standards once");
-    expect(await cli(r.root, "--version")).toMatchObject({ code: 0, stdout: "0.1.0\n" });
+    const { version } = JSON.parse(
+      await readFile(new URL("../package.json", import.meta.url), "utf8"),
+    );
+    expect(await cli(r.root, "--version")).toMatchObject({ code: 0, stdout: `${version}\n` });
     expect((await cli(r.root, "nope")).code).toBe(2);
   });
 
