@@ -1,5 +1,13 @@
 # @groundrule/packs
 
+## 0.1.1
+
+### Patch Changes
+
+- 2c0cfbb: Fix links in the package READMEs on npm: they pointed to files relative to the repository, which don't exist on npmjs.com. They now link to the CLI docs and to the repository on GitHub.
+- @groundrule/core@0.1.1
+  - @groundrule/spec@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes
