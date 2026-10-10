@@ -14,7 +14,8 @@
     "format": "biome check --write .",
     "check": "pnpm lint && turbo run build typecheck test",
     "changeset": "changeset",
-    "release": "turbo run build && changeset publish"
+    "release": "turbo run build && node scripts/publish.mjs",
+    "release:dry": "turbo run build && node scripts/publish.mjs --dry-run"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
