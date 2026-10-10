@@ -3,13 +3,17 @@
   "version": "0.1.0",
   "description": "Groundrule: define engineering standards once, enforce them everywhere.",
   "license": "Apache-2.0",
-  "type": "module",
+  "author": "Vyana Compute",
+  "homepage": "https://groundrule.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/groundrule/groundrule.git",
+    "url": "git+https://github.com/Metricall-AI-Lab/groundrule-oss.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://groundrule.dev",
+  "bugs": {
+    "url": "https://github.com/Metricall-AI-Lab/groundrule-oss/issues"
+  },
+  "type": "module",
   "bin": {
     "groundrule": "./dist/bin.js"
   },
@@ -24,13 +28,16 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && chmod +x dist/bin.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
-  },
-  "engines": {
-    "node": ">=22"
   },
   "dependencies": {
     "@groundrule/adapters": "workspace:*",
