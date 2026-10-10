@@ -1,5 +1,12 @@
 # @groundrule/evaluators
 
+## 0.1.1
+
+### Patch Changes
+
+- @groundrule/core@0.1.1
+  - @groundrule/spec@0.1.1
+
 ## 0.1.0
 
 ### Patch Changes

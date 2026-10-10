@@ -1,6 +1,6 @@
 {
   "name": "@groundrule/evaluators",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Built-in Groundrule evaluators: files, regex, dependencies, change-set, semgrep, llm.",
   "license": "Apache-2.0",
   "author": "Vyana Compute",
