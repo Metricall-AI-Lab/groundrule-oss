@@ -20,7 +20,7 @@ Bundled standard packs, referenced as `groundrule:packs/<name>`. 171 standards i
 
 ## Quality bar
 
-Every catalog standard carries the metadata from [RFC 0001](../../rfcs/0001-catalog-metadata.md): intent, a noise rating with known false positives, and a recommended rollout stage; checked standards say how to fix a violation, and security standards cite references (CWE titles match MITRE exactly). `test/catalog-quality.test.ts` enforces it.
+Every catalog standard carries the metadata from [RFC 0001](https://github.com/Metricall-AI-Lab/groundrule-oss/blob/main/rfcs/0001-catalog-metadata.md): intent, a noise rating with known false positives, and a recommended rollout stage; checked standards say how to fix a violation, and security standards cite references (CWE titles match MITRE exactly). `test/catalog-quality.test.ts` enforces it.
 
 ## Precision harness
 
