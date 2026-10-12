@@ -12,3 +12,5 @@ Changes to the Groundrule document format go through an RFC.
 | [0002](0002-platform-config.md) | Connecting a repository to the Groundrule platform | Accepted |
 | [0003](0003-scan-report.md) | Scan reports | Accepted |
 | [0004](0004-scan-imports.md) | Imports in scan reports | Accepted |
+| [0005](0005-check-run.md) | Check runs | Accepted |
+| [0006](0006-agent-sync.md) | Agent sync reports | Accepted |
