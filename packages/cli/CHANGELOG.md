@@ -1,5 +1,22 @@
 # @groundrule/cli
 
+## 0.2.0
+
+### Minor Changes
+
+- f165c4e: Add `groundrule check --upload`: sends the result of a check to your organization on Groundrule, with the repository, commit, and, in GitHub Actions, the pull request it was for (RFC 0005, new `CheckRun` document kind and JSON Schema). Snippets are one redacted line per finding, never for security rules, and `--no-snippets` sends none. A failed upload never changes the check's exit code. The GitHub Action gains `token`, `snippets` and `url` inputs to turn it on.
+
+### Patch Changes
+
+- Updated dependencies [f165c4e]
+  - @groundrule/spec@0.2.0
+  - @groundrule/core@0.2.0
+  - @groundrule/adapters@0.2.0
+  - @groundrule/evaluators@0.2.0
+  - @groundrule/packs@0.2.0
+  - @groundrule/reporters@0.2.0
+  - @groundrule/mcp@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes
