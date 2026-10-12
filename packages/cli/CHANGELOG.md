@@ -1,5 +1,21 @@
 # @groundrule/cli
 
+## 0.4.0
+
+### Minor Changes
+
+- 6160365: Coding agents check their own work. `groundrule mcp` adds a `check` tool: the same check CI runs, on the agent's uncommitted changes (or since a ref, or every file), reporting only what the change introduced and how to fix it. `groundrule hooks` adds a stop hook for Claude Code, Codex, and Cursor, so the agent runs the check whenever it finishes a task and is told what to fix.
+
+### Patch Changes
+
+- @groundrule/adapters@0.4.0
+  - @groundrule/core@0.4.0
+  - @groundrule/evaluators@0.4.0
+  - @groundrule/mcp@0.4.0
+  - @groundrule/packs@0.4.0
+  - @groundrule/reporters@0.4.0
+  - @groundrule/spec@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

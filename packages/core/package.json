@@ -1,6 +1,6 @@
 {
   "name": "@groundrule/core",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Groundrule engine: loading, validation, scope resolution, and the evaluator plugin interface.",
   "license": "Apache-2.0",
   "author": "Vyana Compute",
