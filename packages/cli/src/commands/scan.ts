@@ -160,7 +160,7 @@ export async function scan(io: IO, options: ScanOptions): Promise<number> {
     if (!(error instanceof PlatformError)) throw error;
     eprintln(
       io,
-      `✕ Upload failed: ${error.status === 403 && error.message.includes("scans:write") ? "this token can't upload scans. Run `groundrule login` again, or create a token with “Upload scans” in Settings → API tokens." : error.message}`,
+      `✕ Upload failed: ${error.status === 403 && error.message.includes("scans:write") ? "this token can't upload scans. Run `groundrule login` again, or create a token with “Upload scans and check results” in Settings → API tokens." : error.message}`,
     );
     return EXIT.usage;
   }
