@@ -1,5 +1,12 @@
 # @groundrule/core
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [baa71da]
+  - @groundrule/spec@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
