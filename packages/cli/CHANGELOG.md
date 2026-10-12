@@ -1,5 +1,22 @@
 # @groundrule/cli
 
+## 0.5.0
+
+### Minor Changes
+
+- 136141a: `groundrule sync --upload` reports what a repository delivers to coding agents (RFC 0006): which agent files the config asks for and whether they match the rulebook, which rules they carry, and whether Groundrule's stop hooks and MCP server are set up in the repository. Paths, rule IDs and yes/no only. The GitHub Action sends it whenever it has a token. New spec kind: `AgentSync`.
+
+### Patch Changes
+
+- Updated dependencies [136141a]
+  - @groundrule/spec@0.5.0
+  - @groundrule/adapters@0.5.0
+  - @groundrule/core@0.5.0
+  - @groundrule/evaluators@0.5.0
+  - @groundrule/packs@0.5.0
+  - @groundrule/reporters@0.5.0
+  - @groundrule/mcp@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
