@@ -8,7 +8,7 @@
 //
 // In GitHub Actions it publishes through npm trusted publishing (OIDC) with provenance, so no
 // npm token is stored anywhere. Locally, the first release needs `npm login` first.
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -56,7 +56,21 @@ for (const dir of ORDER) {
     ...(dryRun ? ["--dry-run"] : []),
   ];
   console.log(`  ${dryRun ? "would publish" : "publishing"} ${name}@${version}`);
-  execFileSync("npm", args, { stdio: "inherit" });
+  const res = spawnSync("npm", args, { encoding: "utf8" });
+  process.stdout.write(res.stdout ?? "");
+  if (res.status !== 0) {
+    // npm's registry can lag: a run right after another may not see a version that was just
+    // published, and npm then refuses to publish it again. That version is on npm; move on.
+    if (
+      /cannot publish over the previously published versions|EPUBLISHCONFLICT/i.test(res.stderr)
+    ) {
+      console.log(`  = ${name}@${version} was already published (npm hadn't shown it yet)`);
+      continue;
+    }
+    process.stderr.write(res.stderr ?? "");
+    throw new Error(`npm publish failed for ${name}@${version}`);
+  }
+  process.stderr.write(res.stderr ?? "");
   count++;
 }
 console.log(
