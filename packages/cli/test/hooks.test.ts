@@ -84,7 +84,7 @@ describe("withHook", () => {
             hooks: [
               {
                 type: "command",
-                command: "npx --yes @groundrule/cli hook claude-code",
+                command: "npx --yes '@groundrule/cli@>=0.4.0' hook claude-code",
                 timeout: 120,
               },
             ],
@@ -119,7 +119,13 @@ describe("withHook", () => {
     expect(withHook({}, "cursor", true)).toEqual({
       version: 1,
       hooks: {
-        stop: [{ command: "npx --yes @groundrule/cli hook cursor", timeout: 120, loop_limit: 1 }],
+        stop: [
+          {
+            command: "npx --yes '@groundrule/cli@>=0.4.0' hook cursor",
+            timeout: 120,
+            loop_limit: 1,
+          },
+        ],
       },
     });
   });

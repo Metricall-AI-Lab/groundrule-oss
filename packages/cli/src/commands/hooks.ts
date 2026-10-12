@@ -21,9 +21,10 @@ const NAME: Record<HookAgent, string> = {
   cursor: "Cursor",
 };
 
-const command = (agent: HookAgent) => `npx --yes @groundrule/cli hook ${agent}`;
+// A bare package name lets npx reuse an older cached CLI without the hook command.
+const command = (agent: HookAgent) => `npx --yes '@groundrule/cli@>=0.4.0' hook ${agent}`;
 /** Recognizes a hook this command installed, whatever version wrote it. */
-const OURS = /(^|\s)(@groundrule\/cli|groundrule)(@\S+)?\s+hook\s/;
+const OURS = /(^|[\s'"])(@groundrule\/cli|groundrule)(@[^\s'"]+)?['"]?\s+hook\s/;
 /** Seconds an agent waits for the check before giving up on it. */
 const TIMEOUT = 120;
 
