@@ -207,7 +207,8 @@
             "enum": [
               "claude-code",
               "codex",
-              "cursor"
+              "cursor",
+              "copilot"
             ]
           },
           "installed": {

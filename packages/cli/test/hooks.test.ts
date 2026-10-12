@@ -131,6 +131,63 @@ describe("withHook", () => {
   });
 });
 
+describe("Copilot's hook", () => {
+  it("is an agentStop entry in Groundrule's own version 1 file, kept apart from others", () => {
+    const theirs = { type: "command", bash: "./lint.sh", timeoutSec: 30 };
+    const config = { version: 1, hooks: { agentStop: [theirs] } };
+    const once = withHook(config, "copilot", true);
+    expect(once).toEqual({
+      version: 1,
+      hooks: {
+        agentStop: [
+          theirs,
+          {
+            type: "command",
+            bash: "npx --yes '@groundrule/cli@>=0.4.0' hook copilot",
+            powershell: "npx --yes '@groundrule/cli@>=0.4.0' hook copilot",
+            timeoutSec: 120,
+          },
+        ],
+      },
+    });
+    expect(withHook(once, "copilot", true)).toEqual(once);
+    expect(withHook(once, "copilot", false)).toEqual(config);
+  });
+
+  it("is set up when the repository uses Copilot, and removed with its file", async () => {
+    const { root, write } = await repo();
+    await write(".github/copilot-instructions.md", "Team notes\n");
+    const r = await cli(root, ["hooks"]);
+    expect(r.stdout).toContain(
+      "Copilot checks its work when it finishes: .github/hooks/groundrule.json",
+    );
+    expect((await json(join(root, ".github/hooks/groundrule.json"))).hooks.agentStop).toHaveLength(
+      1,
+    );
+    const removed = await cli(root, ["hooks", "--remove", "--agents", "copilot"]);
+    expect(removed.stdout).toContain(
+      "Removed the Groundrule hook from .github/hooks/groundrule.json",
+    );
+    await expect(readFile(join(root, ".github/hooks/groundrule.json"), "utf8")).rejects.toThrow();
+  });
+
+  it("makes Copilot take another turn with what to fix, once", async () => {
+    const { root, write } = await repo();
+    await write("src/keys.ts", LEAK);
+    const event = (active: boolean) =>
+      JSON.stringify({
+        sessionId: "s",
+        cwd: root,
+        stopReason: "end_turn",
+        stop_hook_active: active,
+      });
+    const out = JSON.parse((await cli(root, ["hook", "copilot"], event(false))).stdout);
+    expect(out.decision).toBe("block");
+    expect(out.reason).toContain("SEC-003");
+    expect((await cli(root, ["hook", "copilot"], event(true))).stdout).toBe("");
+  });
+});
+
 describe("groundrule hooks", () => {
   it("installs for Claude Code and the agents the repository already uses, then removes", async () => {
     const { root, write } = await repo();

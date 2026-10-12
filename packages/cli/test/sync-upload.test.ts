@@ -132,6 +132,7 @@ describe("groundrule sync --upload", () => {
         { agent: "claude-code", installed: true },
         { agent: "codex", installed: false },
         { agent: "cursor", installed: false },
+        { agent: "copilot", installed: false },
       ],
       mcp: [
         { client: "claude-code", configured: true },

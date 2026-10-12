@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { HOOK_AGENTS, type HookAgent } from "@groundrule/spec";
 import { checkForAgent } from "../agent-report.js";
@@ -12,12 +12,23 @@ const HOOK_FILE: Record<HookAgent, string> = {
   "claude-code": ".claude/settings.json",
   codex: ".codex/hooks.json",
   cursor: ".cursor/hooks.json",
+  // Copilot reads every .github/hooks/*.json; this file is Groundrule's own.
+  copilot: ".github/hooks/groundrule.json",
+};
+
+/** A repository uses an agent when it has that agent's files (Claude Code is the default). */
+const USES: Record<HookAgent, readonly string[]> = {
+  "claude-code": [],
+  codex: [".codex"],
+  cursor: [".cursor"],
+  copilot: [".github/hooks", ".github/copilot-instructions.md", ".github/instructions"],
 };
 
 const NAME: Record<HookAgent, string> = {
   "claude-code": "Claude Code",
   codex: "Codex",
   cursor: "Cursor",
+  copilot: "Copilot",
 };
 
 // A bare package name lets npx reuse an older cached CLI without the hook command.
@@ -30,15 +41,35 @@ const TIMEOUT = 120;
 type Json = Record<string, unknown>;
 const isObject = (v: unknown): v is Json =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-const commandOf = (v: unknown) => (isObject(v) && typeof v.command === "string" ? v.command : "");
+const commandOf = (v: unknown) =>
+  isObject(v) ? [v.command, v.bash].filter((c) => typeof c === "string").join(" ") : "";
 
 /**
  * Add (or remove) Groundrule's stop hook in an agent's hook config, keeping everything else.
  * Claude Code and Codex share one shape: hooks.Stop[] of { hooks: [{ type, command }] }.
- * Cursor's is version 1 with hooks.stop[] of { command }.
+ * Cursor's is version 1 with hooks.stop[] of { command }; Copilot's is version 1 with
+ * hooks.agentStop[] of { type, bash, powershell, timeoutSec }.
  */
 export function withHook(config: Json, agent: HookAgent, install: boolean): Json {
   const hooks = isObject(config.hooks) ? { ...config.hooks } : {};
+  if (agent === "copilot") {
+    const stop = (Array.isArray(hooks.agentStop) ? hooks.agentStop : []).filter(
+      (h) => !OURS.test(commandOf(h)),
+    );
+    if (install)
+      stop.push({
+        type: "command",
+        bash: command(agent),
+        powershell: command(agent),
+        timeoutSec: TIMEOUT,
+      });
+    if (stop.length) hooks.agentStop = stop;
+    else delete hooks.agentStop;
+    return tidy(
+      { version: typeof config.version === "number" ? config.version : 1, ...config },
+      hooks,
+    );
+  }
   if (agent === "cursor") {
     const stop = (Array.isArray(hooks.stop) ? hooks.stop : []).filter(
       (h) => !OURS.test(commandOf(h)),
@@ -104,7 +135,9 @@ export async function hooks(io: IO, options: HooksOptions): Promise<number> {
   // Claude Code by default, plus the other agents this repository already configures.
   const agents =
     options.agents ??
-    HOOK_AGENTS.filter((a) => a === "claude-code" || existsSync(join(root, dirname(HOOK_FILE[a]))));
+    HOOK_AGENTS.filter(
+      (a) => a === "claude-code" || USES[a].some((p) => existsSync(join(root, p))),
+    );
   let code: number = EXIT.ok;
   let changed = 0;
   for (const agent of agents) {
@@ -135,8 +168,12 @@ export async function hooks(io: IO, options: HooksOptions): Promise<number> {
       continue;
     }
     changed++;
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, `${JSON.stringify(next, null, 2)}\n`);
+    // Groundrule's own Copilot file goes away with its hook.
+    if (agent === "copilot" && !isObject(next.hooks)) await rm(path, { force: true });
+    else {
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, `${JSON.stringify(next, null, 2)}\n`);
+    }
     println(
       io,
       options.remove

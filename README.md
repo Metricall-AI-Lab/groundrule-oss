@@ -71,7 +71,7 @@ More in [`examples/foundation`](examples/foundation/.groundrule/standards).
 | `groundrule scan [--json] [--upload]` | Observe this repository against the whole catalog: stack, agent files, tools, and how every rule would do today. Changes nothing |
 | `groundrule propose "<rule>"` | Propose a rule for your team to review on the platform. `--why`, `--example`, `--file path[:line]` |
 | `groundrule mcp` | Serve your standards to coding agents over MCP, let them check their changes and propose rules (see below) |
-| `groundrule hooks [--agents <list>] [--remove]` | Have Claude Code, Codex, or Cursor run the check when they finish a task (see below) |
+| `groundrule hooks [--agents <list>] [--remove]` | Have Claude Code, Codex, Cursor, or Copilot run the check when they finish a task (see below) |
 | `groundrule login` | Sign in to your organization on the Groundrule platform (browser approval) |
 | `groundrule whoami` / `logout` | Show or remove (and revoke) your saved sign-in |
 
@@ -116,7 +116,7 @@ The JSON form goes in `.cursor/mcp.json` for Cursor, `.vscode/mcp.json` for VS C
 `groundrule hooks` adds a stop hook, so the agent runs the check every time it finishes a task, whether or not it remembered to:
 
 ```bash
-npx @groundrule/cli hooks        # Claude Code, plus Codex and Cursor if the repository uses them
+npx @groundrule/cli hooks        # Claude Code, plus Codex, Cursor and Copilot if the repository uses them
 ```
 
 | Agent | File | When the check fails |
@@ -124,6 +124,7 @@ npx @groundrule/cli hooks        # Claude Code, plus Codex and Cursor if the rep
 | Claude Code | `.claude/settings.json` | The agent is stopped from finishing and told what to fix |
 | Codex | `.codex/hooks.json` | The same; each developer trusts the hook once with `/hooks` |
 | Cursor | `.cursor/hooks.json` | What to fix is sent as a follow-up message |
+| Copilot (CLI and cloud agent) | `.github/hooks/groundrule.json` | The agent takes another turn with what to fix |
 
 Existing settings and hooks are kept. The hook asks once per turn, so an agent that can't fix something isn't kept going forever, and it never fails the agent: without a Groundrule configuration it does nothing. Commit the files so every developer's agent runs it; `--remove` takes the hooks out again.
 
