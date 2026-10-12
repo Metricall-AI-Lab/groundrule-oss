@@ -1,5 +1,13 @@
 # @groundrule/adapters
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [88fdead]
+  - @groundrule/spec@0.6.0
+  - @groundrule/core@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes
