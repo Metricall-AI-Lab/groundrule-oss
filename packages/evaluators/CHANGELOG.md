@@ -1,5 +1,13 @@
 # @groundrule/evaluators
 
+## 0.2.0
+
+### Patch Changes
+
+- Updated dependencies [f165c4e]
+  - @groundrule/spec@0.2.0
+  - @groundrule/core@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes
