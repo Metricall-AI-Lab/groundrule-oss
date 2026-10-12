@@ -1,5 +1,23 @@
 # @groundrule/cli
 
+## 0.3.0
+
+### Minor Changes
+
+- baa71da: `check --upload` now sends the pull request's head commit (`pullRequest.headSha`, read from GitHub's event data), so a service that posts the result on the pull request attaches it to exactly the commit that was checked, even if someone pushed again while CI was running. Additive and optional in the `CheckRun` format (RFC 0005).
+
+### Patch Changes
+
+- fd4a523: The upload error for a token without scan access now names the permission as it appears in Settings → API tokens: “Upload scans and check results”.
+- Updated dependencies [baa71da]
+  - @groundrule/spec@0.3.0
+  - @groundrule/adapters@0.3.0
+  - @groundrule/core@0.3.0
+  - @groundrule/evaluators@0.3.0
+  - @groundrule/packs@0.3.0
+  - @groundrule/reporters@0.3.0
+  - @groundrule/mcp@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
