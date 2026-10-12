@@ -1,5 +1,23 @@
 # @groundrule/cli
 
+## 0.6.0
+
+### Minor Changes
+
+- 88fdead: `groundrule hooks` sets up GitHub Copilot too (the Copilot CLI and cloud agent): an `agentStop` hook in `.github/hooks/groundrule.json` runs the check when Copilot finishes and has it take another turn with what to fix. Agent reports (`sync --upload`) say whether it's installed. Spec: `copilot` added to the hook agents.
+
+### Patch Changes
+
+- c65aaa5: The GitHub Action uses `actions/setup-node@v7` and `github/codeql-action/upload-sarif@v4`, which run on Node.js 24, so workflows no longer show GitHub's Node.js 20 deprecation notice.
+- Updated dependencies [88fdead]
+  - @groundrule/spec@0.6.0
+  - @groundrule/adapters@0.6.0
+  - @groundrule/core@0.6.0
+  - @groundrule/evaluators@0.6.0
+  - @groundrule/packs@0.6.0
+  - @groundrule/reporters@0.6.0
+  - @groundrule/mcp@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
