@@ -24,6 +24,18 @@ inputs:
   working-directory:
     description: Directory containing the repository to check.
     default: "."
+  token:
+    description: >-
+      A Groundrule API token with "Upload scans and check results". When set, the result is sent
+      to your organization on Groundrule (check --upload), with the pull request it was for.
+      Pass it from a secret, e.g. secrets.GROUNDRULE_TOKEN.
+    default: ""
+  snippets:
+    description: With token, include the offending line of each finding (redacted). "false" sends none.
+    default: "true"
+  url:
+    description: Groundrule platform address, for self-hosted or test platforms.
+    default: ""
 
 outputs:
   exit-code:
@@ -46,6 +58,10 @@ runs:
         PR_BASE: ${{ github.event.pull_request.base.sha }}
         PUSH_BEFORE: ${{ github.event.before }}
         FAIL_ON: ${{ inputs.fail-on }}
+        # The token travels in the environment, never on the command line.
+        GROUNDRULE_TOKEN: ${{ inputs.token }}
+        GROUNDRULE_URL: ${{ inputs.url }}
+        SNIPPETS: ${{ inputs.snippets }}
       run: |
         set +e
         base="${INPUT_BASE:-${PR_BASE:-$PUSH_BEFORE}}"
@@ -57,6 +73,13 @@ runs:
           args+=(--all)
         fi
         [ -n "$FAIL_ON" ] && args+=(--fail-on "$FAIL_ON")
+        if [ -n "$GROUNDRULE_TOKEN" ]; then
+          args+=(--upload)
+          [ "$SNIPPETS" = "false" ] && args+=(--no-snippets)
+        else
+          unset GROUNDRULE_TOKEN
+        fi
+        [ -z "$GROUNDRULE_URL" ] && unset GROUNDRULE_URL
         $GROUNDRULE "${args[@]}"
         code=$?
         echo "exit-code=$code" >> "$GITHUB_OUTPUT"
