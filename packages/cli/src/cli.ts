@@ -1,9 +1,10 @@
 import { FORMATS, type Format } from "@groundrule/reporters";
 import { AGENT_TARGETS, type AgentTarget } from "@groundrule/spec";
-import { Command, CommanderError, Option } from "commander";
+import { Argument, Command, CommanderError, Option } from "commander";
 import { check } from "./commands/check.js";
 import { doctor } from "./commands/doctor.js";
 import { explain } from "./commands/explain.js";
+import { HOOK_AGENTS, type HookAgent, hook, hooks } from "./commands/hooks.js";
 import { init } from "./commands/init.js";
 import { login, logout, whoami } from "./commands/login.js";
 import { mcp } from "./commands/mcp.js";
@@ -145,6 +146,39 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     )
     .action(async () => {
       code = await mcp(ctx());
+    });
+
+  program
+    .command("hooks")
+    .description(
+      "have coding agents run the check when they finish a task (Claude Code, Codex, Cursor)",
+    )
+    .addOption(
+      new Option(
+        "--agents <list>",
+        `agents (${HOOK_AGENTS.join(", ")}; default: Claude Code and the ones this repository uses)`,
+      ).argParser(list),
+    )
+    .option("--remove", "remove the Groundrule hooks")
+    .action(async (o: { agents?: string[]; remove?: boolean }) => {
+      const unknown = o.agents?.filter((a) => !(HOOK_AGENTS as readonly string[]).includes(a));
+      if (unknown?.length) {
+        eprintln(io, `✕ Unknown agent: ${unknown.join(", ")}. Use ${HOOK_AGENTS.join(", ")}.`);
+        code = EXIT.usage;
+        return;
+      }
+      code = await hooks(ctx(), {
+        ...(o.agents ? { agents: o.agents as HookAgent[] } : {}),
+        ...(o.remove ? { remove: true } : {}),
+      });
+    });
+
+  program
+    .command("hook", { hidden: true })
+    .description("run by a coding agent's hook when it finishes; tells it what to fix")
+    .addArgument(new Argument("<agent>").choices(HOOK_AGENTS))
+    .action(async (agent: HookAgent) => {
+      code = await hook(ctx(), agent);
     });
 
   program
