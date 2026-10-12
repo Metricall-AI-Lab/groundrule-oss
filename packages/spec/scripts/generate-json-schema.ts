@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import {
+  AgentSync,
   CheckRun,
   DOCUMENT_SCHEMAS,
   Finding,
@@ -22,6 +23,7 @@ const targets: Record<string, z.ZodType> = {
   GroundruleDocument,
   ScanReport,
   CheckRun,
+  AgentSync,
 };
 
 for (const [name, schema] of Object.entries(targets)) {

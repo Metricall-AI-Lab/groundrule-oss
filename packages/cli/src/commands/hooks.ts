@@ -1,12 +1,11 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { HOOK_AGENTS, type HookAgent } from "@groundrule/spec";
 import { checkForAgent } from "../agent-report.js";
 import { EXIT, eprintln, type IO, println, style } from "../io.js";
 
-/** Coding agents whose "agent is finishing" hook Groundrule can install. */
-export const HOOK_AGENTS = ["claude-code", "codex", "cursor"] as const;
-export type HookAgent = (typeof HOOK_AGENTS)[number];
+export { HOOK_AGENTS, type HookAgent };
 
 /** Where each agent reads project hooks from. */
 const HOOK_FILE: Record<HookAgent, string> = {
@@ -71,6 +70,26 @@ export function withHook(config: Json, agent: HookAgent, install: boolean): Json
 function tidy(config: Json, hooks: Json): Json {
   const { hooks: _, ...rest } = config;
   return Object.keys(hooks).length ? { ...rest, hooks } : rest;
+}
+
+/** Which agents' project settings in this repository run Groundrule's hook. */
+export async function installedHooks(
+  root: string,
+): Promise<{ agent: HookAgent; installed: boolean }[]> {
+  return Promise.all(
+    HOOK_AGENTS.map(async (agent) => {
+      try {
+        const config: unknown = JSON.parse(await readFile(join(root, HOOK_FILE[agent]), "utf8"));
+        // Installed when removing Groundrule's hook would change the file.
+        const installed =
+          isObject(config) &&
+          JSON.stringify(withHook(config, agent, false)) !== JSON.stringify(config);
+        return { agent, installed };
+      } catch {
+        return { agent, installed: false };
+      }
+    }),
+  );
 }
 
 export interface HooksOptions {

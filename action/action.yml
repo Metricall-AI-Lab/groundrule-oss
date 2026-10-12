@@ -27,7 +27,8 @@ inputs:
   token:
     description: >-
       A Groundrule API token with "Upload scans and check results". When set, the result is sent
-      to your organization on Groundrule (check --upload), with the pull request it was for.
+      to your organization on Groundrule (check --upload), with the pull request it was for, and
+      so is what the repository delivers to coding agents (sync --check --upload).
       Pass it from a secret, e.g. secrets.GROUNDRULE_TOKEN.
     default: ""
   snippets:
@@ -93,8 +94,15 @@ runs:
         INPUT_URL: ${{ inputs.url }}
       run: |
         [ -n "$INPUT_URL" ] && export GROUNDRULE_URL="$INPUT_URL"
-        [ -n "$INPUT_TOKEN" ] && export GROUNDRULE_TOKEN="$INPUT_TOKEN"
-        npx --yes @groundrule/cli@${{ inputs.version }} sync --check
+        cli=(npx --yes "@groundrule/cli@${{ inputs.version }}")
+        args=(sync --check)
+        # With a token, also report what the repository delivers to coding agents
+        # (CLI 0.5.0 and later; an older pinned version just checks).
+        if [ -n "$INPUT_TOKEN" ]; then
+          export GROUNDRULE_TOKEN="$INPUT_TOKEN"
+          if "${cli[@]}" sync --help | grep -q -- "--upload"; then args+=(--upload); fi
+        fi
+        "${cli[@]}" "${args[@]}"
 
     - if: always() && inputs.sarif == 'true' && hashFiles(format('{0}/groundrule.sarif', inputs.working-directory)) != ''
       uses: github/codeql-action/upload-sarif@v3
