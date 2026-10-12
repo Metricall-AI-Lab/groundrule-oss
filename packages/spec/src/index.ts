@@ -1,3 +1,4 @@
+export * from "./agent-sync.js";
 export * from "./check-run.js";
 export * from "./common.js";
 export * from "./config.js";

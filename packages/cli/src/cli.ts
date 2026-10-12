@@ -213,9 +213,22 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     .description("write coding-agent instructions (AGENTS.md, CLAUDE.md, Cursor, Copilot)")
     .option("--check", "exit 1 if the files are out of date instead of writing them")
     .option("--refresh", "re-fetch remote packs")
-    .action(async (o: { check?: boolean; refresh?: boolean }) => {
-      code = await sync(ctx(), o);
-    });
+    .option("--upload", "report what this repository delivers to coding agents to Groundrule")
+    .option("--org <slug>", "organization (default: from .groundrule/config.yaml)")
+    .option("--url <url>", "Groundrule platform address")
+    .option("--repository <name>", "repository name, e.g. acme/api (default: from the git remote)")
+    .action(
+      async (o: {
+        check?: boolean;
+        refresh?: boolean;
+        upload?: boolean;
+        org?: string;
+        url?: string;
+        repository?: string;
+      }) => {
+        code = await sync(ctx(), o);
+      },
+    );
 
   program
     .command("check")

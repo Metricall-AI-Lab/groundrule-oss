@@ -1,0 +1,266 @@
+{
+  "$id": "https://groundrule.dev/schemas/v1alpha1/agent-sync.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "groundrule.dev/v1alpha1",
+      "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+    },
+    "kind": {
+      "type": "string",
+      "const": "AgentSync"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "cliVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      },
+      "required": [
+        "generatedAt",
+        "cliVersion"
+      ],
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "owner/name from the git remote, or the folder name."
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "pullRequest": {
+      "description": "Present when the report came from CI for a pull request.",
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "url": {
+          "description": "The pull request on the code host.",
+          "type": "string",
+          "maxLength": 500,
+          "format": "uri"
+        },
+        "headRef": {
+          "description": "The branch being merged.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "headSha": {
+          "description": "The pull request's head commit, where the code host shows checks. CI often checks out a test merge commit instead (repository.commit).",
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "baseRef": {
+          "description": "The branch merged into.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "author": {
+          "description": "The author's login on the code host.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "additionalProperties": false
+    },
+    "rulebook": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "local"
+      ],
+      "description": "platform: the organization's rulebook on Groundrule. local: packs in the config."
+    },
+    "upToDate": {
+      "type": "boolean",
+      "description": "Every agent file matches the rulebook."
+    },
+    "targets": {
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "enum": [
+              "agents-md",
+              "claude-code",
+              "cursor",
+              "copilot"
+            ]
+          },
+          "files": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Repository-relative POSIX path."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "current",
+                    "outdated",
+                    "missing",
+                    "leftover"
+                  ]
+                }
+              },
+              "required": [
+                "path",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "target",
+          "files"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The agent formats the config asks for, and their files."
+    },
+    "standards": {
+      "type": "object",
+      "properties": {
+        "delivered": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000,
+          "description": "Rules written into the agent files."
+        },
+        "ids": {
+          "maxItems": 2000,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+            "description": "Unique, stable standard identifier, e.g. AUTH-017."
+          },
+          "description": "Their IDs, in order."
+        }
+      },
+      "required": [
+        "delivered",
+        "ids"
+      ],
+      "additionalProperties": false
+    },
+    "hooks": {
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "type": "string",
+            "enum": [
+              "claude-code",
+              "codex",
+              "cursor"
+            ]
+          },
+          "installed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "agent",
+          "installed"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Whether the repository's project settings run `groundrule hook` for each agent."
+    },
+    "mcp": {
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "string",
+            "enum": [
+              "claude-code",
+              "cursor",
+              "vscode"
+            ]
+          },
+          "configured": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "client",
+          "configured"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Whether the repository's project MCP settings start `groundrule mcp`. Settings in a developer's own profile can't be seen."
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "repository",
+    "rulebook",
+    "upToDate",
+    "targets",
+    "standards",
+    "hooks",
+    "mcp"
+  ],
+  "additionalProperties": false,
+  "description": "What a repository delivers to coding agents, uploaded with `groundrule sync --upload`."
+}

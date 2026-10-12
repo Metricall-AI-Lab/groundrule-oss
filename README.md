@@ -62,7 +62,7 @@ More in [`examples/foundation`](examples/foundation/.groundrule/standards).
 | Command | What it does |
 |---------|--------------|
 | `groundrule init` | Create `.groundrule/config.yaml` with packs for your stack |
-| `groundrule sync [--check]` | Write (or verify) coding-agent instructions |
+| `groundrule sync [--check] [--upload]` | Write (or verify) coding-agent instructions; `--upload` reports what the repository delivers to agents |
 | `groundrule check [--base <ref>] [--all]` | Check changes, a branch, or everything. `-f json\|sarif\|markdown`, `--summary <file>` |
 | `groundrule standards` | List the standards in effect |
 | `groundrule explain <ID>` | Why a standard exists, examples, how to comply, exceptions |
