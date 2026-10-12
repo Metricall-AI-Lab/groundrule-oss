@@ -70,7 +70,8 @@ More in [`examples/foundation`](examples/foundation/.groundrule/standards).
 | `groundrule packs` | List bundled packs |
 | `groundrule scan [--json] [--upload]` | Observe this repository against the whole catalog: stack, agent files, tools, and how every rule would do today. Changes nothing |
 | `groundrule propose "<rule>"` | Propose a rule for your team to review on the platform. `--why`, `--example`, `--file path[:line]` |
-| `groundrule mcp` | Serve your standards to coding agents over MCP, and let them propose rules (see below) |
+| `groundrule mcp` | Serve your standards to coding agents over MCP, let them check their changes and propose rules (see below) |
+| `groundrule hooks [--agents <list>] [--remove]` | Have Claude Code, Codex, or Cursor run the check when they finish a task (see below) |
 | `groundrule login` | Sign in to your organization on the Groundrule platform (browser approval) |
 | `groundrule whoami` / `logout` | Show or remove (and revoke) your saved sign-in |
 
@@ -92,9 +93,10 @@ What each command takes from the platform depends on the rule's rollout stage: `
 
 ### Coding agents (MCP)
 
-`groundrule mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server (stdio) with two tools:
+`groundrule mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server (stdio) with three tools:
 
 - `list_standards`: the rules in effect in the repository, so the agent follows them. Works offline.
+- `check`: the same check CI runs, on the agent's uncommitted changes (or since a `base` ref, or `all` files). It lists only what the change introduced, with where and how to fix it, so the agent fixes it before it finishes. Works offline; nothing is uploaded.
 - `propose_rule`: when you correct your agent and say (or agree) that it should apply to everyone, it proposes the rule to your organization's review inbox, with where it came up. Nothing changes until a reviewer accepts it. Needs a connected repository and `groundrule login`.
 
 Add it to your agent once per repository or user:
@@ -108,6 +110,22 @@ claude mcp add groundrule -- npx -y @groundrule/cli mcp          # Claude Code
 ```
 
 The JSON form goes in `.cursor/mcp.json` for Cursor, `.vscode/mcp.json` for VS Code (as `servers`), or your agent's MCP settings. Proposals carry the rule, your reason, and a file and line if given; nothing else from the repository is sent.
+
+### Check when the agent finishes (hooks)
+
+`groundrule hooks` adds a stop hook, so the agent runs the check every time it finishes a task, whether or not it remembered to:
+
+```bash
+npx @groundrule/cli hooks        # Claude Code, plus Codex and Cursor if the repository uses them
+```
+
+| Agent | File | When the check fails |
+|---|---|---|
+| Claude Code | `.claude/settings.json` | The agent is stopped from finishing and told what to fix |
+| Codex | `.codex/hooks.json` | The same; each developer trusts the hook once with `/hooks` |
+| Cursor | `.cursor/hooks.json` | What to fix is sent as a follow-up message |
+
+Existing settings and hooks are kept. The hook asks once per turn, so an agent that can't fix something isn't kept going forever, and it never fails the agent: without a Groundrule configuration it does nothing. Commit the files so every developer's agent runs it; `--remove` takes the hooks out again.
 
 ## Checks
 

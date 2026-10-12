@@ -1,12 +1,13 @@
 import { appliesToRepository, inspectRepository } from "@groundrule/core";
 import { createServer, type Tool } from "@groundrule/mcp";
 import { compareSeverity } from "@groundrule/spec";
+import { checkForAgent } from "../agent-report.js";
 import { EXIT, eprintln, type IO, VERSION } from "../io.js";
 import { PlatformError } from "../platform.js";
 import { openWorkspace } from "../workspace.js";
 import { Proposal, sendProposal } from "./propose.js";
 
-const INSTRUCTIONS = `Groundrule holds this team's engineering standards. Call list_standards to see the rules in effect before writing or reviewing code, and follow them. When the developer corrects you about how code in this codebase should be written and says, or confirms when you ask, that it should apply to everyone from now on, call propose_rule so the team can adopt it. Never propose one-off preferences, rules that already exist, or anything the developer didn't ask for or agree to.`;
+const INSTRUCTIONS = `Groundrule holds this team's engineering standards. Call list_standards to see the rules in effect before writing or reviewing code, and follow them. Before you finish a change, call check and fix every blocking finding it reports. When the developer corrects you about how code in this codebase should be written and says, or confirms when you ask, that it should apply to everyone from now on, call propose_rule so the team can adopt it. Never propose one-off preferences, rules that already exist, or anything the developer didn't ask for or agree to.`;
 
 /** A short, stable name for the agent, from what its MCP client calls itself. */
 const agentName = (name: string | undefined) =>
@@ -141,7 +142,42 @@ export function groundruleTools(io: IO): Tool[] {
     },
   };
 
-  return [listStandards, proposeRule];
+  const checkTool: Tool = {
+    name: "check",
+    title: "Check changes against the standards",
+    description:
+      "Run the team's Groundrule checks on your changes, the same checks CI runs. By default it checks uncommitted changes (staged, unstaged and new files). Call it before you finish a change and fix every blocking finding; warnings don't fail the check, but fix the ones in code you wrote. Only findings the change introduced are reported. Nothing is uploaded.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        base: {
+          type: "string",
+          description:
+            "Check everything changed since this git ref instead, e.g. origin/main for a whole branch.",
+        },
+        all: {
+          type: "boolean",
+          description: "Check every file, not only changes. Slower; reports existing problems too.",
+        },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async handler(args) {
+      const checked = await checkForAgent(io, {
+        ...(typeof args.base === "string" ? { base: args.base } : {}),
+        ...(args.all === true ? { all: true } : {}),
+      });
+      if (!checked.ok) return { text: checked.message, isError: true };
+      const { report } = checked;
+      return {
+        text: report.text,
+        structured: { failed: report.failed, findings: report.findings },
+      };
+    },
+  };
+
+  return [listStandards, checkTool, proposeRule];
 }
 
 /** `groundrule mcp`: serve Groundrule to a coding agent over stdio (Model Context Protocol). */
