@@ -205,6 +205,11 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     )
     .option("--only <ids>", "only these standard IDs, comma-separated", list)
     .option("--verbose", "also show legacy and excepted findings")
+    .option("--upload", "send the result to your organization on Groundrule")
+    .option("--no-snippets", "with --upload: leave code snippets out")
+    .option("--repository <name>", "repository name, e.g. acme/api (default: from the git remote)")
+    .option("--org <slug>", "organization to upload to")
+    .option("--url <url>", "Groundrule platform address")
     .action(
       async (o: {
         base?: string;
@@ -215,6 +220,11 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
         failOn?: "blocker" | "warning" | "none";
         only?: string[];
         verbose?: boolean;
+        upload?: boolean;
+        snippets?: boolean;
+        repository?: string;
+        org?: string;
+        url?: string;
       }) => {
         code = await check(ctx(), {
           format: o.format,
@@ -225,6 +235,11 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
           ...(o.failOn ? { failOn: o.failOn } : {}),
           ...(o.only ? { only: o.only.map((id) => id.toUpperCase()) } : {}),
           ...(o.verbose ? { verbose: true } : {}),
+          ...(o.upload ? { upload: true } : {}),
+          ...(o.snippets === false ? { snippets: false } : {}),
+          ...(o.repository ? { repository: o.repository } : {}),
+          ...(o.org ? { org: o.org } : {}),
+          ...(o.url ? { url: o.url } : {}),
         });
       },
     );
