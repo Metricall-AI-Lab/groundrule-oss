@@ -21,6 +21,7 @@ pullRequest:            # present when run for a pull request (from the CI provi
   title: Add refunds
   url: https://github.com/acme/payments-api/pull/42
   headRef: fix/refunds
+  headSha: <40 hex>       # the pull request's head commit (added in 0.3.0)
   baseRef: main
   author: octocat
 mode: changes           # all | changes
@@ -50,6 +51,7 @@ omittedFindings: 0      # findings beyond the 500 sent
 - Findings are the violations and concerns of the run, blocking first, then by severity, file and line; at most 500, with `omittedFindings` counting the rest. Passing results are not findings.
 - Snippets are one line, at most 200 characters, with credential-shaped values replaced by `[redacted]`. Standards in the `security` category never include snippets. `metadata.snippets: false` (`--no-snippets`) omits all of them. Messages are at most 300 characters.
 - `pullRequest` comes from the CI provider (GitHub Actions: the `pull_request` event payload). Outside a pull request it is omitted, and the run describes the branch or commit.
+- `pullRequest.headSha` (optional, added in 0.3.0) is the pull request's head commit. CI usually checks out a test merge commit, which is `repository.commit`; a service that shows results on the pull request needs the head. Receivers must accept runs without it.
 - Nothing else leaves the machine: no file contents, no diffs, no environment.
 
 ## Compatibility

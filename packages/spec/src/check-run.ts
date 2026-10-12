@@ -54,6 +54,13 @@ export const CheckRunPullRequest = z.strictObject({
     .optional()
     .describe("The pull request on the code host."),
   headRef: z.string().min(1).max(255).optional().describe("The branch being merged."),
+  headSha: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/)
+    .optional()
+    .describe(
+      "The pull request's head commit, where the code host shows checks. CI often checks out a test merge commit instead (repository.commit).",
+    ),
   baseRef: z.string().min(1).max(255).optional().describe("The branch merged into."),
   author: z.string().min(1).max(100).optional().describe("The author's login on the code host."),
 });

@@ -93,6 +93,11 @@
           "minLength": 1,
           "maxLength": 255
         },
+        "headSha": {
+          "description": "The pull request's head commit, where the code host shows checks. CI often checks out a test merge commit instead (repository.commit).",
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
         "baseRef": {
           "description": "The branch merged into.",
           "type": "string",

@@ -24,11 +24,16 @@ export async function pullRequestFromCi(io: IO): Promise<CheckRunPullRequest | u
   const text = (value: unknown, max: number) =>
     typeof value === "string" && value.trim() ? value.trim().slice(0, max) : undefined;
   const ref = (side: unknown) => text((side as { ref?: unknown } | undefined)?.ref, 255);
+  const sha = (side: unknown) => {
+    const value = (side as { sha?: unknown } | undefined)?.sha;
+    return typeof value === "string" && /^[0-9a-f]{40}$/.test(value) ? value : undefined;
+  };
   const candidate = {
     number: pr.number,
     title: text(pr.title, 300),
     url: text(pr.html_url, 500),
     headRef: ref(pr.head),
+    headSha: sha(pr.head),
     baseRef: ref(pr.base),
     author: text((pr.user as { login?: unknown } | undefined)?.login, 100),
   };
