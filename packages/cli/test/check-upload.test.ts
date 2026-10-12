@@ -164,6 +164,7 @@ describe("groundrule check --upload", () => {
       title: "Add refunds",
       url: "https://github.com/acme/payments/pull/42",
       headRef: "fix/refunds",
+      headSha: "a".repeat(40),
       baseRef: "main",
       author: "octocat",
     });
@@ -259,6 +260,11 @@ describe("the pull request from CI", () => {
       io(await prEvent(root, { ...PR, html_url: "http://insecure.example/pr/42" })),
     );
     expect(odd).toEqual({ number: 42 });
+    const badSha = await pullRequestFromCi(
+      io(await prEvent(root, { ...PR, head: { ref: "fix/refunds", sha: "not-a-sha" } })),
+    );
+    expect(badSha).toMatchObject({ number: 42, headRef: "fix/refunds" });
+    expect(badSha?.headSha).toBeUndefined();
   });
 
   it("is undefined outside a pull request or when the payload can't be read", async () => {
