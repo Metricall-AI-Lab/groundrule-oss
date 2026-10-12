@@ -58,9 +58,10 @@ runs:
         PR_BASE: ${{ github.event.pull_request.base.sha }}
         PUSH_BEFORE: ${{ github.event.before }}
         FAIL_ON: ${{ inputs.fail-on }}
-        # The token travels in the environment, never on the command line.
-        GROUNDRULE_TOKEN: ${{ inputs.token }}
-        GROUNDRULE_URL: ${{ inputs.url }}
+        # The token travels in the environment, never on the command line. A token set on
+        # the job (GROUNDRULE_TOKEN) still works when the token input is empty.
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_URL: ${{ inputs.url }}
         SNIPPETS: ${{ inputs.snippets }}
       run: |
         set +e
@@ -73,13 +74,12 @@ runs:
           args+=(--all)
         fi
         [ -n "$FAIL_ON" ] && args+=(--fail-on "$FAIL_ON")
-        if [ -n "$GROUNDRULE_TOKEN" ]; then
+        [ -n "$INPUT_URL" ] && export GROUNDRULE_URL="$INPUT_URL"
+        if [ -n "$INPUT_TOKEN" ]; then
+          export GROUNDRULE_TOKEN="$INPUT_TOKEN"
           args+=(--upload)
           [ "$SNIPPETS" = "false" ] && args+=(--no-snippets)
-        else
-          unset GROUNDRULE_TOKEN
         fi
-        [ -z "$GROUNDRULE_URL" ] && unset GROUNDRULE_URL
         $GROUNDRULE "${args[@]}"
         code=$?
         echo "exit-code=$code" >> "$GITHUB_OUTPUT"
@@ -88,7 +88,13 @@ runs:
     - if: inputs.check-sync == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: npx --yes @groundrule/cli@${{ inputs.version }} sync --check
+      env:
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_URL: ${{ inputs.url }}
+      run: |
+        [ -n "$INPUT_URL" ] && export GROUNDRULE_URL="$INPUT_URL"
+        [ -n "$INPUT_TOKEN" ] && export GROUNDRULE_TOKEN="$INPUT_TOKEN"
+        npx --yes @groundrule/cli@${{ inputs.version }} sync --check
 
     - if: always() && inputs.sarif == 'true' && hashFiles(format('{0}/groundrule.sarif', inputs.working-directory)) != ''
       uses: github/codeql-action/upload-sarif@v3
