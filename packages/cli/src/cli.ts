@@ -151,7 +151,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
   program
     .command("hooks")
     .description(
-      "have coding agents run the check when they finish a task (Claude Code, Codex, Cursor)",
+      "have coding agents run the check when they finish a task (Claude Code, Codex, Cursor, Copilot)",
     )
     .addOption(
       new Option(

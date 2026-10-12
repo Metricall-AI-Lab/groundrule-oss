@@ -41,6 +41,7 @@ hooks:                              # Groundrule's stop hook in project settings
   - { agent: claude-code, installed: true }
   - { agent: codex, installed: false }
   - { agent: cursor, installed: false }
+  - { agent: copilot, installed: false }      # added in 0.6.0 (.github/hooks/groundrule.json)
 mcp:                                # project MCP settings that start `groundrule mcp`
   - { client: claude-code, configured: true }   # .mcp.json
   - { client: cursor, configured: false }       # .cursor/mcp.json
@@ -58,7 +59,7 @@ mcp:                                # project MCP settings that start `groundrul
 - **Nothing else leaves the machine:** no file contents, no environment, nothing from the developer's own settings.
 
 ## Compatibility
-Additive: a new document kind. It is not a configuration document and is never loaded from a repository. `sync` without `--upload` behaves as before, and `sync --check` keeps its exit code whatever happens to the upload.
+Additive: a new document kind. `copilot` was added to the hook agents in 0.6.0; receivers must update before CLIs send it. It is not a configuration document and is never loaded from a repository. `sync` without `--upload` behaves as before, and `sync --check` keeps its exit code whatever happens to the upload.
 
 ## Alternatives considered
 - **Extend `CheckRun`.** Check runs describe code changes and come from pull requests. Agent delivery is a property of the repository. Mixing them would make every check run carry agent data and make "latest state of a repository" harder to read.

@@ -15,7 +15,7 @@ export const AgentFileStatus = z.enum(AGENT_FILE_STATUSES);
 export type AgentFileStatus = z.infer<typeof AgentFileStatus>;
 
 /** Coding agents with a project-level "agent is finishing" hook (`groundrule hooks`). */
-export const HOOK_AGENTS = ["claude-code", "codex", "cursor"] as const;
+export const HOOK_AGENTS = ["claude-code", "codex", "cursor", "copilot"] as const;
 export const HookAgent = z.enum(HOOK_AGENTS);
 export type HookAgent = z.infer<typeof HookAgent>;
 
