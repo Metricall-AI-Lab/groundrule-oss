@@ -16,7 +16,7 @@ import { exists, globFiles, toPosix } from "./fs.js";
 import { isGroundruleDocument, stripManagedBlocks } from "./generated.js";
 import { gitRoot } from "./git.js";
 import { loadFile } from "./load.js";
-import { resolveRemoteSource, type SourceOptions } from "./sources.js";
+import { resolveRemoteSource, SourceError, type SourceOptions } from "./sources.js";
 
 export const CONFIG_DIR = ".groundrule";
 export const CONFIG_FILE = "config.yaml";
@@ -158,6 +158,11 @@ export async function loadWorkspace(
     try {
       target =
         ref.type === "local" ? resolve(fromDir, ref.path) : await resolveRemoteSource(ref, options);
+      // Offline (hosted checks), a local source can't reach outside the repository.
+      if (options.offline && ref.type === "local" && relative(root, target).startsWith(".."))
+        throw new SourceError(
+          `${ref.path} is outside the repository, so it isn't read when checking offline.`,
+        );
     } catch (error) {
       diagnostics.push({
         severity: "error",

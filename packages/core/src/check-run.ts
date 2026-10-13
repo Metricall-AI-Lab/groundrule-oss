@@ -28,6 +28,9 @@ export interface CheckRunOptions {
   failOn: CheckRun["failOn"];
   repositoryName: string;
   pullRequest?: CheckRunPullRequest | undefined;
+  /** The commit and branch, when the caller knows them better than git (hosted checks have no .git). */
+  commit?: string | undefined;
+  branch?: string | undefined;
   now?: Date;
 }
 
@@ -42,9 +45,10 @@ async function gitValue(root: string, args: string[]): Promise<string | undefine
 export async function buildCheckRun(options: CheckRunOptions): Promise<CheckRun> {
   const { result } = options;
   const { root } = result.context;
-  const commit = await gitValue(root, ["rev-parse", "HEAD"]);
+  const commit = options.commit ?? (await gitValue(root, ["rev-parse", "HEAD"]));
   // Pull-request checkouts are detached; their branch comes from the pull request.
   const branch =
+    options.branch ??
     options.pullRequest?.headRef ??
     (await gitValue(root, ["symbolic-ref", "--quiet", "--short", "HEAD"]));
 

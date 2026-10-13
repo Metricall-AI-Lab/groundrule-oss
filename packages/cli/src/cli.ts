@@ -257,8 +257,23 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     .option("--repository <name>", "repository name, e.g. acme/api (default: from the git remote)")
     .option("--org <slug>", "organization to upload to")
     .option("--url <url>", "Groundrule platform address")
+    // Hosted checks (Groundrule's sandbox): every input as a file, no network, no git.
+    .addOption(new Option("--offline", "never reach the network").hideHelp())
+    .addOption(new Option("--rulebook <file>", "the organization's rulebook, as JSON").hideHelp())
+    .addOption(new Option("--changes <file>", "changed files and lines, as JSON").hideHelp())
+    .addOption(new Option("--pull-request <file>", "the pull request, as JSON").hideHelp())
+    .addOption(new Option("--commit <sha>", "the commit under check").hideHelp())
+    .addOption(
+      new Option("--write-check-run <file>", "also write the result as a CheckRun").hideHelp(),
+    )
     .action(
       async (o: {
+        offline?: boolean;
+        rulebook?: string;
+        changes?: string;
+        pullRequest?: string;
+        commit?: string;
+        writeCheckRun?: string;
         base?: string;
         all?: boolean;
         format: Format;
@@ -287,6 +302,12 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
           ...(o.repository ? { repository: o.repository } : {}),
           ...(o.org ? { org: o.org } : {}),
           ...(o.url ? { url: o.url } : {}),
+          ...(o.offline ? { offline: true } : {}),
+          ...(o.rulebook ? { rulebook: o.rulebook } : {}),
+          ...(o.changes ? { changes: o.changes } : {}),
+          ...(o.pullRequest ? { pullRequest: o.pullRequest } : {}),
+          ...(o.commit ? { commit: o.commit } : {}),
+          ...(o.writeCheckRun ? { writeCheckRun: o.writeCheckRun } : {}),
         });
       },
     );

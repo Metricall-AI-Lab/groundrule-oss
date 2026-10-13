@@ -282,7 +282,20 @@ export async function loadPlatformStandards(
       `This token is for ${rulebook.org.slug}, but this repository uses ${platform.org}. Run \`groundrule login\` and approve it for ${platform.org}.`,
     );
   }
+  return standardsFromRulebook(rulebook, { url, org: platform.org, repository, configFile, use });
+}
 
+/**
+ * Turn a rulebook (fetched from the platform, or handed over as a file for a hosted check)
+ * into standards the kernel understands. Every document is validated against the spec.
+ */
+export function standardsFromRulebook(
+  rulebook: PlatformRulebook,
+  p: { url: string; org: string; repository?: string | undefined; configFile: string; use: Use },
+): PlatformStandards {
+  const { url, configFile, use } = p;
+  const platform = { org: p.org };
+  const repository = p.repository;
   const diagnostics: Diagnostic[] = [];
   const standards: LoadedStandard[] = [];
   for (const entry of rulebook.standards) {
