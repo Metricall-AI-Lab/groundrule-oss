@@ -1,5 +1,15 @@
 # @groundrule/core
 
+## 0.7.0
+
+### Minor Changes
+
+- dca0b2e: `groundrule check` can run fully offline from input files (for Groundrule's hosted checks): hidden `--offline`, `--rulebook`, `--changes`, `--pull-request`, `--commit` and `--write-check-run` options. Offline, packs from GitHub are refused instead of fetched and local sources must stay inside the repository; the result is the same as the same check in CI.
+
+### Patch Changes
+
+- @groundrule/spec@0.7.0
+
 ## 0.6.0
 
 ### Patch Changes
