@@ -17,6 +17,11 @@ export interface SourceOptions {
   resolveRegistry?: (name: string, version?: string) => string | undefined;
   /** Base URL for GitHub clones. Overridable for tests and GitHub Enterprise. */
   githubBaseUrl?: string;
+  /**
+   * Never reach the network (hosted checks run in a sandbox with none): remote packs are
+   * refused instead of fetched, and local sources must stay inside the repository.
+   */
+  offline?: boolean;
 }
 
 export class SourceError extends Error {
@@ -36,6 +41,11 @@ export async function resolveRemoteSource(
       );
     return path;
   }
+
+  if (options.offline)
+    throw new SourceError(
+      `github:${ref.owner}/${ref.repo}${ref.ref ? `@${ref.ref}` : ""} isn't fetched when checking offline. Use packs bundled with Groundrule, or your organization's rulebook.`,
+    );
 
   const cacheRoot =
     options.cacheDir ??

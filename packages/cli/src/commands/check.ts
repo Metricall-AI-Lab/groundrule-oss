@@ -11,6 +11,7 @@ import {
   renderTerminal,
 } from "@groundrule/reporters";
 import { pullRequestFromCi } from "../ci.js";
+import { HostedInputError, readChanges, readPullRequest, readRulebook } from "../hosted.js";
 import { EXIT, eprintln, type IO, println, style, VERSION } from "../io.js";
 import { call, detectRepository, PlatformError, platformUrl, tokenFor } from "../platform.js";
 import { openWorkspace, printDiagnostics } from "../workspace.js";
@@ -32,11 +33,53 @@ export interface CheckOptions {
   org?: string;
   url?: string;
   repository?: string;
+  /** Hosted checks: no network at all (no platform, no remote packs). */
+  offline?: boolean;
+  /** Hosted checks: the organization's rulebook, as a file, instead of fetching it. */
+  rulebook?: string;
+  /** Hosted checks: the changed files and lines, as a file, instead of asking git. */
+  changes?: string;
+  /** Hosted checks: the pull request (CheckRunPullRequest), as a file. */
+  pullRequest?: string;
+  /** Hosted checks: the commit under check. */
+  commit?: string;
+  /** Also write the result as a CheckRun (RFC 0005) to this file. */
+  writeCheckRun?: string;
 }
 
 export async function check(io: IO, options: CheckOptions): Promise<number> {
+  if (options.offline && options.upload) {
+    eprintln(io, "✕ --offline and --upload can't be used together.");
+    return EXIT.usage;
+  }
+  if (options.commit && !/^[0-9a-f]{40}$/.test(options.commit)) {
+    eprintln(io, "✕ --commit must be a full 40-character commit SHA.");
+    return EXIT.usage;
+  }
+  let hosted: {
+    rulebook?: Awaited<ReturnType<typeof readRulebook>>;
+    changes?: Awaited<ReturnType<typeof readChanges>>;
+    pullRequest?: Awaited<ReturnType<typeof readPullRequest>>;
+  } = {};
+  try {
+    hosted = {
+      ...(options.rulebook ? { rulebook: await readRulebook(io, options.rulebook) } : {}),
+      ...(options.changes ? { changes: await readChanges(io, options.changes) } : {}),
+      ...(options.pullRequest
+        ? { pullRequest: await readPullRequest(io, options.pullRequest) }
+        : {}),
+    };
+  } catch (error) {
+    if (!(error instanceof HostedInputError)) throw error;
+    eprintln(io, `✕ ${error.message}`);
+    return EXIT.usage;
+  }
   // From the platform: Enforce rules as set, Advise rules as warnings, Teach rules not checked.
-  const workspace = await openWorkspace(io, { use: "checks" });
+  const workspace = await openWorkspace(io, {
+    use: "checks",
+    ...(options.offline ? { offline: true } : {}),
+    ...(hosted.rulebook ? { rulebook: hosted.rulebook } : {}),
+  });
   if (!workspace) return EXIT.usage;
   if (options.failOn) workspace.config.enforcement.failOn = options.failOn;
 
@@ -69,10 +112,11 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
       evaluators: builtinEvaluators,
       ...(options.all
         ? { mode: "all" as const }
-        : options.base
+        : options.base || hosted.changes
           ? { mode: "changes" as const }
           : {}),
       ...(options.base ? { base: options.base } : {}),
+      ...(hosted.changes && !options.all ? { changes: hosted.changes } : {}),
       ...(options.only?.length ? { only: options.only } : {}),
     });
   } catch (error) {
@@ -114,6 +158,25 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
     : result.failed
       ? EXIT.failed
       : EXIT.ok;
+
+  if (options.writeCheckRun) {
+    const run = await buildCheckRun({
+      result,
+      standards: workspace.standards,
+      cliVersion: VERSION,
+      snippets: options.snippets !== false,
+      failOn: workspace.config.enforcement.failOn,
+      repositoryName:
+        options.repository ??
+        workspace.config.platform?.repository ??
+        (options.offline ? undefined : await detectRepository(workspace.root)) ??
+        basename(workspace.root),
+      pullRequest:
+        hosted.pullRequest ?? (options.offline ? undefined : await pullRequestFromCi(io)),
+      ...(options.commit ? { commit: options.commit } : {}),
+    });
+    await writeFile(resolve(io.cwd, options.writeCheckRun), `${JSON.stringify(run)}\n`);
+  }
   if (!upload) return code;
 
   // The check's own result stands whatever happens to the upload: a platform outage must

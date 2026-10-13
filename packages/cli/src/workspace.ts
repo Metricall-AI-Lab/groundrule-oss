@@ -11,6 +11,8 @@ import {
   loadPlatformStandards,
   PlatformError,
   type PlatformRulebook,
+  platformUrl,
+  standardsFromRulebook,
   type Use,
 } from "./platform.js";
 
@@ -21,6 +23,10 @@ export interface OpenOptions {
    * agent files get Teach and above, checks run Advise and above.
    */
   use?: Use;
+  /** Never reach the network: remote packs are refused, and the platform isn't called. */
+  offline?: boolean;
+  /** The organization's rulebook, handed over (hosted checks) instead of fetched. */
+  rulebook?: PlatformRulebook;
 }
 
 export interface OpenedWorkspace extends Workspace {
@@ -37,6 +43,7 @@ export async function openWorkspace(
     cwd: io.cwd,
     resolveRegistry: resolvePack,
     ...(options.refresh ? { refresh: true } : {}),
+    ...(options.offline ? { offline: true } : {}),
   });
   if (!result.ok) {
     printDiagnostics(io, result.diagnostics, io.cwd);
@@ -45,7 +52,7 @@ export async function openWorkspace(
   const workspace: OpenedWorkspace = result.workspace;
   if (workspace.config.platform) {
     try {
-      await usePlatform(io, workspace, options.use ?? "all");
+      await usePlatform(io, workspace, options.use ?? "all", options);
     } catch (error) {
       if (!(error instanceof PlatformError)) throw error;
       printDiagnostics(io, workspace.diagnostics, workspace.root);
@@ -62,9 +69,31 @@ export async function openWorkspace(
  * repository's own standards (.groundrule/standards) still apply; on an ID clash the
  * platform wins, so a repository can't quietly loosen an organization rule.
  */
-async function usePlatform(io: IO, workspace: OpenedWorkspace, use: Use) {
+async function usePlatform(
+  io: IO,
+  workspace: OpenedWorkspace,
+  use: Use,
+  options: OpenOptions = {},
+) {
   const { config, configFile, root } = workspace;
-  const loaded = await loadPlatformStandards(io, config, root, configFile, use);
+  const org = config.platform?.org ?? "";
+  if (options.offline && !options.rulebook)
+    throw new PlatformError(
+      `This repository takes its rules from ${org} on Groundrule. Offline, pass the rulebook with --rulebook.`,
+    );
+  if (options.rulebook && options.rulebook.org.slug !== org)
+    throw new PlatformError(
+      `The rulebook is for ${options.rulebook.org.slug}, but this repository uses ${org}.`,
+    );
+  const loaded = options.rulebook
+    ? standardsFromRulebook(options.rulebook, {
+        url: platformUrl(io, undefined, config),
+        org,
+        repository: config.platform?.repository ?? options.rulebook.target.repository?.name,
+        configFile,
+        use,
+      })
+    : await loadPlatformStandards(io, config, root, configFile, use);
   const diagnostics: Diagnostic[] = [...loaded.diagnostics];
   if (config.extends.length) {
     diagnostics.push({
