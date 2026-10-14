@@ -37,6 +37,7 @@ Pin the action to a commit SHA (`@<sha>`) for reproducible builds. Create the to
 | `working-directory` | `.` | Repository location |
 | `token` | none | Groundrule API token; when set, results are uploaded with the pull request they were for |
 | `snippets` | `true` | With `token`: `false` sends no code snippets |
+| `sigstore` | `false` | With `token`: `true` signs the result with this job's identity through Sigstore (keyless, [RFC 0009](../rfcs/0009-sigstore-keyless-signing.md)). Needs `permissions: id-token: write`. Opt-in: the workflow identity and the result's hash go to Sigstore's public log |
 | `url` | `https://app.groundrule.dev` | Groundrule platform address |
 
 Exit codes: `0` passed, `1` failed, `2` configuration error. A failed upload never changes the exit code: the check's own result stands.

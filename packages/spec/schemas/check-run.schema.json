@@ -554,30 +554,86 @@
       "description": "Who or what wrote the change, as declared in its commits."
     },
     "signature": {
-      "type": "object",
-      "properties": {
-        "algorithm": {
-          "type": "string",
-          "const": "ed25519"
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "const": "ed25519"
+            },
+            "keyId": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "description": "sha256: of the public key's raw 32 bytes."
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9+/]{86}==$",
+              "description": "The Ed25519 signature of the signing payload, base64."
+            }
+          },
+          "required": [
+            "algorithm",
+            "keyId",
+            "value"
+          ],
+          "additionalProperties": false
         },
-        "keyId": {
-          "type": "string",
-          "pattern": "^sha256:[0-9a-f]{64}$",
-          "description": "sha256: of the public key's raw 32 bytes."
-        },
-        "value": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9+/]{86}==$",
-          "description": "The Ed25519 signature of the signing payload, base64."
+        {
+          "type": "object",
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "const": "sigstore"
+            },
+            "bundle": {
+              "type": "object",
+              "properties": {
+                "mediaType": {
+                  "type": "string",
+                  "pattern": "^application\\/vnd\\.dev\\.sigstore\\.bundle"
+                }
+              },
+              "required": [
+                "mediaType"
+              ],
+              "additionalProperties": {},
+              "description": "The Sigstore bundle: certificate, signature over the payload, and the log entry."
+            },
+            "identity": {
+              "type": "object",
+              "properties": {
+                "issuer": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "format": "uri",
+                  "description": "The OIDC issuer, e.g. GitHub Actions."
+                },
+                "subject": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "The signer, e.g. https://github.com/acme/payments/.github/workflows/ci.yml@refs/heads/main."
+                }
+              },
+              "required": [
+                "issuer",
+                "subject"
+              ],
+              "additionalProperties": false,
+              "description": "The certificate's identity, copied out so readers needn't parse it; verifiers re-derive it."
+            }
+          },
+          "required": [
+            "algorithm",
+            "bundle",
+            "identity"
+          ],
+          "additionalProperties": false
         }
-      },
-      "required": [
-        "algorithm",
-        "keyId",
-        "value"
       ],
-      "additionalProperties": false,
-      "description": "Proves the run is what its signer produced; verifiable offline with the public key."
+      "description": "Proves the run is what its signer produced; verifiable offline."
     }
   },
   "required": [

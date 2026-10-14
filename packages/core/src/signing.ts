@@ -102,7 +102,7 @@ export function signCheckRun(run: CheckRun, privateKey: KeyObject): CheckRun {
 
 export type Verification =
   | { ok: true; keyId: string }
-  | { ok: false; keyId: string | null; reason: "unsigned" | "wrong-key" | "invalid" };
+  | { ok: false; keyId: string | null; reason: "unsigned" | "wrong-key" | "invalid" | "sigstore" };
 
 /**
  * Check a run's signature against one public key. `wrong-key` means the run names another
@@ -111,6 +111,8 @@ export type Verification =
 export function verifyCheckRun(run: CheckRun, publicKey: KeyObject): Verification {
   const signature = run.signature;
   if (!signature) return { ok: false, keyId: null, reason: "unsigned" };
+  // A Sigstore signature is verified by identity, not by a key: see verifySigstoreRun.
+  if (signature.algorithm !== "ed25519") return { ok: false, keyId: null, reason: "sigstore" };
   const keyId = keyIdOf(publicKey);
   if (signature.keyId !== keyId) return { ok: false, keyId: signature.keyId, reason: "wrong-key" };
   let ok = false;
