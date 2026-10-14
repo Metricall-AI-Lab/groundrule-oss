@@ -3,7 +3,13 @@ import { ApiVersion, Glob, Severity, StandardId } from "./common.js";
 import { isValidSourceRef } from "./source-ref.js";
 
 /** Agent instruction formats the adapters can generate. */
-export const AGENT_TARGETS = ["agents-md", "claude-code", "cursor", "copilot"] as const;
+export const AGENT_TARGETS = [
+  "agents-md",
+  "claude-code",
+  "cursor",
+  "copilot",
+  "coderabbit",
+] as const;
 export const AgentTarget = z.enum(AGENT_TARGETS);
 export type AgentTarget = z.infer<typeof AgentTarget>;
 

@@ -54,6 +54,7 @@ const TARGET_FILES: Record<AgentTarget, string[]> = {
   "claude-code": ["CLAUDE.md", ".claude"],
   cursor: [".cursor", ".cursorrules"],
   copilot: [".github/copilot-instructions.md", ".github/instructions"],
+  coderabbit: [".coderabbit.yaml", ".coderabbit.yml"],
 };
 
 const TARGET_OUTPUT: Record<AgentTarget, string> = {
@@ -61,6 +62,7 @@ const TARGET_OUTPUT: Record<AgentTarget, string> = {
   "claude-code": "CLAUDE.md",
   cursor: ".cursor/rules/",
   copilot: ".github/copilot-instructions.md",
+  coderabbit: ".coderabbit.yaml",
 };
 
 export async function init(io: IO, options: InitOptions): Promise<number> {

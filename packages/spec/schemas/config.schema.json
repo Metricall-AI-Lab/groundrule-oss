@@ -53,7 +53,8 @@
           "agents-md",
           "claude-code",
           "cursor",
-          "copilot"
+          "copilot",
+          "coderabbit"
         ]
       }
     },
