@@ -1,5 +1,13 @@
 # @groundrule/adapters
 
+## 0.9.0
+
+### Patch Changes
+
+- Updated dependencies [f24d807]
+  - @groundrule/spec@0.9.0
+  - @groundrule/core@0.9.0
+
 ## 0.8.0
 
 ### Patch Changes
