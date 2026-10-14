@@ -1,4 +1,5 @@
 export * from "./check-run.js";
+export * from "./compliance.js";
 export * from "./diagnostics.js";
 export * from "./enforcement.js";
 export * from "./evaluator.js";

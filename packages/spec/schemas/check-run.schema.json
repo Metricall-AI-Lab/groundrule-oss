@@ -33,6 +33,10 @@
         "snippets": {
           "type": "boolean",
           "description": "Whether code snippets were included."
+        },
+        "authorship": {
+          "description": "false when --no-authorship left the authorship record out (RFC 0007).",
+          "type": "boolean"
         }
       },
       "required": [
@@ -277,6 +281,36 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 10000000
+          },
+          "version": {
+            "description": "The standard's metadata.version when the run used it (RFC 0007).",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "digest": {
+            "description": "SHA-256 of the standard as applied, after customizations, as canonical JSON (RFC 0007).",
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "stage": {
+            "description": "The organization's rollout stage for this rule. Absent for rules without a stage.",
+            "type": "string",
+            "enum": [
+              "observe",
+              "teach",
+              "advise",
+              "enforce"
+            ]
+          },
+          "enforcement": {
+            "type": "string",
+            "enum": [
+              "checked",
+              "ai-review",
+              "guidance"
+            ],
+            "description": "checked: a deterministic or static-analysis check can fail a change. ai-review: AI checks only, advisory. guidance: no check."
           }
         },
         "required": [
@@ -374,6 +408,150 @@
       "minimum": 0,
       "maximum": 10000000,
       "description": "Findings beyond the 500 sent."
+    },
+    "rulebook": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "SHA-256 of one line per rule in effect, '<id> <digest> <stage or -> <severity>', sorted by ID."
+        },
+        "standards": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000,
+          "description": "Rules in effect: active, not turned off, at any stage but Observe."
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "platform",
+            "local"
+          ],
+          "description": "Rules from a Groundrule workspace, or local files only."
+        },
+        "platform": {
+          "description": "The workspace and when its rulebook was generated, when source is platform.",
+          "type": "object",
+          "properties": {
+            "org": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "generatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          "required": [
+            "org",
+            "generatedAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "digest",
+        "standards",
+        "source"
+      ],
+      "additionalProperties": false,
+      "description": "Which rules were in effect for the run, verifiably."
+    },
+    "exceptions": {
+      "description": "Exceptions that suppressed at least one finding in this run.",
+      "maxItems": 200,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^EX-[0-9]+$"
+          },
+          "standard": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+            "description": "Unique, stable standard identifier, e.g. AUTH-017."
+          },
+          "expires": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "Calendar date, YYYY-MM-DD."
+          },
+          "approvedBy": {
+            "description": "As written in .groundrule/exceptions.yaml.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "suppressed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000,
+            "description": "Findings it suppressed in this run."
+          }
+        },
+        "required": [
+          "id",
+          "standard",
+          "expires",
+          "suppressed"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "authorship": {
+      "type": "object",
+      "properties": {
+        "commits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000,
+          "description": "Commits in the change."
+        },
+        "agents": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "commits": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000
+              }
+            },
+            "required": [
+              "name",
+              "commits"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Each coding agent declared by the commits, most commits first."
+        },
+        "method": {
+          "type": "string",
+          "const": "commit-metadata",
+          "description": "Detected from commit trailers and bot authors, never from code. A declaration, not proof."
+        }
+      },
+      "required": [
+        "commits",
+        "agents",
+        "method"
+      ],
+      "additionalProperties": false,
+      "description": "Who or what wrote the change, as declared in its commits."
     }
   },
   "required": [

@@ -235,6 +235,8 @@ export interface PlatformStandards {
   url: string;
   rulebook: PlatformRulebook;
   standards: LoadedStandard[];
+  /** Every rule received at Teach or above, as set, for the rulebook digest (RFC 0007). */
+  received: LoadedStandard[];
   diagnostics: Diagnostic[];
 }
 
@@ -298,6 +300,7 @@ export function standardsFromRulebook(
   const repository = p.repository;
   const diagnostics: Diagnostic[] = [];
   const standards: LoadedStandard[] = [];
+  const received: LoadedStandard[] = [];
   for (const entry of rulebook.standards) {
     const parsed = Standard.safeParse(entry.document);
     const id = (entry.document as { metadata?: { id?: string } })?.metadata?.id ?? "unknown";
@@ -309,6 +312,10 @@ export function standardsFromRulebook(
       });
       continue;
     }
+    const file = `${url}/${platform.org}/standards/${parsed.data.metadata.id}`;
+    const origin = `platform:${entry.origin === "organization" ? platform.org : entry.origin}`;
+    if (entry.stage !== "observe")
+      received.push({ standard: parsed.data, file, origin, disabled: false, stage: entry.stage });
     if (use === "checks" && compareRolloutStage(entry.stage, "advise") < 0) continue;
     let standard = parsed.data;
     // Advise reports findings without failing the build.
@@ -317,8 +324,8 @@ export function standardsFromRulebook(
     }
     standards.push({
       standard,
-      file: `${url}/${platform.org}/standards/${standard.metadata.id}`,
-      origin: `platform:${entry.origin === "organization" ? platform.org : entry.origin}`,
+      file,
+      origin,
       disabled: false,
       stage: entry.stage,
       ...(standard.spec.severity !== parsed.data.spec.severity
@@ -333,7 +340,7 @@ export function standardsFromRulebook(
       message: `${repository} isn't registered in ${platform.org}, so the organization's rules apply. Add it under Teams → Repositories to use its team's settings.`,
     });
   }
-  return { url, rulebook, standards, diagnostics };
+  return { url, rulebook, standards, received, diagnostics };
 }
 
 // ---------------------------------------------------------------- local machine

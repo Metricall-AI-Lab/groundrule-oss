@@ -1,6 +1,6 @@
 import { appendFile, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
-import { buildCheckRun, GitError, runChecks } from "@groundrule/core";
+import { buildCheckRun, GitError, gitAuthorship, runChecks } from "@groundrule/core";
 import { builtinEvaluators } from "@groundrule/evaluators";
 import {
   colorEnabled,
@@ -45,6 +45,8 @@ export interface CheckOptions {
   commit?: string;
   /** Also write the result as a CheckRun (RFC 0005) to this file. */
   writeCheckRun?: string;
+  /** Record which coding agents the commits declare (RFC 0007; default true). */
+  authorship?: boolean;
 }
 
 export async function check(io: IO, options: CheckOptions): Promise<number> {
@@ -159,8 +161,31 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
       ? EXIT.failed
       : EXIT.ok;
 
+  // The compliance record (RFC 0007), shared by both ways a run leaves the machine.
+  const local = workspace.standards.filter((s) => s.origin === "local");
+  const record = {
+    exceptions: workspace.exceptions,
+    rulebook: workspace.platform
+      ? {
+          standards: [...workspace.platform.received, ...local],
+          platform: {
+            org: workspace.platform.rulebook.org.slug,
+            generatedAt: workspace.platform.rulebook.generatedAt,
+          },
+        }
+      : { standards: workspace.standards },
+    // Hosted checks have no git history; the service counts the pull request's commits.
+    authorship:
+      options.authorship === false
+        ? (false as const)
+        : options.base && !options.all && !hosted.changes
+          ? await gitAuthorship(workspace.root, options.base)
+          : undefined,
+  };
+
   if (options.writeCheckRun) {
     const run = await buildCheckRun({
+      ...record,
       result,
       standards: workspace.standards,
       cliVersion: VERSION,
@@ -184,6 +209,7 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
   const out = options.format === "terminal" || options.output ? println : eprintln;
   try {
     const run = await buildCheckRun({
+      ...record,
       result,
       standards: workspace.standards,
       cliVersion: VERSION,
