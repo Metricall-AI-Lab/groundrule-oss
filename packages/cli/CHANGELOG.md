@@ -1,5 +1,22 @@
 # @groundrule/cli
 
+## 0.10.0
+
+### Minor Changes
+
+- 21c3da7: Signed check runs (RFC 0008). `groundrule keys generate` creates an Ed25519 key pair; with the private key in `GROUNDRULE_SIGNING_KEY`, `check --upload` and `--write-check-run` sign each result (`--no-sign` opts out, `--sign` insists). `groundrule verify run.json --key public.pem` checks a run offline and exits 1 if it was altered. The signature covers the whole run except code snippets, so a receiver may redact them without breaking it. `signature` is optional on `CheckRun`; unsigned runs are unchanged.
+
+### Patch Changes
+
+- Updated dependencies [21c3da7]
+  - @groundrule/spec@0.10.0
+  - @groundrule/core@0.10.0
+  - @groundrule/adapters@0.10.0
+  - @groundrule/evaluators@0.10.0
+  - @groundrule/packs@0.10.0
+  - @groundrule/reporters@0.10.0
+  - @groundrule/mcp@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes
