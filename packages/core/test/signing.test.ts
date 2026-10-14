@@ -1,6 +1,6 @@
 // Signed check runs (RFC 0008): a signature survives what a receiver may do to snippets, and
 // catches any other change; keys round-trip through PEM and base64.
-import { CheckRun } from "@groundrule/spec";
+import { CheckRun, type CheckRunKeySignature } from "@groundrule/spec";
 import { describe, expect, it } from "vitest";
 import {
   generateSigningKeys,
@@ -113,7 +113,7 @@ describe("signing a run", () => {
     const forged: CheckRun = {
       ...signed,
       signature: {
-        ...(signed.signature as NonNullable<CheckRun["signature"]>),
+        ...(signed.signature as CheckRunKeySignature),
         value: `${"A".repeat(86)}==`,
       },
     };
