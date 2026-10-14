@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ApiVersion, Severity, StandardId } from "./common.js";
+import { ApiVersion, IsoDate, RolloutStage, Severity, StandardId } from "./common.js";
 import { FindingSource } from "./finding.js";
 
 const RelPath = z.string().min(1).max(400).describe("Repository-relative POSIX path.");
@@ -17,6 +17,20 @@ export const CHECK_OUTCOMES = [
 export const CheckOutcome = z.enum(CHECK_OUTCOMES);
 export type CheckOutcome = z.infer<typeof CheckOutcome>;
 
+/** `sha256:` and 64 lowercase hex characters (RFC 0007). */
+export const Digest = z
+  .string()
+  .regex(/^sha256:[0-9a-f]{64}$/, "A digest looks like sha256: followed by 64 hex characters")
+  .describe("sha256: followed by the SHA-256 in lowercase hex.");
+
+/** Whether a standard can fail a change (RFC 0007; enforcementOf in @groundrule/core). */
+export const EnforcementLabel = z
+  .enum(["checked", "ai-review", "guidance"])
+  .describe(
+    "checked: a deterministic or static-analysis check can fail a change. ai-review: AI checks only, advisory. guidance: no check.",
+  );
+export type EnforcementLabel = z.infer<typeof EnforcementLabel>;
+
 export const CheckRunOutcome = z.strictObject({
   id: StandardId,
   title: z.string().min(1).max(200),
@@ -24,6 +38,19 @@ export const CheckRunOutcome = z.strictObject({
   status: CheckOutcome,
   violations: Count,
   concerns: Count,
+  version: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("The standard's metadata.version when the run used it (RFC 0007)."),
+  digest: Digest.optional().describe(
+    "SHA-256 of the standard as applied, after customizations, as canonical JSON (RFC 0007).",
+  ),
+  stage: RolloutStage.optional().describe(
+    "The organization's rollout stage for this rule. Absent for rules without a stage.",
+  ),
+  enforcement: EnforcementLabel.optional(),
 });
 export type CheckRunOutcome = z.infer<typeof CheckRunOutcome>;
 
@@ -71,6 +98,59 @@ export type CheckRunPullRequest = z.infer<typeof CheckRunPullRequest>;
  * commit and pull request, whether it passed, every applicable standard's outcome, and at
  * most 500 findings with one-line redacted snippets. Never file contents or diffs.
  */
+/** Every rule in effect, as one digest (RFC 0007). */
+export const CheckRunRulebook = z
+  .strictObject({
+    digest: Digest.describe(
+      "SHA-256 of one line per rule in effect, '<id> <digest> <stage or -> <severity>', sorted by ID.",
+    ),
+    standards: Count.describe("Rules in effect: active, not turned off, at any stage but Observe."),
+    source: z
+      .enum(["platform", "local"])
+      .describe("Rules from a Groundrule workspace, or local files only."),
+    platform: z
+      .strictObject({
+        org: z.string().min(1).max(100),
+        generatedAt: z.iso.datetime({ offset: true }),
+      })
+      .optional()
+      .describe("The workspace and when its rulebook was generated, when source is platform."),
+  })
+  .describe("Which rules were in effect for the run, verifiably.");
+export type CheckRunRulebook = z.infer<typeof CheckRunRulebook>;
+
+/** An exception that suppressed findings in the run (RFC 0007). */
+export const CheckRunException = z.strictObject({
+  id: z.string().regex(/^EX-[0-9]+$/),
+  standard: StandardId,
+  expires: IsoDate,
+  approvedBy: z
+    .string()
+    .min(1)
+    .max(200)
+    .optional()
+    .describe("As written in .groundrule/exceptions.yaml."),
+  suppressed: Count.describe("Findings it suppressed in this run."),
+});
+export type CheckRunException = z.infer<typeof CheckRunException>;
+
+/** Coding agents the change's commits declare (RFC 0007). Counts only. */
+export const CheckRunAuthorship = z
+  .strictObject({
+    commits: Count.describe("Commits in the change."),
+    agents: z
+      .array(z.strictObject({ name: z.string().min(1).max(60), commits: Count }))
+      .max(20)
+      .describe("Each coding agent declared by the commits, most commits first."),
+    method: z
+      .literal("commit-metadata")
+      .describe(
+        "Detected from commit trailers and bot authors, never from code. A declaration, not proof.",
+      ),
+  })
+  .describe("Who or what wrote the change, as declared in its commits.");
+export type CheckRunAuthorship = z.infer<typeof CheckRunAuthorship>;
+
 export const CheckRun = z
   .strictObject({
     apiVersion: ApiVersion,
@@ -80,6 +160,10 @@ export const CheckRun = z
       cliVersion: z.string().min(1).max(40),
       durationMs: Count,
       snippets: z.boolean().describe("Whether code snippets were included."),
+      authorship: z
+        .boolean()
+        .optional()
+        .describe("false when --no-authorship left the authorship record out (RFC 0007)."),
     }),
     repository: z.strictObject({
       name: z
@@ -119,6 +203,13 @@ export const CheckRun = z
     outcomes: z.array(CheckRunOutcome).max(2000),
     findings: z.array(CheckRunFinding).max(500),
     omittedFindings: Count.describe("Findings beyond the 500 sent."),
+    rulebook: CheckRunRulebook.optional(),
+    exceptions: z
+      .array(CheckRunException)
+      .max(200)
+      .optional()
+      .describe("Exceptions that suppressed at least one finding in this run."),
+    authorship: CheckRunAuthorship.optional(),
   })
   .describe("A check run, produced by `groundrule check` and uploaded with --upload.");
 export type CheckRunInput = z.input<typeof CheckRun>;

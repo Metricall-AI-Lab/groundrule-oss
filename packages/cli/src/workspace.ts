@@ -2,6 +2,7 @@ import {
   type Diagnostic,
   displayPath,
   formatDiagnostic,
+  type LoadedStandard,
   loadWorkspace,
   type Workspace,
 } from "@groundrule/core";
@@ -31,7 +32,7 @@ export interface OpenOptions {
 
 export interface OpenedWorkspace extends Workspace {
   /** Set when standards came from the platform. */
-  platform?: { url: string; rulebook: PlatformRulebook };
+  platform?: { url: string; rulebook: PlatformRulebook; received: LoadedStandard[] };
 }
 
 /** Load the workspace, printing diagnostics. Returns undefined on errors (exit 2). */
@@ -134,7 +135,7 @@ async function usePlatform(
     ...local.filter((s) => !platformIds.has(s.standard.metadata.id)),
   ].sort((a, b) => a.standard.metadata.id.localeCompare(b.standard.metadata.id));
   workspace.diagnostics.push(...diagnostics);
-  workspace.platform = { url: loaded.url, rulebook: loaded.rulebook };
+  workspace.platform = { url: loaded.url, rulebook: loaded.rulebook, received: loaded.received };
 }
 
 export function printDiagnostics(io: IO, diagnostics: readonly Diagnostic[], root: string) {

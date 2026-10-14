@@ -1,6 +1,7 @@
 // The result of `groundrule check`, shaped for upload (RFC 0005): repository identity, the
 // run's outcome, every applicable standard, and at most 500 findings with one-line, redacted
-// snippets. Never file contents or diffs.
+// snippets. Never file contents or diffs. With RFC 0007 it is also a compliance record: which
+// rules were in effect, which exceptions applied, and which coding agents the commits declare.
 
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
@@ -9,9 +10,14 @@ import { promisify } from "node:util";
 import {
   API_VERSION,
   type CheckRun,
+  type CheckRunAuthorship,
+  type CheckRunException,
   type CheckRunFinding,
   type CheckRunPullRequest,
+  type ExceptionEntry,
 } from "@groundrule/spec";
+import { appliedStandard, rulebookDigest, ruleDigest, rulesInEffect } from "./compliance.js";
+import { enforcementOf } from "./enforcement.js";
 import type { RunResult } from "./runner.js";
 import { redactSecrets } from "./scan.js";
 import type { LoadedStandard } from "./workspace.js";
@@ -32,6 +38,18 @@ export interface CheckRunOptions {
   commit?: string | undefined;
   branch?: string | undefined;
   now?: Date;
+  /** The repository's exceptions; those that suppressed a finding are recorded. */
+  exceptions?: readonly ExceptionEntry[];
+  /**
+   * Every rule the repository received, for the rulebook digest. Unlike `standards`, it
+   * includes Teach rules, which agents follow but checks don't run.
+   */
+  rulebook?: {
+    standards: readonly LoadedStandard[];
+    platform?: { org: string; generatedAt: string } | undefined;
+  };
+  /** Agents the change's commits declare; false when turned off with --no-authorship. */
+  authorship?: CheckRunAuthorship | false | undefined;
 }
 
 async function gitValue(root: string, args: string[]): Promise<string | undefined> {
@@ -94,6 +112,24 @@ export async function buildCheckRun(options: CheckRunOptions): Promise<CheckRun>
     findings.push(finding);
   }
 
+  const suppressed = new Map<string, number>();
+  for (const f of result.findings)
+    if (f.suppressedBy) suppressed.set(f.suppressedBy, (suppressed.get(f.suppressedBy) ?? 0) + 1);
+  const exceptions: CheckRunException[] = (options.exceptions ?? [])
+    .filter((e) => suppressed.has(e.id))
+    .slice(0, 200)
+    .map((e) => ({
+      id: e.id,
+      standard: e.standard,
+      expires: e.expires,
+      ...(e.approvedBy ? { approvedBy: e.approvedBy.slice(0, 200) } : {}),
+      suppressed: suppressed.get(e.id) ?? 0,
+    }));
+
+  const inEffect = options.rulebook ? rulesInEffect(options.rulebook.standards) : undefined;
+  const platform = options.rulebook?.platform;
+  const authorship = options.authorship;
+
   const pr = options.pullRequest;
   return {
     apiVersion: API_VERSION,
@@ -103,6 +139,7 @@ export async function buildCheckRun(options: CheckRunOptions): Promise<CheckRun>
       cliVersion: options.cliVersion.slice(0, 40),
       durationMs: Math.round(result.context.durationMs),
       snippets: options.snippets,
+      ...(authorship === false ? { authorship: false } : {}),
     },
     repository: {
       name: options.repositoryName.slice(0, 200),
@@ -120,15 +157,41 @@ export async function buildCheckRun(options: CheckRunOptions): Promise<CheckRun>
     outcomes: result.outcomes
       .filter((o) => o.status !== "skipped")
       .slice(0, 2000)
-      .map((o) => ({
-        id: o.id,
-        title: o.title.slice(0, 200),
-        severity: o.severity,
-        status: o.status,
-        violations: o.violations,
-        concerns: o.concerns,
-      })),
+      .map((o) => {
+        const loaded = byId.get(o.id);
+        const standard = loaded && appliedStandard(loaded);
+        return {
+          id: o.id,
+          title: o.title.slice(0, 200),
+          severity: o.severity,
+          status: o.status,
+          violations: o.violations,
+          concerns: o.concerns,
+          ...(standard
+            ? {
+                version: standard.metadata.version,
+                digest: ruleDigest(standard),
+                ...(loaded.stage ? { stage: loaded.stage } : {}),
+                enforcement: enforcementOf(standard.spec.checks.map((c) => c.evaluator)),
+              }
+            : {}),
+        };
+      }),
     findings,
     omittedFindings: Math.max(0, reported.length - MAX_FINDINGS),
+    ...(inEffect
+      ? {
+          rulebook: {
+            digest: rulebookDigest(inEffect),
+            standards: inEffect.length,
+            source: platform ? ("platform" as const) : ("local" as const),
+            ...(platform
+              ? { platform: { org: platform.org.slice(0, 100), generatedAt: platform.generatedAt } }
+              : {}),
+          },
+        }
+      : {}),
+    ...(exceptions.length ? { exceptions } : {}),
+    ...(authorship && result.context.mode !== "all" ? { authorship } : {}),
   };
 }

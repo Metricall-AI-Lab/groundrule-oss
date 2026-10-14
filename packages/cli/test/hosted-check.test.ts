@@ -294,3 +294,132 @@ describe("a hosted check", () => {
     );
   });
 });
+
+describe("the compliance record (RFC 0007)", () => {
+  it("records the rulebook, each rule's stage and enforcement, and the exceptions used", async () => {
+    const root = await tmp("gr-hosted-");
+    await write(root, {
+      ".groundrule/config.yaml":
+        "apiVersion: groundrule.dev/v1alpha1\nkind: Config\nplatform:\n  org: acme\n",
+      ".groundrule/exceptions.yaml": JSON.stringify({
+        apiVersion: "groundrule.dev/v1alpha1",
+        kind: "ExceptionList",
+        spec: {
+          exceptions: [
+            {
+              id: "EX-7",
+              standard: "ACME-001",
+              paths: ["src/legacy.ts"],
+              reason: "Migrating in Q4.",
+              approvedBy: "priya",
+              expires: "2099-12-31",
+            },
+            { id: "EX-8", standard: "ACME-002", reason: "Unused.", expires: "2099-12-31" },
+          ],
+        },
+      }),
+      "src/a.ts": "export const total = (amount: number) => amount * 1.0;\n",
+      "src/legacy.ts": "export const old = (amount: number) => amount * 1.0;\n",
+    });
+    const inputs = await tmp("gr-inputs-");
+    const generatedAt = "2026-10-14T09:00:00.000Z";
+    const rulebook = (teach: string) => ({
+      org: { slug: "acme", name: "Acme", codingAgents: [] },
+      target: { level: "organization", team: null, repository: null },
+      repositoryKnown: true,
+      generatedAt,
+      standards: [
+        {
+          stage: "enforce",
+          origin: "organization",
+          document: standard("ACME-001", "amount \\* 1\\.0"),
+        },
+        {
+          stage: "advise",
+          origin: "organization",
+          document: standard("ACME-002", "console\\.log"),
+        },
+        { stage: "teach", origin: "organization", document: standard("ACME-003", teach) },
+        { stage: "observe", origin: "organization", document: standard("ACME-004", "y") },
+      ],
+    });
+    const runWith = async (teach: string, ...extra: string[]) => {
+      await writeFile(join(inputs, "rulebook.json"), JSON.stringify(rulebook(teach)));
+      await cli(
+        root,
+        "check",
+        "--offline",
+        "--all",
+        "--rulebook",
+        join(inputs, "rulebook.json"),
+        "--write-check-run",
+        join(inputs, "run.json"),
+        ...extra,
+      );
+      return CheckRun.parse(JSON.parse(await readFile(join(inputs, "run.json"), "utf8")));
+    };
+
+    const run = await runWith("x");
+    expect(run.rulebook).toEqual({
+      digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      // Enforce, Advise and Teach; not Observe.
+      standards: 3,
+      source: "platform",
+      platform: { org: "acme", generatedAt },
+    });
+    const outcome = (id: string) => run.outcomes.find((o) => o.id === id);
+    expect(outcome("ACME-001")).toMatchObject({
+      version: 1,
+      digest: expect.stringMatching(/^sha256:/),
+      stage: "enforce",
+      enforcement: "checked",
+    });
+    // Advise runs ACME-002 as a warning; its digest is the rule as the organization set it.
+    expect(outcome("ACME-002")).toMatchObject({ severity: "warning", stage: "advise" });
+    expect(outcome("ACME-003")).toBeUndefined();
+    expect(run.exceptions).toEqual([
+      {
+        id: "EX-7",
+        standard: "ACME-001",
+        expires: "2099-12-31",
+        approvedBy: "priya",
+        suppressed: 1,
+      },
+    ]);
+    // An audit of every file has no change, so no authorship.
+    expect(run.authorship).toBeUndefined();
+
+    // Same rules, same digest; a change to a Teach rule changes it.
+    expect((await runWith("x")).rulebook?.digest).toBe(run.rulebook?.digest);
+    expect((await runWith("z")).rulebook?.digest).not.toBe(run.rulebook?.digest);
+  });
+
+  it("counts the agents the change's commits declare, unless turned off", async () => {
+    const root = await tmp("gr-ci-");
+    await write(root, FILES);
+    git(root, "init", "-q", "-b", "main");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "base");
+    git(root, "switch", "-q", "-c", "feature");
+    await write(root, { "src/refunds.ts": "export const ok = 2;\n" });
+    git(root, "commit", "-qam", "Change\n\nCo-Authored-By: Claude <noreply@anthropic.com>");
+    await write(root, { "src/refunds.ts": "export const ok = 3;\n" });
+    git(root, "commit", "-qam", "By hand");
+    const out = join(await tmp("gr-out-"), "run.json");
+
+    await cli(root, "check", "--base", "main", "--write-check-run", out);
+    const run = CheckRun.parse(JSON.parse(await readFile(out, "utf8")));
+    expect(run.authorship).toEqual({
+      commits: 2,
+      agents: [{ name: "Claude Code", commits: 1 }],
+      method: "commit-metadata",
+    });
+    expect(run.rulebook).toMatchObject({ standards: 2, source: "local" });
+    expect(run.metadata.authorship).toBeUndefined();
+
+    await cli(root, "check", "--base", "main", "--no-authorship", "--write-check-run", out);
+    const off = CheckRun.parse(JSON.parse(await readFile(out, "utf8")));
+    expect(off.authorship).toBeUndefined();
+    expect(off.metadata.authorship).toBe(false);
+  });
+});
