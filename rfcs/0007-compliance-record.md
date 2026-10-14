@@ -1,6 +1,6 @@
 # RFC 0007: Compliance record on check runs
 
-- **Status:** Draft
+- **Status:** Accepted (14 October 2026)
 - **Author:** Groundrule maintainers
 - **Spec version:** v1alpha1
 
@@ -66,7 +66,7 @@ authorship:                     # optional: only in changes mode, and only when 
 ### Digests
 - **A rule's `digest`** is `sha256:` followed by the SHA-256, in hex, of the rule **as applied**: the standard document after organization, team and repository customizations, serialized as canonical JSON (keys sorted, no insignificant whitespace, UTF-8). A rule whose wording, checks, severity or scope changed gets a new digest even when its `version` wasn't bumped.
 - **The `rulebook.digest`** is `sha256:` followed by the SHA-256 of the lines `<id> <digest> <stage or "-"> <severity>`, one per rule in effect, sorted by ID, joined with `\n`. Anyone with the same rules can recompute it; any change to any rule, or to a stage or severity, changes it.
-- "In effect" is the same set `groundrule standards` lists as active and applicable, plus organization rules at every stage except Observe (Teach rules are in effect for agents even though their checks don't run).
+- "In effect" is every active rule the repository received and no override turned off, at every stage except Observe (Teach rules are in effect for agents even though their checks don't run). Whether a rule applies to this repository's languages isn't part of it, so adding a file in a new language doesn't change the rulebook digest.
 
 ### Exceptions
 - Listed only when they suppressed at least one finding in this run, at most 200.
@@ -110,7 +110,7 @@ No code, commit messages, SHAs, file contents or personal email addresses.
 - **Detecting AI-written code from the code itself.** Rejected: unreliable, and it would send or inspect code. Commit metadata is honest about what it is.
 - **Signing runs in the CLI.** Deferred to a later RFC: signing needs key management. The rulebook digest is the foundation a signature would cover.
 
-## Open questions
-1. Should the CLI offer `--no-authorship` for teams that don't want agent counts uploaded? (Proposed: yes, and `metadata.authorship: false` recorded like `metadata.snippets`.)
-2. Should Teach rules count as "in effect" for the digest? (Proposed above: yes, because they shape agent output even though they aren't checked.)
-3. Which agent markers ship first? (Proposed: Claude Code, Cursor, GitHub Copilot coding agent, Codex, Aider; each with a test.)
+## Decisions (14 October 2026)
+1. **Opt-out:** `--no-authorship` leaves `authorship` out, and `metadata.authorship: false` records that, like `metadata.snippets`.
+2. **Teach rules count** in the rulebook digest: they shape what agents write even though their checks don't run.
+3. **First agent markers:** Claude Code, Cursor, GitHub Copilot coding agent, Codex and Aider, each with a test.
