@@ -1,5 +1,6 @@
 export * from "./check-run.js";
 export * from "./diagnostics.js";
+export * from "./enforcement.js";
 export * from "./evaluator.js";
 export * from "./fingerprint.js";
 export * from "./frameworks.js";

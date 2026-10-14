@@ -1,4 +1,4 @@
-import { displayPath } from "@groundrule/core";
+import { cannotFail, displayPath, enforcementOf } from "@groundrule/core";
 import {
   complianceFrameworkTitle,
   type Example,
@@ -96,8 +96,16 @@ export async function explain(io: IO, id: string): Promise<number> {
   }
 
   section("How it's checked");
-  if (spec.checks.length === 0)
-    println(io, "   Agent and reviewer guidance only; no automated check.");
+  const evaluators = spec.checks.map((c) => c.evaluator);
+  const how = enforcementOf(evaluators);
+  if (how === "guidance") println(io, "   Agent and reviewer guidance only; no automated check.");
+  if (how === "ai-review")
+    println(io, "   AI review only: advisory, it never fails a change on its own.");
+  if (cannotFail(spec.severity, evaluators))
+    println(
+      io,
+      `   ${s.yellow(`! A ${spec.severity} rule with no deterministic check can't fail a change. Add a check to enforce it.`)}`,
+    );
   for (const c of spec.checks)
     println(io, `   • ${c.evaluator} ${s.dim(`(${SOURCES[c.evaluator] ?? "plugin"})`)}`);
   if (spec.agent.instruction)

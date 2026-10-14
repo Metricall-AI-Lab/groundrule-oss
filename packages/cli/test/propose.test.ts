@@ -263,7 +263,7 @@ describe("groundrule mcp", () => {
     ]);
     expect(by(3).result.isError).toBe(false);
     expect(by(3).result.content[0].text).toMatch(
-      /^SEC-001 \(blocker\) No private keys in the repository:/,
+      /^SEC-001 \(blocker · checked automatically\) No private keys in the repository:/,
     );
     expect(by(4).result).toMatchObject({ isError: false, structuredContent: { id: "p1" } });
     expect(by(4).result.content[0].text).toContain(
