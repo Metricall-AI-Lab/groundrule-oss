@@ -20,8 +20,10 @@ import {
   type ScanTool,
 } from "@groundrule/spec";
 import picomatch from "picomatch";
+import { discoverArchitecture } from "./discovery.js";
 import type { Evaluator } from "./evaluator.js";
 import { MANAGED_BEGIN } from "./generated.js";
+import { buildImportGraph } from "./import-graph.js";
 import {
   importInstructions,
   importOwners,
@@ -306,6 +308,20 @@ function filesChecked(loaded: LoadedStandard, files: readonly string[]): number 
   return seen.size + (repositoryLevel && seen.size === 0 ? 1 : 0);
 }
 
+/** Boundaries and gates the repository already keeps, from its import graph (RFC 0011). */
+async function discoverFromImports(root: string, files: readonly string[]) {
+  const read = async (p: string) => {
+    try {
+      const text = await readFile(join(root, p), "utf8");
+      return text.length > 1_000_000 || text.includes("\0") ? undefined : text;
+    } catch {
+      return undefined;
+    }
+  };
+  const { edges } = await buildImportGraph(files, read);
+  return discoverArchitecture(files, edges);
+}
+
 export async function scanRepository(options: ScanOptions): Promise<ScanReport> {
   const started = performance.now();
   const { root } = options;
@@ -447,6 +463,7 @@ export async function scanRepository(options: ScanOptions): Promise<ScanReport> 
             ),
             toolSettings: await importToolSettings(root, repo.files, options.imports.mapping),
             owners: await importOwners(root, repo.files),
+            ...(await discoverFromImports(root, repo.files)),
           },
         }
       : {}),

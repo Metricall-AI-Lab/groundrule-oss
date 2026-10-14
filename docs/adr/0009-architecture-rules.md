@@ -29,7 +29,7 @@ The `imports` evaluator checks import statements of the files under evaluation, 
 
 Imports are resolved to repository paths: relative paths; `tsconfig.json` / `jsconfig.json` `baseUrl` and `paths`; npm workspaces by package name; Python packages by directory (the repository, `src/`, and top-level packages). **Whatever doesn't resolve to the repository is a package**, so a layer rule can never fire on an import it didn't understand; a gate fires only on a package name that matches. That is the rule that keeps precision near certain, which is what lets these rules reach Enforce. TypeScript, JavaScript and Python first; Java and Go later in the same evaluator.
 
-Pre-defined decisions ship as the `architecture` pack, every rule at Observe so adoption is evidence-first; the paths in each rule's check are the conventional ones and are meant to be adjusted in the rulebook. A later slice adds **discovery** to `groundrule scan`: the import graph of a repository, the layout it detects, and proposed boundary rules with their current violation counts, routed through the review inbox.
+Pre-defined decisions ship as the `architecture` pack, every rule at Observe so adoption is evidence-first; the paths in each rule's check are the conventional ones and are meant to be adjusted in the rulebook. **Discovery** in `groundrule scan` ([RFC 0011](../../rfcs/0011-architecture-discovery.md)) reads the import graph and proposes the boundaries and package gates the code already keeps, with their current violation counts, routed through the review inbox.
 
 ## Consequences
 

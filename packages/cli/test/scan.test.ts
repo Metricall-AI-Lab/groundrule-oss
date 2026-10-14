@@ -183,6 +183,35 @@ describe("groundrule scan", () => {
     expect(JSON.parse(await readFile(join(root, "report.json"), "utf8"))).toEqual(report);
   });
 
+  it("discovers the boundaries a layered repository keeps (RFC 0011)", async () => {
+    const files: Record<string, string> = { ...APP };
+    for (let i = 0; i < 3; i++) {
+      files[`src/domain/d${i}.ts`] = `export const d${i} = ${i};\n`;
+      files[`src/infra/i${i}.ts`] =
+        `import { d${i} } from "../domain/d${i}";\nimport { Pool } from "pg";\n`;
+    }
+    files["src/domain/leak.ts"] = `import { i0 } from "../infra/i0";\n`;
+    const root = await repo(files);
+    const r = await cli(root, ["scan"]);
+    expect(r.stdout).toMatch(/Layering\s+1 boundaries and 1 package gates this code already keeps/);
+    expect(r.stdout).toContain("src/domain must not import src/infra");
+    expect(r.stdout).toContain("1 file would fail today");
+    expect(r.stdout).toContain("only src/infra uses pg");
+    const report = ScanReport.parse(JSON.parse((await cli(root, ["scan", "--json"])).stdout));
+    expect(report.imports?.boundaries).toEqual([
+      expect.objectContaining({
+        from: "src/domain",
+        forbid: "src/infra",
+        importsBack: 3,
+        violations: 1,
+        examples: [{ file: "src/domain/leak.ts", line: 1, target: "src/infra/i0.ts" }],
+      }),
+    ]);
+    expect(report.imports?.gates).toEqual([
+      expect.objectContaining({ package: "pg", only: "src/infra", users: 3, violations: 0 }),
+    ]);
+  });
+
   it("leaves imports out with --no-import", async () => {
     const root = await repo(APP);
     const report = JSON.parse((await cli(root, ["scan", "--json", "--no-import"])).stdout);

@@ -150,10 +150,53 @@ export const ImportedOwner = z.strictObject({
 });
 export type ImportedOwner = z.infer<typeof ImportedOwner>;
 
+/** A boundary the repository already keeps (RFC 0011): `from` rarely or never imports `forbid`. */
+export const ImportedBoundary = z.strictObject({
+  from: RelPath.describe("The module that must not import, e.g. src/domain."),
+  forbid: RelPath.describe("The module it must not import, e.g. src/infra."),
+  files: z.number().int().nonnegative().describe("Files in `from`."),
+  importsBack: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe("Files in `forbid` that import `from`: the direction's evidence."),
+  violations: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe("Files in `from` that import `forbid` today."),
+  examples: z
+    .array(z.strictObject({ file: RelPath, line: z.number().int().positive(), target: RelPath }))
+    .max(3),
+  fingerprint: z.string().regex(/^[0-9a-f]{64}$/),
+});
+export type ImportedBoundary = z.infer<typeof ImportedBoundary>;
+
+/** A package one module owns (RFC 0011): used from `only`, and rarely or never elsewhere. */
+export const ImportedGate = z.strictObject({
+  package: z.string().min(1).max(120),
+  only: RelPath.describe("The module that uses the package, e.g. src/payments."),
+  users: z.number().int().nonnegative().describe("Files in `only` that import it."),
+  violations: z.number().int().nonnegative().describe("Files elsewhere that import it today."),
+  examples: z.array(z.strictObject({ file: RelPath, line: z.number().int().positive() })).max(3),
+  fingerprint: z.string().regex(/^[0-9a-f]{64}$/),
+});
+export type ImportedGate = z.infer<typeof ImportedGate>;
+
 export const ScanImports = z.strictObject({
   instructions: z.array(ImportedInstruction).max(500),
   toolSettings: z.array(ImportedToolSetting).max(300),
   owners: z.array(ImportedOwner).max(200),
+  boundaries: z
+    .array(ImportedBoundary)
+    .max(25)
+    .default([])
+    .describe("Architecture boundaries the code already keeps, as proposals (RFC 0011)."),
+  gates: z
+    .array(ImportedGate)
+    .max(15)
+    .default([])
+    .describe("Packages one module owns, as proposals (RFC 0011)."),
 });
 export type ScanImports = z.infer<typeof ScanImports>;
 

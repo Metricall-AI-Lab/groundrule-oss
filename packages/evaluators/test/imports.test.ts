@@ -90,10 +90,10 @@ describe("layer rules", () => {
     expect(scoped[0]).toMatchObject({ message: "No infra here.", remediation: "Inject it." });
   });
 
-  it("resolve tsconfig paths and npm workspaces, and treat unknown bare names as packages", async () => {
+  it("resolve tsconfig paths and pnpm workspaces, and treat unknown bare names as packages", async () => {
     const repo = {
       "tsconfig.json": `{ "compilerOptions": { "baseUrl": ".", "paths": { "@app/*": ["src/*"] } } }`,
-      "package.json": `{ "workspaces": ["packages/*"] }`,
+      "pnpm-workspace.yaml": "packages:\n  - 'packages/*'\n  - '!packages/private/**'\n",
       "packages/db/package.json": `{ "name": "@acme/db" }`,
       "packages/db/src/index.ts": "export const db = 1;\n",
       "packages/db/src/internal/pool.ts": "export const pool = 1;\n",
