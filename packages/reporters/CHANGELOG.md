@@ -1,5 +1,13 @@
 # @groundrule/reporters
 
+## 0.8.0
+
+### Patch Changes
+
+- Updated dependencies [943c0bc]
+  - @groundrule/core@0.8.0
+  - @groundrule/spec@0.8.0
+
 ## 0.7.0
 
 ### Patch Changes
