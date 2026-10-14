@@ -15,5 +15,6 @@ export * from "./repository.js";
 export * from "./runner.js";
 export * from "./scan.js";
 export * from "./scope.js";
+export * from "./signing.js";
 export * from "./sources.js";
 export * from "./workspace.js";

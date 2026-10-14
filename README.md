@@ -65,6 +65,8 @@ More in [`examples/foundation`](examples/foundation/.groundrule/standards).
 | `groundrule sync [--check] [--upload]` | Write (or verify) coding-agent instructions; `--upload` reports what the repository delivers to agents |
 | `groundrule check [--base <ref>] [--all]` | Check changes, a branch, or everything. `-f json\|sarif\|markdown`, `--summary <file>` |
 | `groundrule standards` | List the standards in effect |
+| `groundrule keys generate` | Create a signing key pair for check results ([RFC 0008](rfcs/0008-signed-check-runs.md)) |
+| `groundrule verify <run.json> --key <public.pem>` | Check a run's signature offline |
 | `groundrule explain <ID>` | Why a standard exists, examples, how to comply, exceptions |
 | `groundrule doctor` | Check configuration, tools, and agent files |
 | `groundrule packs` | List bundled packs |
@@ -90,6 +92,8 @@ npx @groundrule/cli sync                # your organization's rules, with every 
 `groundrule scan --upload` shares a scan with your organization so it can see which rules fit each repository. It also imports what you already have as proposals: instructions from AGENTS.md, CLAUDE.md, Cursor, and Copilot files; ESLint, Biome, Ruff, golangci-lint, Checkstyle, PMD, and tsconfig settings that match catalog rules; and CODEOWNERS (use `--no-import` to leave these out). Reports contain counts and at most three one-line, redacted snippets per rule (none for security rules, none at all with `--no-snippets`); `--json` shows exactly what would be sent. When uploading, the scan also tests your organization's own rules that have checks, drafts included, so you see their impact before publishing them.
 
 `groundrule check --upload` sends the result to your organization as a compliance record ([RFC 0007](rfcs/0007-compliance-record.md)): which rules were in effect (as a digest anyone with the same rules can recompute), each rule's version, rollout stage and whether it could fail the change, the exceptions that applied, and which coding agents the change's commits declare, from `Co-Authored-By` trailers and bot authors (counts only; never commit messages or email addresses). Agent counts are a declaration, not proof; leave them out with `--no-authorship`.
+
+With a signing key in CI (`groundrule keys generate`, then the private key as `GROUNDRULE_SIGNING_KEY`), every uploaded run is signed with Ed25519 ([RFC 0008](rfcs/0008-signed-check-runs.md)); `groundrule verify` proves later, offline, that a run wasn't altered. The signature covers everything but code snippets.
 
 What each command takes from the platform depends on the rule's rollout stage: `sync` writes rules at Teach, Advise, and Enforce into your agent files; `check` runs Enforce rules as set and Advise rules as warnings. Rules your repository defines in `.groundrule/standards/` still apply. In CI, set `GROUNDRULE_TOKEN` to a token from Settings → API tokens. Sign-ins are saved in `~/.config/groundrule/credentials.json`, readable only by you.
 

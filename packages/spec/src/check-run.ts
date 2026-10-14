@@ -151,6 +151,19 @@ export const CheckRunAuthorship = z
   .describe("Who or what wrote the change, as declared in its commits.");
 export type CheckRunAuthorship = z.infer<typeof CheckRunAuthorship>;
 
+/** Who signed the run, and the signature (RFC 0008). The payload is the canonical JSON of the run without `signature` and without snippets. */
+export const CheckRunSignature = z
+  .strictObject({
+    algorithm: z.literal("ed25519"),
+    keyId: Digest.describe("sha256: of the public key's raw 32 bytes."),
+    value: z
+      .string()
+      .regex(/^[A-Za-z0-9+/]{86}==$/, "An Ed25519 signature is 64 bytes, base64")
+      .describe("The Ed25519 signature of the signing payload, base64."),
+  })
+  .describe("Proves the run is what its signer produced; verifiable offline with the public key.");
+export type CheckRunSignature = z.infer<typeof CheckRunSignature>;
+
 export const CheckRun = z
   .strictObject({
     apiVersion: ApiVersion,
@@ -210,6 +223,7 @@ export const CheckRun = z
       .optional()
       .describe("Exceptions that suppressed at least one finding in this run."),
     authorship: CheckRunAuthorship.optional(),
+    signature: CheckRunSignature.optional(),
   })
   .describe("A check run, produced by `groundrule check` and uploaded with --upload.");
 export type CheckRunInput = z.input<typeof CheckRun>;

@@ -6,6 +6,7 @@ import { doctor } from "./commands/doctor.js";
 import { explain } from "./commands/explain.js";
 import { HOOK_AGENTS, type HookAgent, hook, hooks } from "./commands/hooks.js";
 import { init } from "./commands/init.js";
+import { keysGenerate, keysId } from "./commands/keys.js";
 import { login, logout, whoami } from "./commands/login.js";
 import { mcp } from "./commands/mcp.js";
 import { packs } from "./commands/packs.js";
@@ -13,6 +14,7 @@ import { propose } from "./commands/propose.js";
 import { scan } from "./commands/scan.js";
 import { standards } from "./commands/standards.js";
 import { sync } from "./commands/sync.js";
+import { verify } from "./commands/verify.js";
 import { EXIT, eprintln, type IO, VERSION } from "./io.js";
 
 const list = (value: string) =>
@@ -258,6 +260,8 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
       "--no-authorship",
       "with --upload: don't record which coding agents the commits declare",
     )
+    .option("--sign", "sign the result with GROUNDRULE_SIGNING_KEY (the default when it is set)")
+    .option("--no-sign", "don't sign the result")
     .option("--repository <name>", "repository name, e.g. acme/api (default: from the git remote)")
     .option("--org <slug>", "organization to upload to")
     .option("--url <url>", "Groundrule platform address")
@@ -289,6 +293,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
         upload?: boolean;
         snippets?: boolean;
         authorship?: boolean;
+        sign?: boolean;
         repository?: string;
         org?: string;
         url?: string;
@@ -305,6 +310,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
           ...(o.upload ? { upload: true } : {}),
           ...(o.snippets === false ? { snippets: false } : {}),
           ...(o.authorship === false ? { authorship: false } : {}),
+          ...(o.sign !== undefined ? { sign: o.sign } : {}),
           ...(o.repository ? { repository: o.repository } : {}),
           ...(o.org ? { org: o.org } : {}),
           ...(o.url ? { url: o.url } : {}),
@@ -332,6 +338,31 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     .argument("<id>", "standard ID, e.g. AUTH-017")
     .action(async (id: string) => {
       code = await explain(ctx(), id);
+    });
+
+  const keys = program.command("keys").description("signing keys for check results (RFC 0008)");
+  keys
+    .command("generate")
+    .description("create a key pair: the private key for CI, the public key for Groundrule")
+    .option("--out <dir>", "where to write the two files (default: here)")
+    .action(async (o: { out?: string }) => {
+      code = await keysGenerate(ctx(), o);
+    });
+  keys
+    .command("id")
+    .description("print a public key's ID, as runs and Groundrule name it")
+    .argument("<file>", "the public key, PEM")
+    .action(async (file: string) => {
+      code = await keysId(ctx(), file);
+    });
+
+  program
+    .command("verify")
+    .description("check a run's signature with a public key, offline")
+    .argument("<file>", "a CheckRun, JSON")
+    .requiredOption("--key <file>", "the signer's public key, PEM")
+    .action(async (file: string, o: { key: string }) => {
+      code = await verify(ctx(), file, o);
     });
 
   program
