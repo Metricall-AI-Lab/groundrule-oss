@@ -163,6 +163,30 @@ describe("groundrule CLI", () => {
     expect((await cli(r.root, "packs")).stdout).toContain("groundrule:packs/java-spring");
   });
 
+  it("says when a blocker rule has no check and so can't fail a change", async () => {
+    const rule = (id: string, checks: unknown[]) =>
+      JSON.stringify({
+        apiVersion: "groundrule.dev/v1alpha1",
+        kind: "Standard",
+        metadata: { id, title: `${id} title`, type: "prohibition", category: "testing" },
+        spec: { severity: "blocker", requirement: `Rule ${id}.`, checks },
+      });
+    const r = await repo({
+      ".groundrule/config.yaml": "apiVersion: groundrule.dev/v1alpha1\nkind: Config\n",
+      ".groundrule/standards/TEACH-001.yaml": rule("TEACH-001", []),
+      ".groundrule/standards/CHK-001.yaml": rule("CHK-001", [
+        { evaluator: "regex", pattern: "forbidden", message: "no" },
+      ]),
+    });
+    const list = (await cli(r.root, "standards")).stdout;
+    expect(list).toMatch(/TEACH-001[\s\S]*agent guidance[^\n]*can't fail a change/);
+    expect(list).toMatch(/CHK-001[\s\S]*checked by regex/);
+    expect(list.match(/can't fail a change/g)).toHaveLength(1);
+    const explain = (await cli(r.root, "explain", "TEACH-001")).stdout;
+    expect(explain).toContain("can't fail a change. Add a check to enforce it.");
+    expect((await cli(r.root, "explain", "CHK-001")).stdout).not.toContain("can't fail");
+  });
+
   it("reports configuration errors with file:line and exit code 2", async () => {
     const r = await repo({
       ".groundrule/config.yaml":

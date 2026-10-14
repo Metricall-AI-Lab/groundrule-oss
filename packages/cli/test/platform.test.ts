@@ -336,8 +336,12 @@ describe("sync and check with platform:", () => {
     const list = groundruleTools(io).find((t) => t.name === "list_standards");
     if (!list) throw new Error("list_standards is missing");
     const result = await list.handler({}, { client: null });
-    expect(result.text).toContain("ORG-002 (blocker · advise: findings warn, never fail)");
-    expect(result.text).toContain("ORG-001 (blocker · enforce)");
+    expect(result.text).toContain(
+      "ORG-002 (blocker · advise: findings warn, never fail · checked automatically)",
+    );
+    expect(result.text).toContain("ORG-001 (blocker · enforce · checked automatically)");
+    // At teach, a rule's checks don't run, so it isn't called checked.
+    expect(result.text).toContain("ORG-003 (blocker · teach: guidance only)");
     expect(result.text).toMatch(/LOCAL-001 \(blocker\) /);
     const rows = (result.structured as { standards: { id: string; stage?: string }[] }).standards;
     expect(rows.find((r) => r.id === "ORG-003")?.stage).toBe("teach");

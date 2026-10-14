@@ -1,4 +1,4 @@
-import { appliesToRepository, inspectRepository } from "@groundrule/core";
+import { appliesToRepository, enforcementOf, inspectRepository } from "@groundrule/core";
 import { createServer, type Tool } from "@groundrule/mcp";
 import { compareSeverity } from "@groundrule/spec";
 import { checkForAgent } from "../agent-report.js";
@@ -62,6 +62,10 @@ export function groundruleTools(io: IO): Tool[] {
             .replace(/\s+/g, " ")
             .trim(),
           ...(l.standard.spec.scope.paths?.length ? { paths: l.standard.spec.scope.paths } : {}),
+          // Checked only where the rule's stage runs its checks (Advise, Enforce, or no stage).
+          checked:
+            enforcementOf(l.standard.spec.checks.map((c) => c.evaluator)) === "checked" &&
+            (!l.stage || l.stage === "advise" || l.stage === "enforce"),
         }))
         .filter(
           (r) =>
@@ -75,7 +79,7 @@ export function groundruleTools(io: IO): Tool[] {
         ? rows
             .map(
               (r) =>
-                `${r.id} (${r.severity}${r.stage ? ` · ${STAGE_NOTE[r.stage] ?? r.stage}` : ""}) ${r.title}: ${r.requirement}${r.paths ? ` [applies to ${r.paths.join(", ")}]` : ""}`,
+                `${r.id} (${r.severity}${r.stage ? ` · ${STAGE_NOTE[r.stage] ?? r.stage}` : ""}${r.checked ? " · checked automatically" : ""}) ${r.title}: ${r.requirement}${r.paths ? ` [applies to ${r.paths.join(", ")}]` : ""}`,
             )
             .join("\n")
         : query

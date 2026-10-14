@@ -1,4 +1,11 @@
-import { appliesToRepository, displayPath, inspectRepository } from "@groundrule/core";
+import {
+  appliesToRepository,
+  cannotFail,
+  displayPath,
+  ENFORCEMENT_LABEL,
+  enforcementOf,
+  inspectRepository,
+} from "@groundrule/core";
 import { compareSeverity } from "@groundrule/spec";
 import { EXIT, type IO, println, style } from "../io.js";
 import { openWorkspace } from "../workspace.js";
@@ -44,7 +51,17 @@ export async function standards(io: IO, options: { json?: boolean }): Promise<nu
         : r.severity === "warning"
           ? s.yellow(padded)
           : s.dim(padded);
-    const checks = r.checks.length ? r.checks.join(", ") : "agent guidance";
+    const how = enforcementOf(r.checks);
+    const checks =
+      how === "checked"
+        ? `checked by ${r.checks.join(", ")}`
+        : how === "ai-review"
+          ? `${ENFORCEMENT_LABEL[how]}: ${r.checks.join(", ")}`
+          : ENFORCEMENT_LABEL[how];
+    const unenforced =
+      r.applies && r.status === "active" && cannotFail(r.severity, r.checks)
+        ? ` ${s.yellow("· can't fail a change")}`
+        : "";
     const note =
       r.status !== "active"
         ? ` ${s.dim(`(${r.status})`)}`
@@ -55,7 +72,7 @@ export async function standards(io: IO, options: { json?: boolean }): Promise<nu
     println(io, inactive ? s.dim(line) : line);
     println(
       io,
-      ` ${" ".repeat(width)}  ${" ".repeat(8)}  ${s.dim(`${checks}${r.paths.length ? ` · ${r.paths.join(", ")}` : ""} · ${r.origin}${r.stage ? ` · ${r.stage}` : ""}`)}`,
+      ` ${" ".repeat(width)}  ${" ".repeat(8)}  ${s.dim(`${checks}${r.paths.length ? ` · ${r.paths.join(", ")}` : ""} · ${r.origin}${r.stage ? ` · ${r.stage}` : ""}`)}${unenforced}`,
     );
   }
   println(io);
