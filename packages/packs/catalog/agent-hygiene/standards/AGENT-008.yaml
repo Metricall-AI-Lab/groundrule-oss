@@ -20,6 +20,9 @@ spec:
       If your change alters behavior, config, env vars, flags, or setup, update the matching README
       or docs, example config, and comments in the same change, and add a CHANGELOG entry if the
       project has one. Don't create new doc files unless asked.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
   quality:
     noise: low
   rollout:

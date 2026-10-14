@@ -21,6 +21,9 @@ spec:
       include: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.vue", "**/*.svelte"]
       exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/vendor/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/examples/**", "**/example/**", "**/docs/**", "**/fixtures/**", "**/*.min.js"]
       message: debugger statement
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
   applicability:
     files: ["**/package.json"]
   quality:

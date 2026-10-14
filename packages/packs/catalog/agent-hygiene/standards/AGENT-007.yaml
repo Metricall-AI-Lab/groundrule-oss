@@ -21,6 +21,9 @@ spec:
       Before writing code, find two or three similar places in the repo and copy their structure,
       naming, error handling, logging, and test style. Search for an existing helper before writing
       a new one, and do not introduce a new library or pattern without saying why.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25"] }
   quality:
     noise: low
   rollout:

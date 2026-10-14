@@ -31,6 +31,9 @@ spec:
     summary: >
       Give every workflow job timeout-minutes. Add a concurrency group: cancel-in-progress
       for PR CI, queued (no cancel) per environment for deploys.
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
+    - { framework: iso-27001, controls: ["8.6"] }
   quality:
     noise: low
   rollout:

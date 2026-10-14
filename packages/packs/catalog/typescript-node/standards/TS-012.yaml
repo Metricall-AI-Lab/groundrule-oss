@@ -27,6 +27,8 @@ spec:
     summary: >
       In request handlers, middleware, and consumers use async APIs (fs/promises, async
       child_process, async crypto); keep *Sync calls to startup code, CLIs, and scripts.
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
   applicability:
     frameworks: [express, fastify, nestjs, hono, nextjs]
     files: ["**/package.json"]

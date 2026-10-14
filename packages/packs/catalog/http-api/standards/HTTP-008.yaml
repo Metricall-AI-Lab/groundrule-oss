@@ -26,6 +26,9 @@ spec:
     - { id: CWE-307, title: Improper Restriction of Excessive Authentication Attempts }
     - { id: CWE-770, title: Allocation of Resources Without Limits or Throttling }
     - { id: OWASP-API4:2023, title: Unrestricted Resource Consumption, url: "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/" }
+  compliance:
+    - { framework: soc2, controls: [CC6.6] }
+    - { framework: iso-27001, controls: ["8.26"] }
   quality:
     noise: low
   rollout:

@@ -22,6 +22,9 @@ spec:
       Never edit lockfiles, build output, or files marked generated / DO NOT EDIT by hand. Change
       the source (package manifest, schema, .proto, spec) and rerun the project's generator or
       package manager command, and mention which command you ran.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
   quality:
     noise: low
   rollout:

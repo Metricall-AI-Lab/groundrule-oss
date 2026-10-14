@@ -21,6 +21,9 @@ spec:
       Make tests deterministic: fake or inject the clock (no real "now"), seed or inject randomness
       and ID generators, pin time zone and locale, and give each test its own data so tests pass
       in any order. Restore env vars, mocks, and globals after each test.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25"] }
   quality:
     noise: low
   rollout:

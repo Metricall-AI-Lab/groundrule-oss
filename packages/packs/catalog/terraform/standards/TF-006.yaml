@@ -44,6 +44,7 @@ spec:
     - { id: CWE-732, title: Incorrect Permission Assignment for Critical Resource }
   compliance:
     - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.15", "8.3", "8.12"] }
   quality:
     noise: medium
     knownFalsePositives:

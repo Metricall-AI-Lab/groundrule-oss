@@ -39,6 +39,8 @@ spec:
   references:
     - https://go.dev/doc/effective_go#errors
     - https://go.dev/wiki/CodeReviewComments#handle-errors
+  compliance:
+    - { framework: iso-27001, controls: ["8.28"] }
   quality:
     noise: low
   rollout:

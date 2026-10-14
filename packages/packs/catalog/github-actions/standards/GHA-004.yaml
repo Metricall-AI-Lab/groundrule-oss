@@ -39,6 +39,9 @@ spec:
       message: pull_request_target workflow checks out pull request code
   references:
     - { id: CWE-829, title: Inclusion of Functionality from Untrusted Control Sphere }
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.28"] }
   quality:
     noise: medium
     knownFalsePositives:

@@ -42,6 +42,8 @@ spec:
   references:
     - https://go.dev/wiki/CodeReviewComments#goroutine-lifetimes
     - https://pkg.go.dev/golang.org/x/sync/errgroup
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
   quality:
     noise: low
   rollout:

@@ -35,6 +35,9 @@ spec:
       message: fmt.Print in library code; use the project's logger or an io.Writer
   references:
     - https://pkg.go.dev/log/slog
+  compliance:
+    - { framework: soc2, controls: [CC7.2] }
+    - { framework: iso-27001, controls: ["8.15"] }
   applicability:
     files: ["**/go.mod"]
   quality:

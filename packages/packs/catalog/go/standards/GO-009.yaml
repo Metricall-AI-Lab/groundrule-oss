@@ -44,6 +44,8 @@ spec:
     - { id: CWE-338, title: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG) }
     - { id: CWE-330, title: Use of Insufficiently Random Values }
     - https://pkg.go.dev/crypto/rand
+  compliance:
+    - { framework: iso-27001, controls: ["8.24"] }
   applicability:
     files: ["**/go.mod"]
   quality:

@@ -21,6 +21,9 @@ spec:
   references:
     - https://pkg.go.dev/cmd/vet
     - https://go.dev/doc/articles/race_detector
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25", "8.29"] }
   quality:
     noise: low
   rollout:

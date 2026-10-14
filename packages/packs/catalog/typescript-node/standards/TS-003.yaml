@@ -28,6 +28,7 @@ spec:
   compliance:
     - { framework: owasp-asvs, controls: [V5.2.4] }
     - { framework: iso-27001, controls: ["8.28"] }
+    - { framework: soc2, controls: [CC6.8] }
   applicability:
     files: ["**/package.json"]
   quality:

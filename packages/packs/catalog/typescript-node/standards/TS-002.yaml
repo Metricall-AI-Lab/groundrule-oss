@@ -24,6 +24,8 @@ spec:
     - { id: CWE-1104, title: Use of Unmaintained Third Party Components }
   compliance:
     - { framework: owasp-asvs, controls: [V14.2.1] }
+    - { framework: soc2, controls: [CC7.1] }
+    - { framework: iso-27001, controls: ["8.8"] }
   applicability:
     files: ["**/package.json"]
   quality:

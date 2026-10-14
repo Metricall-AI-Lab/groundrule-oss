@@ -45,6 +45,9 @@ spec:
       and @Validated on the controller for constrained path/query params. Business rules stay in services.
   references:
     - { id: CWE-20, title: Improper Input Validation }
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.26", "8.28"] }
   applicability:
     files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
   quality:

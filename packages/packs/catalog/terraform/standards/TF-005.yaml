@@ -46,6 +46,9 @@ spec:
       message: SSH or RDP ingress open to the internet
   references:
     - { id: CWE-284, title: Improper Access Control }
+  compliance:
+    - { framework: soc2, controls: [CC6.6] }
+    - { framework: iso-27001, controls: ["8.20"] }
   quality:
     noise: low
     knownFalsePositives:

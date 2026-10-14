@@ -55,6 +55,9 @@ spec:
       pattern: '^(?![ \t]*//)[^\n]*?\b[tb]\.Skip(?:Now)?\(\s*\)'
       include: ["**/*_test.go"]
       message: Skipped test without a reason
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25"] }
   quality:
     noise: low
     knownFalsePositives:

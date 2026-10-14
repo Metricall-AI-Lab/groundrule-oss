@@ -32,6 +32,8 @@ spec:
         language: yaml
   references:
     - https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
   quality:
     noise: low
   rollout:

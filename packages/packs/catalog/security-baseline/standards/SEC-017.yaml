@@ -28,6 +28,8 @@ spec:
     - { id: CWE-1275, title: Sensitive Cookie with Improper SameSite Attribute }
   compliance:
     - { framework: owasp-asvs, controls: [V3.4.1, V3.4.2, V3.4.3] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.5"] }
   applicability:
     frameworks: [express, fastify, nestjs, hono, nextjs, spring-boot, django, flask, fastapi]
   quality:

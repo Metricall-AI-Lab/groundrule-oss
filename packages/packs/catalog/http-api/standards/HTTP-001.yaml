@@ -61,6 +61,9 @@ spec:
   references:
     - { id: CWE-209, title: Generation of Error Message Containing Sensitive Information }
     - { id: RFC-9457, title: Problem Details for HTTP APIs, url: "https://www.rfc-editor.org/rfc/rfc9457" }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.12"] }
   quality:
     noise: low
     knownFalsePositives:

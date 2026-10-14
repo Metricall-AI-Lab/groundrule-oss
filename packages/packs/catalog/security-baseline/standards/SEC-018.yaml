@@ -27,6 +27,8 @@ spec:
     - { id: CWE-942, title: Permissive Cross-domain Security Policy with Untrusted Domains }
   compliance:
     - { framework: owasp-asvs, controls: [V14.5.3] }
+    - { framework: soc2, controls: [CC6.6] }
+    - { framework: iso-27001, controls: ["8.20"] }
   applicability:
     frameworks: [express, fastify, nestjs, hono, nextjs, spring-boot, django, flask, fastapi]
   quality:

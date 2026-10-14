@@ -40,6 +40,8 @@ spec:
   references:
     - { id: CWE-400, title: Uncontrolled Resource Consumption }
     - https://pkg.go.dev/net/http#Server
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
   applicability:
     files: ["**/go.mod"]
   quality:

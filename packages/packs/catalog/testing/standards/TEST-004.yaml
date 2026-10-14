@@ -19,6 +19,9 @@ spec:
     summary: >
       When fixing a bug, first write a test that reproduces it and run it to see it fail, then fix
       the code and see it pass. Say in your summary that you observed the failure before the fix.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25", "8.29"] }
   quality:
     noise: low
   rollout:

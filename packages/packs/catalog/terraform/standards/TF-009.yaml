@@ -33,6 +33,9 @@ spec:
   references:
     - { id: CWE-798, title: Use of Hard-coded Credentials }
     - { id: CWE-532, title: Insertion of Sensitive Information into Log File }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
   quality:
     noise: low
   rollout:

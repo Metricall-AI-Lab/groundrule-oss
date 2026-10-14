@@ -21,6 +21,9 @@ spec:
       Before saying you are done, run the project's own test, type-check, lint, and format commands
       (from README, package scripts, Makefile, or CI) for the code you changed. Report the commands
       and results, and state clearly anything you could not run or that still fails.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25"] }
   quality:
     noise: low
   rollout:

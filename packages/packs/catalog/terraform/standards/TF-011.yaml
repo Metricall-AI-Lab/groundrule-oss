@@ -25,6 +25,8 @@ spec:
     - { id: CWE-311, title: Missing Encryption of Sensitive Data }
   compliance:
     - { framework: hipaa, controls: ["164.312(a)(2)(iv)"] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.24"] }
   quality:
     noise: low
   rollout:

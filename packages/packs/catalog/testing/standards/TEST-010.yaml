@@ -21,6 +21,9 @@ spec:
       Mock only external boundaries (network, clock, randomness, external infrastructure) and use
       real code or in-memory fakes for the project's own modules. Assert on results and state, not
       on which internal functions were called.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25"] }
   quality:
     noise: low
   rollout:

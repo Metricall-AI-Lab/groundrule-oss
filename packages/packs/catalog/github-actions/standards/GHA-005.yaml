@@ -36,6 +36,9 @@ spec:
       message: Downloaded script piped into a shell
   references:
     - { id: CWE-494, title: Download of Code Without Integrity Check }
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.19"] }
   quality:
     noise: medium
     knownFalsePositives:

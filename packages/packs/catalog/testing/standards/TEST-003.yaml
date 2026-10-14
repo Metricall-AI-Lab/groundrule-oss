@@ -21,6 +21,9 @@ spec:
       In unit tests, stub outbound HTTP with the mocking tool the project already uses (msw, nock,
       responses, httptest, WireMock...) or inject a fake client; never call real third-party,
       staging, or production endpoints, and never depend on real credentials.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25", "8.31"] }
   quality:
     noise: low
   rollout:

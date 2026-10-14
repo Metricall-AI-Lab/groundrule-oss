@@ -26,6 +26,9 @@ spec:
   references:
     - { id: CWE-1104, title: Use of Unmaintained Third Party Components }
     - { id: CVE-2020-26160, title: jwt-go audience claim validation bypass }
+  compliance:
+    - { framework: soc2, controls: [CC7.1] }
+    - { framework: iso-27001, controls: ["8.8"] }
   applicability:
     files: ["**/go.mod"]
   quality:

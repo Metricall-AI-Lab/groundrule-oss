@@ -43,6 +43,9 @@ spec:
       message: Long-lived cloud key used instead of OIDC
   references:
     - { id: CWE-522, title: Insufficiently Protected Credentials }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17", "8.5"] }
   quality:
     noise: medium
     knownFalsePositives:

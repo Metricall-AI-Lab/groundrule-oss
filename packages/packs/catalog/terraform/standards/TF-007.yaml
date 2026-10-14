@@ -29,6 +29,7 @@ spec:
     - { id: CWE-538, title: Insertion of Sensitive Information into Externally-Accessible File or Directory }
   compliance:
     - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
   quality:
     noise: low
     knownFalsePositives:

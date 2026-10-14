@@ -22,6 +22,9 @@ spec:
     - evaluator: files
       forbid: ["**/.terraform/**"]
       message: .terraform directory committed to the repository
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
   quality:
     noise: low
   rollout:

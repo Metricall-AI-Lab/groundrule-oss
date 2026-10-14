@@ -17,6 +17,9 @@ spec:
     summary: >
       Avoid any. Validate untrusted input at the boundary with the project's schema library
       (e.g. zod) and use the inferred types. Reuse existing types and helpers before adding new ones.
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.26", "8.28"] }
   applicability:
     files: ["**/tsconfig.json"]
   quality:

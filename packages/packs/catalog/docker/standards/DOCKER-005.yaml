@@ -41,6 +41,9 @@ spec:
   references:
     - { id: CWE-798, title: Use of Hard-coded Credentials }
     - { id: CWE-312, title: Cleartext Storage of Sensitive Information }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
   quality:
     noise: medium
     knownFalsePositives:
