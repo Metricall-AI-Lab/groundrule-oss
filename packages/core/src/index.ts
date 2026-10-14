@@ -1,6 +1,7 @@
 export * from "./check-run.js";
 export * from "./compliance.js";
 export * from "./diagnostics.js";
+export * from "./discovery.js";
 export * from "./enforcement.js";
 export * from "./evaluator.js";
 export * from "./fingerprint.js";
@@ -8,6 +9,7 @@ export * from "./frameworks.js";
 export * from "./fs.js";
 export * from "./generated.js";
 export * from "./git.js";
+export * from "./import-graph.js";
 export * from "./importers.js";
 export * from "./languages.js";
 export * from "./load.js";

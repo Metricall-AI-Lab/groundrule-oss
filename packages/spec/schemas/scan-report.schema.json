@@ -582,6 +582,165 @@
             ],
             "additionalProperties": false
           }
+        },
+        "boundaries": {
+          "default": [],
+          "description": "Architecture boundaries the code already keeps, as proposals (RFC 0011).",
+          "maxItems": 25,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "description": "The module that must not import, e.g. src/domain."
+              },
+              "forbid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "description": "The module it must not import, e.g. src/infra."
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Files in `from`."
+              },
+              "importsBack": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Files in `forbid` that import `from`: the direction's evidence."
+              },
+              "violations": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Files in `from` that import `forbid` today."
+              },
+              "examples": {
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400,
+                      "description": "Repository-relative POSIX path."
+                    },
+                    "line": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "target": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400,
+                      "description": "Repository-relative POSIX path."
+                    }
+                  },
+                  "required": [
+                    "file",
+                    "line",
+                    "target"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "from",
+              "forbid",
+              "files",
+              "importsBack",
+              "violations",
+              "examples",
+              "fingerprint"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "gates": {
+          "default": [],
+          "description": "Packages one module owns, as proposals (RFC 0011).",
+          "maxItems": 15,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "package": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "only": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "description": "The module that uses the package, e.g. src/payments."
+              },
+              "users": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Files in `only` that import it."
+              },
+              "violations": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Files elsewhere that import it today."
+              },
+              "examples": {
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400,
+                      "description": "Repository-relative POSIX path."
+                    },
+                    "line": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "file",
+                    "line"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "package",
+              "only",
+              "users",
+              "violations",
+              "examples",
+              "fingerprint"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [

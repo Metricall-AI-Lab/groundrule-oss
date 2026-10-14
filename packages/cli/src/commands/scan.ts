@@ -282,7 +282,7 @@ function printSummary(
   println(io);
   println(io, ` ${label("Packs")}${list(packs, "none")} ${s.dim("apply to this repository")}`);
   if (report.imports) {
-    const { instructions, toolSettings, owners } = report.imports;
+    const { instructions, toolSettings, owners, boundaries, gates } = report.imports;
     println(
       io,
       ` ${label("Imports")}${instructions.length} instructions from agent files · ${toolSettings.length} tool settings that match catalog rules · ${owners.length} CODEOWNERS entries`,
@@ -293,6 +293,33 @@ function printSummary(
         io,
         ` ${" ".repeat(12)}${s.dim(`Already enforced by your tools: ${[...new Set(enforced.map((t) => t.standardId))].slice(0, 8).join(", ")}`)}`,
       );
+    if (boundaries.length || gates.length) {
+      println(
+        io,
+        ` ${label("Layering")}${boundaries.length} boundaries and ${gates.length} package gates this code already keeps ${s.dim("(proposed rules, with what would fail today)")}`,
+      );
+      const today = (n: number) =>
+        n === 0
+          ? s.green("clean today")
+          : s.yellow(`${n} ${n === 1 ? "file" : "files"} would fail today`);
+      for (const b of boundaries.slice(0, 6))
+        println(
+          io,
+          ` ${" ".repeat(12)}${b.from} must not import ${b.forbid} ${s.dim(`· ${b.importsBack} files depend the other way ·`)} ${today(b.violations)}`,
+        );
+      for (const g of gates.slice(0, 4))
+        println(
+          io,
+          ` ${" ".repeat(12)}only ${g.only} uses ${g.package} ${s.dim(`· ${g.users} files there ·`)} ${today(g.violations)}`,
+        );
+      const more =
+        boundaries.length -
+        Math.min(boundaries.length, 6) +
+        gates.length -
+        Math.min(gates.length, 4);
+      if (more > 0)
+        println(io, ` ${" ".repeat(12)}${s.dim(`and ${more} more in the JSON report`)}`);
+    }
     println(io);
   }
   if (!options.upload) {
