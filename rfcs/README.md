@@ -15,4 +15,4 @@ Changes to the Groundrule document format go through an RFC.
 | [0005](0005-check-run.md) | Check runs | Accepted |
 | [0006](0006-agent-sync.md) | Agent sync reports | Accepted |
 | [0007](0007-compliance-record.md) | Compliance record on check runs | Accepted |
-| [0008](0008-signed-check-runs.md) | Signed check runs | Proposed |
+| [0008](0008-signed-check-runs.md) | Signed check runs | Accepted |

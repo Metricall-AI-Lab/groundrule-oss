@@ -1,6 +1,6 @@
 # RFC 0008: Signed check runs
 
-- **Status:** Proposed
+- **Status:** Accepted (14 October 2026)
 - **Author:** Groundrule maintainers
 - **Spec version:** v1alpha1
 - **Builds on:** RFC 0005 (check runs), RFC 0007 (the compliance record)
@@ -81,7 +81,7 @@ Additive within v1alpha1:
 - **Sigstore / keyless signing.** Attractive for GitHub Actions (OIDC identity, no secret), but it adds a transparency-log dependency and doesn't cover other CI systems or hosted checks. It can be added later as a second algorithm; the payload rule stays the same.
 - **JWS / detached JWS envelopes.** More machinery (headers, encodings) for no gain over one field with three values.
 
-## Decisions to make
-1. **Default in CI:** sign automatically when `GROUNDRULE_SIGNING_KEY` is set (recommended; `--no-sign` opts out), or only with an explicit `--sign`.
-2. **Unregistered key:** accept and mark (recommended), or reject.
-3. **Groundrule's own key:** one key for the service, with its public key published on the docs site and at `https://api.groundrule.dev/.well-known/groundrule-keys.json` (recommended), rotated by publishing the new key alongside the old.
+## Decisions (14 October 2026)
+1. **Sign by default in CI:** `--upload` and `--write-check-run` sign when `GROUNDRULE_SIGNING_KEY` is set; `--no-sign` opts out; `--sign` without a key is an error.
+2. **Unregistered keys** are accepted and marked "signed with an unregistered key"; registering the key afterwards re-verifies.
+3. **Groundrule's own key:** one service key, its public key published on the docs site and at `https://api.groundrule.dev/.well-known/groundrule-keys.json`; rotation publishes the new key alongside the old.
