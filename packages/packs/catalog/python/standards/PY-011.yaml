@@ -52,6 +52,8 @@ spec:
     - { url: "https://docs.djangoproject.com/en/stable/ref/settings/#debug", title: "Django settings: DEBUG" }
   compliance:
     - { framework: owasp-asvs, controls: [V14.3.2] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.9", "8.31"] }
   quality:
     noise: medium
     knownFalsePositives:

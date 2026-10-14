@@ -57,6 +57,8 @@ spec:
   references:
     - { id: CWE-390, title: Detection of Error Condition Without Action }
     - { id: CWE-209, title: Generation of Error Message Containing Sensitive Information }
+  compliance:
+    - { framework: iso-27001, controls: ["8.28"] }
   applicability:
     files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
   quality:

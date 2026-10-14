@@ -65,4 +65,5 @@ const KNOWN = new Set([
   "agent-hygiene",
 ]);
 
+export * from "./controls.js";
 export * from "./mappings.js";

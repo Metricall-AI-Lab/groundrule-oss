@@ -32,6 +32,9 @@ spec:
       application entry point.
   references:
     - { url: "https://docs.python.org/3/howto/logging.html", title: "Python Logging HOWTO" }
+  compliance:
+    - { framework: soc2, controls: [CC7.2] }
+    - { framework: iso-27001, controls: ["8.15"] }
   quality:
     noise: low
   rollout:

@@ -36,6 +36,9 @@ spec:
   references:
     - { id: CWE-538, title: Insertion of Sensitive Information into Externally-Accessible File or Directory }
     - https://docs.docker.com/build/building/best-practices/
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.12"] }
   quality:
     noise: low
   rollout:

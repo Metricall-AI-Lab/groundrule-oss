@@ -19,7 +19,8 @@ spec:
     - { id: CWE-532, title: Insertion of Sensitive Information into Log File }
   compliance:
     - { framework: owasp-asvs, controls: [V7.1.1, V7.1.2] }
-    - { framework: iso-27001, controls: ["8.11", "8.15"] }
+    - { framework: iso-27001, controls: ["8.11", "8.15", "8.12"] }
+    - { framework: soc2, controls: [CC6.1, CC7.2] }
   quality:
     noise: low
   rollout:

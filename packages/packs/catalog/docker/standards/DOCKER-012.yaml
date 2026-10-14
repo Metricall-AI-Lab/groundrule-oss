@@ -21,6 +21,9 @@ spec:
       the pinned base image version instead.
   references:
     - { id: CWE-1104, title: Use of Unmaintained Third Party Components }
+  compliance:
+    - { framework: soc2, controls: [CC7.1] }
+    - { framework: iso-27001, controls: ["8.8"] }
   quality:
     noise: low
   rollout:

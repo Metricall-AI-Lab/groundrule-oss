@@ -31,6 +31,9 @@ spec:
   references:
     - { id: CWE-1357, title: Reliance on Insufficiently Trustworthy Component }
     - { id: OWASP-A08:2021, title: Software and Data Integrity Failures, url: "https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/" }
+  compliance:
+    - { framework: soc2, controls: [CC6.8, CC8.1] }
+    - { framework: iso-27001, controls: ["8.8", "8.32"] }
   applicability:
     files: ["**/package.json", "**/pyproject.toml", "**/requirements*.txt", "**/Cargo.toml", "**/go.mod"]
   quality:

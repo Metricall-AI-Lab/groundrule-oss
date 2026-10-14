@@ -27,6 +27,9 @@ spec:
     summary: >
       Deploy jobs must declare environment: <name>; keep deployment credentials as
       environment secrets (or an OIDC subject bound to the environment), not repository secrets.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.31", "8.32"] }
   quality:
     noise: low
   rollout:

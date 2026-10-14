@@ -46,6 +46,8 @@ spec:
   references:
     - https://go.dev/doc/effective_go#defer
     - https://go.dev/doc/database/querying
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
   quality:
     noise: low
   rollout:

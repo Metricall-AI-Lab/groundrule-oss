@@ -38,6 +38,9 @@ spec:
       message: Workflow does not declare top-level permissions
   references:
     - { id: CWE-250, title: Execution with Unnecessary Privileges }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.15"] }
   quality:
     noise: medium
     knownFalsePositives:

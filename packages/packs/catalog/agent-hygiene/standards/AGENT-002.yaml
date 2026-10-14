@@ -21,6 +21,9 @@ spec:
       Do not add a dependency if the standard library, an existing dependency, or repo code can do
       it. If you must add one, verify the exact package name exists and is the well-known one,
       install it with the project's package manager, and explain why in your summary.
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.8"] }
   quality:
     noise: low
   rollout:

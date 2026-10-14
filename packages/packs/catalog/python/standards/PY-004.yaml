@@ -35,6 +35,8 @@ spec:
     - { url: "https://docs.python.org/3/library/pickle.html", title: "pickle: security warning" }
   compliance:
     - { framework: owasp-asvs, controls: [V5.5.3] }
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.28"] }
   quality:
     noise: medium
     knownFalsePositives:

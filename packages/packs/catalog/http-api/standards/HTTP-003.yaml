@@ -27,6 +27,9 @@ spec:
       Never add a list endpoint that returns an unbounded collection. Paginate it (cursor-based
       unless the project uses offsets), enforce a default and maximum page size on the server,
       and sort by a stable key plus a unique tie-breaker such as id.
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
+    - { framework: iso-27001, controls: ["8.6"] }
   quality:
     noise: low
   rollout:

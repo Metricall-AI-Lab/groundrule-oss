@@ -22,6 +22,9 @@ spec:
       If a test or check fails, fix the code. Never delete, skip, or loosen tests, rewrite expected
       values to match buggy output, add lint or type suppressions, lower thresholds, use --no-verify,
       or disable security checks to get green; if you think the test is wrong, stop and explain why.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25", "8.29"] }
   quality:
     noise: low
   rollout:

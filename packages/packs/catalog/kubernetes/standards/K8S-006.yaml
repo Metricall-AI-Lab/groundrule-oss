@@ -50,6 +50,9 @@ spec:
       exclude: ["**/.github/**", "**/*compose*.y*ml", "**/kustomization.y*ml", "**/patches/**", "**/*patch*.y*ml"]
   references:
     - https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
+    - { framework: iso-27001, controls: ["8.6"] }
   quality:
     noise: medium
     knownFalsePositives:

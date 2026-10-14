@@ -22,6 +22,9 @@ spec:
       Stop and ask before anything destructive or hard to undo: deleting files you did not create,
       dropping data or running destructive migrations, force-pushing or rewriting history, and any
       command against shared, staging, or production systems. Show a dry run or plan first.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
   quality:
     noise: low
   rollout:

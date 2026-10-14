@@ -41,6 +41,9 @@ spec:
       copy allowed fields explicitly; return a response DTO.
   references:
     - { id: CWE-915, title: Improperly Controlled Modification of Dynamically-Determined Object Attributes }
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.26", "8.28"] }
   applicability:
     files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
   quality:

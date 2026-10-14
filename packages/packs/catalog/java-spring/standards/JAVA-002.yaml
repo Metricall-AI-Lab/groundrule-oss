@@ -23,6 +23,9 @@ spec:
       pattern: "System\\.(?:out|err)\\.print|\\.printStackTrace\\(\\s*\\)"
       include: ["**/*.java"]
       message: Console output instead of the logger
+  compliance:
+    - { framework: soc2, controls: [CC7.2] }
+    - { framework: iso-27001, controls: ["8.15"] }
   applicability:
     files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
   quality:

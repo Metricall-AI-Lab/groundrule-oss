@@ -35,6 +35,9 @@ spec:
       state per environment. Do not add local state or disable locking.
   references:
     - https://developer.hashicorp.com/terraform/language/state/locking
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.9", "8.32"] }
   quality:
     noise: low
   rollout:

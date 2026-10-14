@@ -19,6 +19,9 @@ spec:
       Touch only the code the task requires: no drive-by refactors, renames, reformatting of
       untouched lines, or dependency upgrades. List unrelated problems you noticed in your summary
       instead of fixing them.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
   quality:
     noise: low
   rollout:

@@ -42,6 +42,9 @@ spec:
   references:
     - { id: CWE-94, title: "Improper Control of Generation of Code ('Code Injection')" }
     - { id: CWE-78, title: "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')" }
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.28"] }
   quality:
     noise: low
     knownFalsePositives:

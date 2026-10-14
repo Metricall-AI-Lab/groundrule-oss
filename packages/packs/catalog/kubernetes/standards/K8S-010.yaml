@@ -33,6 +33,9 @@ spec:
   references:
     - { id: CWE-284, title: Improper Access Control }
     - https://kubernetes.io/docs/concepts/services-networking/network-policies/
+  compliance:
+    - { framework: soc2, controls: [CC6.6] }
+    - { framework: iso-27001, controls: ["8.20"] }
   quality:
     noise: low
   rollout:

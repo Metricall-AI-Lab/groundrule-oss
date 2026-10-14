@@ -30,6 +30,9 @@ spec:
       include: ["**/*.test.*", "**/*.spec.*", "**/*.cy.*", "**/*_spec.rb", "**/test/**", "**/tests/**", "**/__tests__/**", "**/spec/**", "**/e2e/**", "**/cypress/**"]
       exclude: ["**/*.snap", "**/*.md", "**/*.mdx", "**/fixtures/**", "**/__fixtures__/**", "**/testdata/**"]
       message: Focused test (.only / fit / fdescribe) committed
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.25"] }
   quality:
     noise: low
     knownFalsePositives:

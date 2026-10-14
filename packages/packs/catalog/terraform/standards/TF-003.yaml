@@ -26,6 +26,9 @@ spec:
   references:
     - { id: CWE-1357, title: Reliance on Insufficiently Trustworthy Component }
     - https://developer.hashicorp.com/terraform/language/files/dependency-lock
+  compliance:
+    - { framework: soc2, controls: [CC6.8, CC8.1] }
+    - { framework: iso-27001, controls: ["8.8", "8.32"] }
   quality:
     noise: medium
     knownFalsePositives:

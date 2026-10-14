@@ -36,6 +36,9 @@ spec:
     - { id: CWE-200, title: Exposure of Sensitive Information to an Unauthorized Actor }
     - https://nextjs.org/docs/app/building-your-application/configuring/environment-variables
     - https://vite.dev/guide/env-and-mode
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
   applicability:
     frameworks: [react, nextjs]
     files: ["**/package.json"]

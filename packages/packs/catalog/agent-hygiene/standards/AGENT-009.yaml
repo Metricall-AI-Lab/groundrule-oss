@@ -20,6 +20,9 @@ spec:
       End every task with a short summary of what changed, the assumptions you made, how you
       verified it, and what remains unverified. If an ambiguity affects data, security, or public
       behavior, ask before implementing rather than guessing.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
   quality:
     noise: low
   rollout:

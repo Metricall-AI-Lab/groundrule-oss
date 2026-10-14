@@ -39,6 +39,8 @@ spec:
     - https://go.dev/doc/database/sql-injection
   compliance:
     - { framework: owasp-asvs, controls: [V5.3.4] }
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.28"] }
   applicability:
     files: ["**/go.mod"]
   quality:

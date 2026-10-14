@@ -28,6 +28,7 @@ spec:
     - { url: "https://docs.python.org/3/library/secrets.html", title: "secrets: generate secure random numbers" }
   compliance:
     - { framework: owasp-asvs, controls: [V6.3.1] }
+    - { framework: iso-27001, controls: ["8.24"] }
   quality:
     noise: low
   rollout:

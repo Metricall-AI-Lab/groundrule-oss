@@ -31,6 +31,8 @@ spec:
   references:
     - { url: "https://requests.readthedocs.io/en/latest/user/advanced/#timeouts", title: "Requests: Timeouts" }
     - { id: CWE-400, title: Uncontrolled Resource Consumption }
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
   quality:
     noise: medium
     knownFalsePositives:

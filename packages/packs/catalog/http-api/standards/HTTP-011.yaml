@@ -20,6 +20,9 @@ spec:
       After changing an endpoint, find the API description (openapi.yaml/json, swagger, or
       annotations) and update or regenerate it in the same change, including new fields, status
       codes, and error responses. Never hand-edit a generated spec.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
   quality:
     noise: low
   rollout:

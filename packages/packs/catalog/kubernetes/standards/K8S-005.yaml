@@ -48,6 +48,9 @@ spec:
     - { id: CWE-250, title: Execution with Unnecessary Privileges }
     - https://kubernetes.io/docs/concepts/security/pod-security-standards/
     - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.9"] }
   quality:
     noise: low
   rollout:

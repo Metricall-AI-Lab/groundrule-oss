@@ -42,6 +42,9 @@ spec:
       Do not change provider versions as a side effect of other work.
   references:
     - https://developer.hashicorp.com/terraform/language/expressions/version-constraints
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+    - { framework: iso-27001, controls: ["8.9"] }
   quality:
     noise: low
   rollout:

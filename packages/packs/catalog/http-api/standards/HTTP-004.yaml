@@ -28,6 +28,8 @@ spec:
       support an Idempotency-Key header: persist key, request hash, and first response per caller,
       replay the stored response on repeats, and reject the same key with a different body. Keep
       PUT and DELETE idempotent.
+  compliance:
+    - { framework: soc2, controls: [A1.2] }
   quality:
     noise: low
   rollout:

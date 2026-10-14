@@ -29,6 +29,8 @@ spec:
   references:
     - { id: CWE-908, title: Use of Uninitialized Resource }
     - { id: DEP0005, title: "Node.js deprecation DEP0005: Buffer() constructor", url: "https://nodejs.org/api/deprecations.html" }
+  compliance:
+    - { framework: iso-27001, controls: ["8.28"] }
   applicability:
     files: ["**/package.json"]
   quality:

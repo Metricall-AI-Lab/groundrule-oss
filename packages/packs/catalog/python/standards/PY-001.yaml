@@ -33,6 +33,8 @@ spec:
   references:
     - { id: CWE-396, title: Declaration of Catch for Generic Exception }
     - { url: "https://peps.python.org/pep-0008/#programming-recommendations", title: "PEP 8: Programming Recommendations" }
+  compliance:
+    - { framework: iso-27001, controls: ["8.28"] }
   quality:
     noise: low
     knownFalsePositives:

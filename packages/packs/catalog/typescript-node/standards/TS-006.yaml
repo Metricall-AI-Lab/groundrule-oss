@@ -29,6 +29,8 @@ spec:
       and handle their errors. Never pass an async callback to forEach; use for...of or Promise.all.
   references:
     - https://typescript-eslint.io/rules/no-floating-promises/
+  compliance:
+    - { framework: iso-27001, controls: ["8.28"] }
   applicability:
     files: ["**/package.json"]
   quality:

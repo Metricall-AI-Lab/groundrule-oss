@@ -27,6 +27,9 @@ spec:
       job pushes with git. Never upload .git as an artifact.
   references:
     - { id: CWE-522, title: Insufficiently Protected Credentials }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.17"] }
   quality:
     noise: low
   rollout:

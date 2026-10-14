@@ -44,6 +44,9 @@ spec:
       message: All Actuator endpoints exposed over HTTP; list only the ones you need
   references:
     - { id: CWE-200, title: Exposure of Sensitive Information to an Unauthorized Actor }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.9", "8.12"] }
   applicability:
     files: ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"]
   quality:

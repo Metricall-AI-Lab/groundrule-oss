@@ -35,6 +35,8 @@ spec:
     - { id: OWASP-API1:2023, title: Broken Object Level Authorization, url: "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/" }
   compliance:
     - { framework: owasp-asvs, controls: [V4.2.1] }
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["5.15", "8.3", "8.26"] }
   quality:
     noise: low
   rollout:
