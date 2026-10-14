@@ -1,0 +1,11 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: architecture
+  title: Architecture
+  description: Dependency direction, module boundaries and technology gates, checked deterministically on every change. Adjust the paths in each rule to your layout; every rule starts at Observe so you see the impact first.
+  owner: groundrule
+  version: 1.0.0
+  tags: [architecture, boundaries, layers, typescript, javascript, python]
+spec:
+  include: ["standards/**/*.yaml"]

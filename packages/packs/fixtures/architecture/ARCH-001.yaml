@@ -1,0 +1,21 @@
+standard: ARCH-001
+cases:
+  - name: domain imports the database client
+    expect: violation
+    files:
+      src/domain/order.ts: |
+        import { db } from "../infra/db/client";
+        export const total = () => db;
+      src/infra/db/client.ts: |
+        export const db = {};
+  - name: domain depends on its own port; infra implements it
+    expect: clean
+    files:
+      src/domain/order.ts: |
+        import type { OrderRepository } from "./ports";
+        export const place = (repo: OrderRepository) => repo;
+      src/domain/ports.ts: |
+        export interface OrderRepository { save(): void }
+      src/infra/db/orders.ts: |
+        import type { OrderRepository } from "../../domain/ports";
+        export const repo: OrderRepository = { save() {} };

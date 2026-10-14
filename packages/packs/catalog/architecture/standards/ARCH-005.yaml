@@ -1,0 +1,40 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-005
+  title: Production code never imports test code
+  type: prohibition
+  category: architecture
+spec:
+  severity: blocker
+  scope:
+    languages: [typescript, javascript, python]
+    exclude: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**", "test/**", "tests/**", "**/testing/**", "**/fixtures/**", "**/conftest.py"]
+  intent: >
+    A helper, fixture or mock pulled into production code ships test behaviour to users,
+    and makes the test suite impossible to remove or restructure.
+  requirement: >
+    Production code must not import test files, fixtures, mocks or test utilities. Share real
+    code by moving it out of the test tree.
+  remediation: >
+    Move the shared piece into production code (a utils or shared directory) and import it
+    from both sides.
+  examples:
+    approved:
+      - { code: "import { parseMoney } from \"../shared/money\";", language: typescript }
+    forbidden:
+      - { code: "import { fakeClock } from \"../__tests__/helpers\";", language: typescript }
+  checks:
+    - evaluator: imports
+      forbid: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**", "test/**", "tests/**", "**/testing/**", "**/fixtures/**", "**/__mocks__/**", "**/conftest.py"]
+      message: Production code imports test code
+      remediation: Move the shared code out of the test tree.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.27", "8.31"] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - A production `testing` module that ships on purpose (e.g. a public test-utils entry of a library). Allow its path in the check.
+  rollout:
+    recommendedStage: observe

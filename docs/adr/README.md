@@ -13,3 +13,4 @@ Platform decisions live in the private `groundrule-backend` repository (local fo
 | [0006](0006-mcp-server.md) | An MCP server for coding agents | Accepted |
 | [0007](0007-agents-check-their-work.md) | Coding agents check their own work | Accepted |
 | [0008](0008-offline-checks.md) | Offline checks, for hosted runs | Accepted |
+| [0009](0009-architecture-rules.md) | Architecture rules as deterministic primitives | Accepted |

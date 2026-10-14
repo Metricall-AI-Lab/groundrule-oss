@@ -1,0 +1,40 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-006
+  title: Monorepo packages are imported through their public entry
+  type: prohibition
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+    paths: ["packages/**", "apps/**", "libs/**", "services/**"]
+  intent: >
+    Deep imports into another package's `src` bypass its public API, break when the package
+    reorganises, and defeat the build boundaries a monorepo exists to give.
+  requirement: >
+    Code in one workspace package must not import files under another package's `src` (or
+    `lib`, `internal`) directory. Import the package by name, which resolves to its public
+    entry.
+  remediation: >
+    Export the symbol from the package's entry point and import the package by its name.
+  examples:
+    approved:
+      - { code: "import { db } from \"@acme/db\";", language: typescript }
+    forbidden:
+      - { code: "import { pool } from \"@acme/db/src/internal/pool\";", language: typescript }
+  checks:
+    - evaluator: imports
+      from: ["packages/{pkg}/**", "apps/{pkg}/**", "libs/{pkg}/**", "services/{pkg}/**"]
+      forbid: ["packages/!({pkg})/src/**", "packages/!({pkg})/lib/**", "packages/!({pkg})/internal/**", "libs/!({pkg})/src/**", "libs/!({pkg})/internal/**"]
+      message: Deep import into another package; use its public entry
+      remediation: Export it from the package entry and import the package by name.
+  compliance:
+    - { framework: iso-27001, controls: ["8.27"] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Packages that publish subpath exports on purpose (e.g. `@acme/ui/icons`). Allow those paths in the check.
+  rollout:
+    recommendedStage: observe

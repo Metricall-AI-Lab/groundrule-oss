@@ -1,0 +1,40 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-008
+  title: Only the data layer talks to the database
+  type: prohibition
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript, python]
+  intent: >
+    Queries scattered across controllers and jobs can't be reviewed for tenant scoping,
+    indexes or transactions in one place, and every schema change touches the whole codebase.
+  requirement: >
+    Only code under data-access directories (data, db, repositories, infra, infrastructure,
+    persistence) may import the database client or ORM. Other code goes through repositories
+    or the data layer's functions.
+  remediation: >
+    Add a repository function for the query and call it.
+  examples:
+    approved:
+      - { code: "const order = await orders.findById(id);", language: typescript }
+    forbidden:
+      - { code: "import { prisma } from \"@prisma/client\";", language: typescript, note: "inside a controller" }
+  checks:
+    - evaluator: imports
+      package: ["@prisma/client", "prisma", "pg", "mysql2", "knex", "typeorm", "sequelize", "mongoose", "drizzle-orm", "sqlalchemy", "psycopg2", "psycopg", "pymongo", "asyncpg", "peewee", "django.db"]
+      only: ["**/data/**", "**/db/**", "**/repositories/**", "**/infra/**", "**/infrastructure/**", "**/persistence/**", "**/models/**", "**/migrations/**"]
+      message: Database client used outside the data layer
+      remediation: Add a repository function for the query and call it.
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.3", "8.27"] }
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Scripts, seeds and one-off jobs that query the database by design. Allow their directory in the check, or record an exception.
+  rollout:
+    recommendedStage: observe

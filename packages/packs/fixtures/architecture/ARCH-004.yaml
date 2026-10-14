@@ -1,0 +1,23 @@
+standard: ARCH-004
+cases:
+  - name: a component imports the database client
+    expect: violation
+    count: 2
+    files:
+      src/components/Orders.tsx: |
+        import { prisma } from "../db/client";
+        import { PrismaClient } from "@prisma/client";
+        export const Orders = () => [prisma, PrismaClient];
+      src/db/client.ts: |
+        export const prisma = {};
+  - name: the component uses a hook; the data layer uses the client
+    expect: clean
+    files:
+      src/components/Orders.tsx: |
+        import { useOrders } from "../hooks/use-orders";
+        export const Orders = () => useOrders();
+      src/hooks/use-orders.ts: |
+        export const useOrders = () => [];
+      src/data/orders.ts: |
+        import { PrismaClient } from "@prisma/client";
+        export const client = PrismaClient;

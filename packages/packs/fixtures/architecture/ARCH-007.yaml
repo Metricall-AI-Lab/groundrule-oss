@@ -1,0 +1,17 @@
+standard: ARCH-007
+cases:
+  - name: a controller uses the Stripe SDK directly
+    expect: violation
+    files:
+      src/api/checkout.ts: |
+        import Stripe from "stripe";
+        export const s = Stripe;
+  - name: only the payments module uses it
+    expect: clean
+    files:
+      src/payments/gateway.ts: |
+        import Stripe from "stripe";
+        export const charge = () => Stripe;
+      src/api/checkout.ts: |
+        import { charge } from "../payments/gateway";
+        export const handler = charge;
