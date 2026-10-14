@@ -151,17 +151,46 @@ export const CheckRunAuthorship = z
   .describe("Who or what wrote the change, as declared in its commits.");
 export type CheckRunAuthorship = z.infer<typeof CheckRunAuthorship>;
 
-/** Who signed the run, and the signature (RFC 0008). The payload is the canonical JSON of the run without `signature` and without snippets. */
+/** A key-based signature (RFC 0008). */
+export const CheckRunKeySignature = z.strictObject({
+  algorithm: z.literal("ed25519"),
+  keyId: Digest.describe("sha256: of the public key's raw 32 bytes."),
+  value: z
+    .string()
+    .regex(/^[A-Za-z0-9+/]{86}==$/, "An Ed25519 signature is 64 bytes, base64")
+    .describe("The Ed25519 signature of the signing payload, base64."),
+});
+
+/** A keyless signature by the CI job's identity through Sigstore (RFC 0009). */
+export const CheckRunSigstoreSignature = z.strictObject({
+  algorithm: z.literal("sigstore"),
+  bundle: z
+    .object({ mediaType: z.string().regex(/^application\/vnd\.dev\.sigstore\.bundle/) })
+    .loose()
+    .describe("The Sigstore bundle: certificate, signature over the payload, and the log entry."),
+  identity: z
+    .strictObject({
+      issuer: z.url().max(200).describe("The OIDC issuer, e.g. GitHub Actions."),
+      subject: z
+        .string()
+        .min(1)
+        .max(500)
+        .describe(
+          "The signer, e.g. https://github.com/acme/payments/.github/workflows/ci.yml@refs/heads/main.",
+        ),
+    })
+    .describe(
+      "The certificate's identity, copied out so readers needn't parse it; verifiers re-derive it.",
+    ),
+});
+
+export type CheckRunKeySignature = z.infer<typeof CheckRunKeySignature>;
+export type CheckRunSigstoreSignature = z.infer<typeof CheckRunSigstoreSignature>;
+
+/** Who signed the run, and the signature (RFC 0008, RFC 0009). The payload is the canonical JSON of the run without `signature` and without snippets. */
 export const CheckRunSignature = z
-  .strictObject({
-    algorithm: z.literal("ed25519"),
-    keyId: Digest.describe("sha256: of the public key's raw 32 bytes."),
-    value: z
-      .string()
-      .regex(/^[A-Za-z0-9+/]{86}==$/, "An Ed25519 signature is 64 bytes, base64")
-      .describe("The Ed25519 signature of the signing payload, base64."),
-  })
-  .describe("Proves the run is what its signer produced; verifiable offline with the public key.");
+  .discriminatedUnion("algorithm", [CheckRunKeySignature, CheckRunSigstoreSignature])
+  .describe("Proves the run is what its signer produced; verifiable offline.");
 export type CheckRunSignature = z.infer<typeof CheckRunSignature>;
 
 export const CheckRun = z

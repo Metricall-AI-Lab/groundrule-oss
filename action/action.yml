@@ -34,6 +34,12 @@ inputs:
   snippets:
     description: With token, include the offending line of each finding (redacted). "false" sends none.
     default: "true"
+  sigstore:
+    description: >-
+      With token, sign the result with this job's identity through Sigstore (keyless, RFC 0009).
+      Needs "permissions: id-token: write" on the job. Opt-in: it records the workflow identity
+      and the result's hash in Sigstore's public log.
+    default: "false"
   url:
     description: Groundrule platform address, for self-hosted or test platforms.
     default: ""
@@ -64,6 +70,7 @@ runs:
         INPUT_TOKEN: ${{ inputs.token }}
         INPUT_URL: ${{ inputs.url }}
         SNIPPETS: ${{ inputs.snippets }}
+        SIGSTORE: ${{ inputs.sigstore }}
       run: |
         set +e
         base="${INPUT_BASE:-${PR_BASE:-$PUSH_BEFORE}}"
@@ -80,6 +87,7 @@ runs:
           export GROUNDRULE_TOKEN="$INPUT_TOKEN"
           args+=(--upload)
           [ "$SNIPPETS" = "false" ] && args+=(--no-snippets)
+          [ "$SIGSTORE" = "true" ] && args+=(--sigstore)
         fi
         $GROUNDRULE "${args[@]}"
         code=$?

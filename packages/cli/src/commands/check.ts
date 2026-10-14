@@ -7,7 +7,10 @@ import {
   parsePrivateKey,
   runChecks,
   SigningError,
+  SigstoreError,
   signCheckRun,
+  signWithSigstore,
+  sigstoreAvailable,
 } from "@groundrule/core";
 import { builtinEvaluators } from "@groundrule/evaluators";
 import {
@@ -57,6 +60,8 @@ export interface CheckOptions {
   authorship?: boolean;
   /** Sign the result (RFC 0008). By default, when GROUNDRULE_SIGNING_KEY is set. */
   sign?: boolean;
+  /** Sign with the GitHub Actions job's identity through Sigstore (RFC 0009). Opt-in. */
+  sigstore?: boolean;
 }
 
 export async function check(io: IO, options: CheckOptions): Promise<number> {
@@ -71,7 +76,22 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
   // The signing key, checked before the run so a bad secret fails fast (RFC 0008).
   const signingSecret = io.env.GROUNDRULE_SIGNING_KEY;
   let signer: ReturnType<typeof parsePrivateKey> | undefined;
-  if (options.sign !== false && (options.sign || signingSecret)) {
+  if (options.sigstore) {
+    if (options.sign || (signingSecret && options.sign !== false)) {
+      eprintln(
+        io,
+        "✕ Choose one: --sigstore, or a signing key (GROUNDRULE_SIGNING_KEY). Pass --no-sign to use Sigstore with the key set.",
+      );
+      return EXIT.usage;
+    }
+    if (!sigstoreAvailable(io.env)) {
+      eprintln(
+        io,
+        "✕ --sigstore needs GitHub Actions with `permissions: id-token: write` on the job. Outside GitHub Actions, sign with a key: groundrule keys generate.",
+      );
+      return EXIT.usage;
+    }
+  } else if (options.sign !== false && (options.sign || signingSecret)) {
     if (!signingSecret) {
       eprintln(
         io,
@@ -212,8 +232,10 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
           : undefined,
   };
 
-  const signed = <T extends Parameters<typeof signCheckRun>[0]>(run: T) =>
-    signer ? signCheckRun(run, signer) : run;
+  const signed = async (run: Parameters<typeof signCheckRun>[0]) => {
+    if (options.sigstore) return signWithSigstore(run, io.env);
+    return signer ? signCheckRun(run, signer) : run;
+  };
 
   if (options.writeCheckRun) {
     const run = await buildCheckRun({
@@ -232,7 +254,15 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
         hosted.pullRequest ?? (options.offline ? undefined : await pullRequestFromCi(io)),
       ...(options.commit ? { commit: options.commit } : {}),
     });
-    await writeFile(resolve(io.cwd, options.writeCheckRun), `${JSON.stringify(signed(run))}\n`);
+    let out: typeof run;
+    try {
+      out = await signed(run);
+    } catch (error) {
+      if (!(error instanceof SigstoreError)) throw error;
+      eprintln(io, `✕ ${error.message}`);
+      return EXIT.usage;
+    }
+    await writeFile(resolve(io.cwd, options.writeCheckRun), `${JSON.stringify(out)}\n`);
   }
   if (!upload) return code;
 
@@ -259,13 +289,17 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
       io,
       upload.url,
       `/v1/cli/checks${query}`,
-      { method: "POST", token: upload.token, body: signed(run) },
+      { method: "POST", token: upload.token, body: await signed(run) },
     );
     out(
       io,
-      ` ${style(io, "stdout").green("✓")} Uploaded${signer ? ", signed," : ""} to ${res.org.name}: ${res.url}`,
+      ` ${style(io, "stdout").green("✓")} Uploaded${options.sigstore ? ", signed with Sigstore," : signer ? ", signed," : ""} to ${res.org.name}: ${res.url}`,
     );
   } catch (error) {
+    if (error instanceof SigstoreError) {
+      eprintln(io, `! Upload skipped: ${error.message} The check result above still stands.`);
+      return code;
+    }
     if (!(error instanceof PlatformError)) throw error;
     const reason =
       error.status === 403 && error.message.includes("scans:write")

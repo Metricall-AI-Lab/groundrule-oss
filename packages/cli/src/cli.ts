@@ -262,6 +262,10 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     )
     .option("--sign", "sign the result with GROUNDRULE_SIGNING_KEY (the default when it is set)")
     .option("--no-sign", "don't sign the result")
+    .option(
+      "--sigstore",
+      "sign with the GitHub Actions job's identity through Sigstore (needs id-token: write)",
+    )
     .option("--repository <name>", "repository name, e.g. acme/api (default: from the git remote)")
     .option("--org <slug>", "organization to upload to")
     .option("--url <url>", "Groundrule platform address")
@@ -294,6 +298,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
         snippets?: boolean;
         authorship?: boolean;
         sign?: boolean;
+        sigstore?: boolean;
         repository?: string;
         org?: string;
         url?: string;
@@ -311,6 +316,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
           ...(o.snippets === false ? { snippets: false } : {}),
           ...(o.authorship === false ? { authorship: false } : {}),
           ...(o.sign !== undefined ? { sign: o.sign } : {}),
+          ...(o.sigstore ? { sigstore: true } : {}),
           ...(o.repository ? { repository: o.repository } : {}),
           ...(o.org ? { org: o.org } : {}),
           ...(o.url ? { url: o.url } : {}),
@@ -360,8 +366,8 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     .command("verify")
     .description("check a run's signature with a public key, offline")
     .argument("<file>", "a CheckRun, JSON")
-    .requiredOption("--key <file>", "the signer's public key, PEM")
-    .action(async (file: string, o: { key: string }) => {
+    .option("--key <file>", "the signer's public key, PEM (not needed for Sigstore-signed runs)")
+    .action(async (file: string, o: { key?: string }) => {
       code = await verify(ctx(), file, o);
     });
 
