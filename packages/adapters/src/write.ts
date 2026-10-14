@@ -2,6 +2,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { MANAGED_BEGIN, MANAGED_END } from "@groundrule/core";
 import { type OutputFile, OWNED_PATTERNS } from "./adapters.js";
+import { CODERABBIT_FILE, hasCodeRabbitEntries, mergeCodeRabbit } from "./coderabbit.js";
 import { SOURCE_NOTE } from "./render.js";
 
 export const BEGIN = MANAGED_BEGIN;
@@ -38,7 +39,11 @@ export async function syncOutputs(
     const file = join(root, output.path);
     const existing = await readFile(file, "utf8").catch(() => undefined);
     const next =
-      output.mode === "managed" ? upsertManagedBlock(existing, output.content) : output.content;
+      output.mode === "managed"
+        ? upsertManagedBlock(existing, output.content)
+        : output.mode === "merged" && output.merge
+          ? output.merge(existing)
+          : output.content;
     const status = existing === undefined ? "created" : existing === next ? "unchanged" : "updated";
     changes.push({ path: output.path, status });
     if (!options.dryRun && status !== "unchanged") {
@@ -48,6 +53,16 @@ export async function syncOutputs(
   }
 
   const wanted = new Set(outputs.map((o) => o.path));
+  // A reviewer config no longer targeted: take Groundrule's entries out, keep the team's.
+  if (options.targets && !options.targets.includes("coderabbit")) {
+    const file = join(root, CODERABBIT_FILE);
+    const existing = await readFile(file, "utf8").catch(() => undefined);
+    if (existing && hasCodeRabbitEntries(existing)) {
+      const next = mergeCodeRabbit(existing, null);
+      changes.push({ path: CODERABBIT_FILE, status: "updated" });
+      if (!options.dryRun) await writeFile(file, next);
+    }
+  }
   for (const [target, pattern] of Object.entries(OWNED_PATTERNS)) {
     if (options.targets && !options.targets.includes(target)) continue;
     const dir = join(root, pattern.dir);

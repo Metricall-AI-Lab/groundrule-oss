@@ -1,4 +1,5 @@
 import type { AgentTarget, Standard } from "@groundrule/spec";
+import { CODERABBIT_FILE, mergeCodeRabbit, renderCodeRabbit } from "./coderabbit.js";
 import {
   groupByScope,
   PREAMBLE,
@@ -16,7 +17,13 @@ import {
 export interface OutputFile {
   path: string;
   content: string;
-  mode: "managed" | "owned";
+  /**
+   * managed: a marked block in a file that may hold other content.
+   * owned:   the whole file.
+   * merged:  entries inside a structured file; `merge` folds them into what's there.
+   */
+  mode: "managed" | "owned" | "merged";
+  merge?: (existing: string | undefined) => string;
 }
 
 export interface AdapterInput {
@@ -59,6 +66,16 @@ export function renderTargets(input: AdapterInput): OutputFile[] {
       case "copilot":
         outputs.push(...renderCopilot(standards));
         break;
+      case "coderabbit": {
+        const entries = renderCodeRabbit(standards);
+        outputs.push({
+          path: CODERABBIT_FILE,
+          mode: "merged",
+          content: mergeCodeRabbit(undefined, entries),
+          merge: (existing) => mergeCodeRabbit(existing, entries),
+        });
+        break;
+      }
     }
   }
   return outputs;
