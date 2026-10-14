@@ -1,5 +1,17 @@
 # @groundrule/evaluators
 
+## 0.15.0
+
+### Minor Changes
+
+- ab2cbb5: Architecture discovery in `groundrule scan` (RFC 0011): the boundaries and package gates a repository already keeps, read from its import graph, as proposals with the files that would fail each today. `ScanImports` gains `boundaries` and `gates`; the import scanner and resolver move to `@groundrule/core` (`buildImportGraph`, `discoverArchitecture`), and the `imports` evaluator uses them.
+
+### Patch Changes
+
+- Updated dependencies [ab2cbb5]
+  - @groundrule/spec@0.15.0
+  - @groundrule/core@0.15.0
+
 ## 0.14.0
 
 ### Minor Changes
