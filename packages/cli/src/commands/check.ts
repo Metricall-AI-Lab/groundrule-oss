@@ -1,6 +1,14 @@
 import { appendFile, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
-import { buildCheckRun, GitError, gitAuthorship, runChecks } from "@groundrule/core";
+import {
+  buildCheckRun,
+  GitError,
+  gitAuthorship,
+  parsePrivateKey,
+  runChecks,
+  SigningError,
+  signCheckRun,
+} from "@groundrule/core";
 import { builtinEvaluators } from "@groundrule/evaluators";
 import {
   colorEnabled,
@@ -47,6 +55,8 @@ export interface CheckOptions {
   writeCheckRun?: string;
   /** Record which coding agents the commits declare (RFC 0007; default true). */
   authorship?: boolean;
+  /** Sign the result (RFC 0008). By default, when GROUNDRULE_SIGNING_KEY is set. */
+  sign?: boolean;
 }
 
 export async function check(io: IO, options: CheckOptions): Promise<number> {
@@ -57,6 +67,25 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
   if (options.commit && !/^[0-9a-f]{40}$/.test(options.commit)) {
     eprintln(io, "✕ --commit must be a full 40-character commit SHA.");
     return EXIT.usage;
+  }
+  // The signing key, checked before the run so a bad secret fails fast (RFC 0008).
+  const signingSecret = io.env.GROUNDRULE_SIGNING_KEY;
+  let signer: ReturnType<typeof parsePrivateKey> | undefined;
+  if (options.sign !== false && (options.sign || signingSecret)) {
+    if (!signingSecret) {
+      eprintln(
+        io,
+        "✕ --sign needs GROUNDRULE_SIGNING_KEY. Generate a key with `groundrule keys generate`.",
+      );
+      return EXIT.usage;
+    }
+    try {
+      signer = parsePrivateKey(signingSecret);
+    } catch (error) {
+      if (!(error instanceof SigningError)) throw error;
+      eprintln(io, `✕ ${error.message}`);
+      return EXIT.usage;
+    }
   }
   let hosted: {
     rulebook?: Awaited<ReturnType<typeof readRulebook>>;
@@ -183,6 +212,9 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
           : undefined,
   };
 
+  const signed = <T extends Parameters<typeof signCheckRun>[0]>(run: T) =>
+    signer ? signCheckRun(run, signer) : run;
+
   if (options.writeCheckRun) {
     const run = await buildCheckRun({
       ...record,
@@ -200,7 +232,7 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
         hosted.pullRequest ?? (options.offline ? undefined : await pullRequestFromCi(io)),
       ...(options.commit ? { commit: options.commit } : {}),
     });
-    await writeFile(resolve(io.cwd, options.writeCheckRun), `${JSON.stringify(run)}\n`);
+    await writeFile(resolve(io.cwd, options.writeCheckRun), `${JSON.stringify(signed(run))}\n`);
   }
   if (!upload) return code;
 
@@ -227,9 +259,12 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
       io,
       upload.url,
       `/v1/cli/checks${query}`,
-      { method: "POST", token: upload.token, body: run },
+      { method: "POST", token: upload.token, body: signed(run) },
     );
-    out(io, ` ${style(io, "stdout").green("✓")} Uploaded to ${res.org.name}: ${res.url}`);
+    out(
+      io,
+      ` ${style(io, "stdout").green("✓")} Uploaded${signer ? ", signed," : ""} to ${res.org.name}: ${res.url}`,
+    );
   } catch (error) {
     if (!(error instanceof PlatformError)) throw error;
     const reason =
