@@ -1,5 +1,18 @@
 # @groundrule/cli
 
+## 0.12.0
+
+### Patch Changes
+
+- Updated dependencies [9d4dd77]
+  - @groundrule/packs@0.12.0
+  - @groundrule/adapters@0.12.0
+  - @groundrule/core@0.12.0
+  - @groundrule/evaluators@0.12.0
+  - @groundrule/mcp@0.12.0
+  - @groundrule/reporters@0.12.0
+  - @groundrule/spec@0.12.0
+
 ## 0.11.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @groundrule/core
 
+## 0.12.0
+
+### Patch Changes
+
+- @groundrule/spec@0.12.0
+
 ## 0.11.0
 
 ### Minor Changes
