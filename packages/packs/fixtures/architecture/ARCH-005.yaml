@@ -1,0 +1,21 @@
+standard: ARCH-005
+cases:
+  - name: production code imports a test helper
+    expect: violation
+    files:
+      src/clock.ts: |
+        import { fakeClock } from "./__tests__/helpers";
+        export const now = fakeClock;
+      src/__tests__/helpers.ts: |
+        export const fakeClock = () => 0;
+  - name: the shared piece lives in production code; tests import it
+    expect: clean
+    files:
+      src/clock.ts: |
+        import { parse } from "./shared/time";
+        export const now = parse;
+      src/shared/time.ts: |
+        export const parse = () => 0;
+      src/__tests__/clock.test.ts: |
+        import { now } from "../clock";
+        export const t = now;

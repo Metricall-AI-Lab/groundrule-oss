@@ -1,0 +1,41 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-003
+  title: Feature modules reach each other only through their public entry
+  type: prohibition
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript]
+  intent: >
+    When one feature imports another's internals, the two can no longer change
+    independently, and the owner of the second feature can't refactor without breaking the
+    first. A public index is the contract between them.
+  requirement: >
+    Code in one feature directory must not import files inside another feature directory,
+    except that feature's index file. Shared code lives outside the feature directories.
+  remediation: >
+    Export what other features need from the feature's index, and import that; or move the
+    shared piece to a shared directory.
+  examples:
+    approved:
+      - { code: "import { billing } from \"../billing\";", language: typescript, note: "the index" }
+    forbidden:
+      - { code: "import { calc } from \"../billing/internal/calc\";", language: typescript }
+  checks:
+    - evaluator: imports
+      from: ["**/features/{feature}/**"]
+      forbid: ["**/features/!({feature})/**"]
+      allow: ["**/features/!({feature})/index.*"]
+      message: Imports another feature's internals; use its index
+      remediation: Export it from the other feature's index, or move it to a shared directory.
+  compliance:
+    - { framework: iso-27001, controls: ["8.27"] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Feature directories that deliberately expose more than one entry file. Add those files to `allow`.
+  rollout:
+    recommendedStage: observe

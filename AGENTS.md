@@ -11,7 +11,7 @@ Product context: `../Groundrule_Product_Vision.md` and `../Groundrule_Build_Plan
 |------|---------|
 | `packages/spec` | Zod schemas + types for every document kind; generates JSON Schema into `schemas/` |
 | `packages/core` | Workspace loading (config, packs, overrides, exceptions), git diff, scope, runner, `Evaluator` interface |
-| `packages/evaluators` | Built-in checks: `files`, `regex`, `dependencies`, `change-set`, `semgrep`, `llm` (stub until 0.2) |
+| `packages/evaluators` | Built-in checks: `files`, `regex`, `dependencies`, `imports`, `change-set`, `semgrep`, `llm` (stub until 0.2) |
 | `packages/reporters` | Output: terminal, JSON, SARIF, Markdown |
 | `packages/adapters` | Agent instructions: AGENTS.md, CLAUDE.md, Cursor rules, Copilot instructions |
 | `packages/packs` | Bundled standard packs in `catalog/` (`groundrule:packs/<name>`) |

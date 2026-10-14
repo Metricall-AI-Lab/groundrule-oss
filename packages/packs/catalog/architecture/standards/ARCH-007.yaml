@@ -1,0 +1,39 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-007
+  title: Only the payments module uses the payment provider's SDK
+  type: prohibition
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript, python]
+  intent: >
+    When every module can call Stripe, retries, idempotency keys, audit logging and provider
+    switches have to be done in every module. One gateway module owns the provider.
+  requirement: >
+    Only code under the payments (or billing) directory may import the payment provider's SDK
+    (Stripe, Braintree, Adyen, PayPal). Everything else calls the payments module.
+  remediation: >
+    Add the operation you need to the payments module and call that.
+  examples:
+    approved:
+      - { code: "import { charge } from \"../payments/gateway\";", language: typescript }
+    forbidden:
+      - { code: "import Stripe from \"stripe\";", language: typescript, note: "outside payments/" }
+  checks:
+    - evaluator: imports
+      package: ["stripe", "@stripe/*", "braintree", "@adyen/*", "@paypal/*", "paypalrestsdk", "adyen"]
+      only: ["**/payments/**", "**/billing/**"]
+      message: The payment SDK is used outside the payments module
+      remediation: Add the operation to the payments module and call that.
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.27"] }
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Webhook handlers that verify provider signatures outside the payments directory. Move them under it, or allow the file in the check.
+  rollout:
+    recommendedStage: observe

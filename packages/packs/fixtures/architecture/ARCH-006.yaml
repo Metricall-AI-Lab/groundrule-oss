@@ -1,0 +1,34 @@
+standard: ARCH-006
+cases:
+  - name: an app deep-imports another package's source
+    expect: violation
+    files:
+      package.json: |
+        { "name": "mono", "workspaces": ["packages/*", "apps/*"] }
+      packages/db/package.json: |
+        { "name": "@acme/db" }
+      packages/db/src/index.ts: |
+        export { pool } from "./internal/pool";
+      packages/db/src/internal/pool.ts: |
+        export const pool = 1;
+      apps/web/package.json: |
+        { "name": "web" }
+      apps/web/src/main.ts: |
+        import { pool } from "@acme/db/src/internal/pool";
+        export const p = pool;
+  - name: the app imports the package by name
+    expect: clean
+    files:
+      package.json: |
+        { "name": "mono", "workspaces": ["packages/*", "apps/*"] }
+      packages/db/package.json: |
+        { "name": "@acme/db" }
+      packages/db/src/index.ts: |
+        export { pool } from "./internal/pool";
+      packages/db/src/internal/pool.ts: |
+        export const pool = 1;
+      apps/web/package.json: |
+        { "name": "web" }
+      apps/web/src/main.ts: |
+        import { pool } from "@acme/db";
+        export const p = pool;

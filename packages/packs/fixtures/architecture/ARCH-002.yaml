@@ -1,0 +1,18 @@
+standard: ARCH-002
+cases:
+  - name: a use case imports a controller
+    expect: violation
+    files:
+      src/application/place-order.ts: |
+        import { OrderController } from "../api/orders";
+        export const placeOrder = () => OrderController;
+      src/api/orders.ts: |
+        export const OrderController = {};
+  - name: the controller calls the use case
+    expect: clean
+    files:
+      src/application/place-order.ts: |
+        export const placeOrder = (input: { id: string }) => input;
+      src/api/orders.ts: |
+        import { placeOrder } from "../application/place-order";
+        export const handler = () => placeOrder({ id: "1" });

@@ -39,6 +39,7 @@ export const COMPLIANCE_CONTROLS: Record<string, Record<string, string>> = {
     "8.24": "Use of cryptography",
     "8.25": "Secure development life cycle",
     "8.26": "Application security requirements",
+    "8.27": "Secure system architecture and engineering principles",
     "8.28": "Secure coding",
     "8.29": "Security testing in development and acceptance",
     "8.31": "Separation of development, test and production environments",

@@ -63,6 +63,7 @@ const KNOWN = new Set([
   "http-api",
   "testing",
   "agent-hygiene",
+  "architecture",
 ]);
 
 export * from "./controls.js";

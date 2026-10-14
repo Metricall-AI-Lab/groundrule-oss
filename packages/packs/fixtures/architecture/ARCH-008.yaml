@@ -1,0 +1,22 @@
+standard: ARCH-008
+cases:
+  - name: a job queries through the ORM directly
+    expect: violation
+    files:
+      src/jobs/nightly.py: |
+        import sqlalchemy
+        def run():
+            return sqlalchemy
+  - name: the job calls a repository; the data layer owns the ORM
+    expect: clean
+    files:
+      src/jobs/nightly.py: |
+        from src.data.orders import find_all
+        def run():
+            return find_all()
+      src/__init__.py: ""
+      src/data/__init__.py: ""
+      src/data/orders.py: |
+        import sqlalchemy
+        def find_all():
+            return sqlalchemy

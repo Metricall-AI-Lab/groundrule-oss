@@ -1,0 +1,25 @@
+standard: ARCH-003
+cases:
+  - name: a feature imports another feature's internals
+    expect: violation
+    files:
+      src/features/orders/service.ts: |
+        import { calc } from "../billing/internal/calc";
+        export const total = calc;
+      src/features/billing/internal/calc.ts: |
+        export const calc = 1;
+      src/features/billing/index.ts: |
+        export const billing = 1;
+  - name: features talk through the index, and within themselves freely
+    expect: clean
+    files:
+      src/features/orders/service.ts: |
+        import { billing } from "../billing";
+        import { helper } from "./helper";
+        export const total = billing + helper;
+      src/features/orders/helper.ts: |
+        export const helper = 1;
+      src/features/billing/index.ts: |
+        export { calc as billing } from "./internal/calc";
+      src/features/billing/internal/calc.ts: |
+        export const calc = 1;
