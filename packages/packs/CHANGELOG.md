@@ -1,5 +1,13 @@
 # @groundrule/packs
 
+## 0.13.0
+
+### Patch Changes
+
+- Updated dependencies [84ca988]
+  - @groundrule/spec@0.13.0
+  - @groundrule/core@0.13.0
+
 ## 0.12.0
 
 ### Minor Changes
