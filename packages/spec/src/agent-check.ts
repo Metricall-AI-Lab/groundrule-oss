@@ -2,7 +2,7 @@
 // counts per rule, sent from a repository connected to the platform. Never a path, a line, a
 // snippet, or anything the agent or the developer wrote.
 import { z } from "zod";
-import { ApiVersion, IsoDate, Severity, StandardId } from "./common.js";
+import { ApiVersion, Severity, StandardId } from "./common.js";
 
 const Count = z.number().int().nonnegative().max(1_000_000);
 
@@ -20,7 +20,7 @@ export const AgentCheck = z.strictObject({
   apiVersion: ApiVersion,
   kind: z.literal("AgentCheck"),
   metadata: z.strictObject({
-    generatedAt: IsoDate,
+    generatedAt: z.iso.datetime({ offset: true }),
     cliVersion: z.string().min(1).max(40),
   }),
   repository: z.strictObject({
