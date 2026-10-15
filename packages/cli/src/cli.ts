@@ -179,8 +179,9 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     .command("hook", { hidden: true })
     .description("run by a coding agent's hook when it finishes; tells it what to fix")
     .addArgument(new Argument("<agent>").choices(HOOK_AGENTS))
-    .action(async (agent: HookAgent) => {
-      code = await hook(ctx(), agent);
+    .option("--before-edit", "the rules for the file the agent is about to edit (Claude Code)")
+    .action(async (agent: HookAgent, o: { beforeEdit?: boolean }) => {
+      code = await hook(ctx(), agent, o.beforeEdit ? { beforeEdit: true } : {});
     });
 
   program

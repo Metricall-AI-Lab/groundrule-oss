@@ -258,6 +258,7 @@ describe("groundrule mcp", () => {
     expect(by(1).result.instructions).toContain("propose_rule");
     expect(by(2).result.tools.map((t: { name: string }) => t.name)).toEqual([
       "list_standards",
+      "rules_for",
       "check",
       "propose_rule",
     ]);

@@ -1,9 +1,14 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { inspectRepository } from "@groundrule/core";
 import { HOOK_AGENTS, type HookAgent } from "@groundrule/spec";
 import { checkForAgent, reportAgentCheck } from "../agent-report.js";
 import { EXIT, eprintln, type IO, println, style } from "../io.js";
+import { rulesFor, rulesForText } from "../rules-for.js";
+import { openWorkspace } from "../workspace.js";
 
 export { HOOK_AGENTS, type HookAgent };
 
@@ -37,6 +42,10 @@ const command = (agent: HookAgent) => `npx --yes '@groundrule/cli@>=0.4.0' hook 
 const OURS = /(^|[\s'"])(@groundrule\/cli|groundrule)(@[^\s'"]+)?['"]?\s+hook\s/;
 /** Seconds an agent waits for the check before giving up on it. */
 const TIMEOUT = 120;
+/** Seconds the before-edit hook may take; an edit is never held longer (ADR 0010). */
+const BEFORE_EDIT_TIMEOUT = 5;
+/** The tools whose file the before-edit hook explains. */
+const EDIT_TOOLS = "Edit|Write|MultiEdit";
 
 type Json = Record<string, unknown>;
 const isObject = (v: unknown): v is Json =>
@@ -83,17 +92,36 @@ export function withHook(config: Json, agent: HookAgent, install: boolean): Json
       hooks,
     );
   }
-  const groups = (Array.isArray(hooks.Stop) ? hooks.Stop : [])
-    .map((g) =>
-      isObject(g) && Array.isArray(g.hooks)
-        ? { ...g, hooks: g.hooks.filter((h) => !OURS.test(commandOf(h))) }
-        : g,
-    )
-    .filter((g) => !(isObject(g) && Array.isArray(g.hooks) && g.hooks.length === 0));
+  const withoutOurs = (event: string) =>
+    (Array.isArray(hooks[event]) ? (hooks[event] as unknown[]) : [])
+      .map((g) =>
+        isObject(g) && Array.isArray(g.hooks)
+          ? { ...g, hooks: g.hooks.filter((h) => !OURS.test(commandOf(h))) }
+          : g,
+      )
+      .filter((g) => !(isObject(g) && Array.isArray(g.hooks) && g.hooks.length === 0));
+  const stop = withoutOurs("Stop");
   if (install)
-    groups.push({ hooks: [{ type: "command", command: command(agent), timeout: TIMEOUT }] });
-  if (groups.length) hooks.Stop = groups;
+    stop.push({ hooks: [{ type: "command", command: command(agent), timeout: TIMEOUT }] });
+  if (stop.length) hooks.Stop = stop;
   else delete hooks.Stop;
+  // Claude Code also hears the rules for a file right before it edits it (ADR 0010).
+  if (agent === "claude-code") {
+    const before = withoutOurs("PreToolUse");
+    if (install)
+      before.push({
+        matcher: EDIT_TOOLS,
+        hooks: [
+          {
+            type: "command",
+            command: `${command(agent)} --before-edit`,
+            timeout: BEFORE_EDIT_TIMEOUT,
+          },
+        ],
+      });
+    if (before.length) hooks.PreToolUse = before;
+    else delete hooks.PreToolUse;
+  }
   return tidy(config, hooks);
 }
 
@@ -197,6 +225,69 @@ interface HookInput {
   /** Claude Code and Codex send session_id; Cursor sends conversation_id. */
   session_id?: unknown;
   conversation_id?: unknown;
+  /** PreToolUse: the tool about to run and its arguments. */
+  tool_name?: unknown;
+  tool_input?: unknown;
+}
+
+/** The files a session was already told about, so a file edited ten times is explained once. */
+async function alreadyTold(
+  session: string | undefined,
+  root: string,
+  file: string,
+): Promise<boolean> {
+  if (!session) return false;
+  const key = createHash("sha256").update(`${session}\0${root}`).digest("hex");
+  const path = join(tmpdir(), `groundrule-jit-${key}.json`);
+  try {
+    const seen: unknown = JSON.parse(await readFile(path, "utf8"));
+    const files = Array.isArray(seen) ? seen.filter((f) => typeof f === "string") : [];
+    if (files.includes(file)) return true;
+    await writeFile(path, JSON.stringify([...files, file].slice(-500)), { mode: 0o600 });
+  } catch {
+    try {
+      await writeFile(path, JSON.stringify([file]), { mode: 0o600 });
+    } catch {
+      // No temp dir to remember in: the rules are repeated, which is harmless.
+    }
+  }
+  return false;
+}
+
+/** `groundrule hook claude-code --before-edit`: the rules for the file about to be edited. */
+async function beforeEdit(io: IO, input: HookInput): Promise<number> {
+  const tool = isObject(input.tool_input) ? input.tool_input : {};
+  const given = typeof tool.file_path === "string" ? tool.file_path : "";
+  if (!given) return EXIT.ok;
+  const dir = typeof input.cwd === "string" ? resolve(io.cwd, input.cwd) : io.cwd;
+  const quiet: IO = { ...io, cwd: dir, stdout: io.stderr };
+  const workspace = await openWorkspace(quiet, { use: "agents" });
+  if (!workspace) return EXIT.ok;
+  const absolute = isAbsolute(given) ? given : resolve(dir, given);
+  // Real paths on both sides: a temp dir or a symlinked checkout must not look outside.
+  const real = async (p: string): Promise<string> => {
+    try {
+      return await realpath(p);
+    } catch {
+      return join(await real(dirname(p)), basename(p));
+    }
+  };
+  const file = relative(await real(workspace.root), await real(absolute)).replace(/\\/g, "/");
+  if (!file || file.startsWith("../")) return EXIT.ok;
+  const session = typeof input.session_id === "string" ? input.session_id : undefined;
+  if (await alreadyTold(session, workspace.root, file)) return EXIT.ok;
+  const repo = await inspectRepository(workspace);
+  const result = rulesFor(workspace.standards, repo, [file]);
+  if (!result.rules.length) return EXIT.ok;
+  io.stdout.write(
+    `${JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        additionalContext: rulesForText(result, [file]),
+      },
+    })}\n`,
+  );
+  return EXIT.ok;
 }
 
 async function readAll(stdin: AsyncIterable<string | Uint8Array>) {
@@ -212,7 +303,11 @@ async function readAll(stdin: AsyncIterable<string | Uint8Array>) {
  * tell the agent what to fix; otherwise say nothing. Never breaks the agent: problems are
  * reported on stderr and the agent finishes normally.
  */
-export async function hook(io: IO, agent: HookAgent): Promise<number> {
+export async function hook(
+  io: IO,
+  agent: HookAgent,
+  options: { beforeEdit?: boolean } = {},
+): Promise<number> {
   let input: HookInput = {};
   try {
     // An agent pipes the event in; a person running it in a terminal doesn't.
@@ -221,6 +316,14 @@ export async function hook(io: IO, agent: HookAgent): Promise<number> {
     if (isObject(parsed)) input = parsed;
   } catch {
     // An agent that sends no JSON still gets checked.
+  }
+  if (options.beforeEdit) {
+    try {
+      return await beforeEdit(io, input);
+    } catch {
+      // An edit is never held up by this hook.
+      return EXIT.ok;
+    }
   }
   // Ask once per turn, so an agent that can't fix something isn't kept going forever.
   if (
