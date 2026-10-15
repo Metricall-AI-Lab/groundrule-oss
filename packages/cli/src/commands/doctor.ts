@@ -47,6 +47,11 @@ export async function doctor(io: IO): Promise<number> {
     ok(
       `Connected to ${org.name} on ${workspace.platform.url}${target.repository ? ` as ${target.repository.name}` : ""}`,
     );
+    ok(
+      workspace.config.platform?.reports === "none"
+        ? "Hook and MCP checks report nothing to the workspace (platform.reports: none)"
+        : `Hook and MCP checks report counts per rule to ${org.name}, never paths or code (set platform.reports: none to stop)`,
+    );
   }
   const repo = await inspectRepository(workspace);
   const effective = effectiveStandards(workspace).filter((l) =>

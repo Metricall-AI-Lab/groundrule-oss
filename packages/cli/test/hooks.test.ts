@@ -40,12 +40,13 @@ async function repo(files: Record<string, string> = CONFIG) {
   return { root, write };
 }
 
-async function cli(cwd: string, argv: string[], stdin?: string) {
+async function cli(cwd: string, argv: string[], stdin?: string, extra: Partial<IO> = {}) {
   let stdout = "";
   let stderr = "";
   const io: IO = {
     cwd,
     env: { NO_COLOR: "1" },
+    ...extra,
     stdout: {
       write: (t: string) => {
         stdout += t;
@@ -320,5 +321,150 @@ describe("the MCP check tool", () => {
     expect(by(3).result.content[0].text).toContain("isn't a git ref");
     // Uncommitted work is included when comparing with a branch.
     expect(by(4).result.content[0].text).toContain("changes since main");
+  });
+});
+
+// ---------------------------------------------------------------- reports (RFC 0012)
+
+const URL_ = "https://app.groundrule.test";
+const TOKEN = `grt_${"a".repeat(43)}`;
+
+/** A workspace whose one rule flags access keys, and a log of what the CLI sent it. */
+function fakeWorkspace() {
+  const calls: { method: string; path: string; body?: unknown }[] = [];
+  const fetch = (async (input: string, init?: RequestInit) => {
+    const url = new URL(input);
+    const path = url.pathname.replace(/^\/api/, "");
+    calls.push({
+      method: init?.method ?? "GET",
+      path,
+      body: init?.body ? JSON.parse(String(init.body)) : undefined,
+    });
+    const json = (status: number, payload: unknown) =>
+      new Response(JSON.stringify(payload), { status });
+    if (path === "/v1/cli/rulebook")
+      return json(200, {
+        org: { slug: "acme", name: "Acme", codingAgents: [] },
+        target: { level: "organization", team: null, repository: { name: "acme/payments-api" } },
+        repositoryKnown: true,
+        generatedAt: new Date().toISOString(),
+        standards: [
+          {
+            stage: "enforce",
+            origin: "organization",
+            document: {
+              apiVersion: "groundrule.dev/v1alpha1",
+              kind: "Standard",
+              metadata: { id: "ORG-001", title: "No access keys in code", type: "prohibition" },
+              spec: {
+                severity: "blocker",
+                requirement: "Never commit access keys.",
+                checks: [{ evaluator: "regex", pattern: "AKIA[0-9A-Z]{16}", include: ["src/**"] }],
+              },
+            },
+          },
+        ],
+      });
+    if (path === "/v1/cli/agent-checks") return json(202, {});
+    return json(404, { error: { code: "not_found", message: "no route" } });
+  }) as unknown as typeof globalThis.fetch;
+  return { calls, fetch };
+}
+
+const connected = (reports?: string) => ({
+  ".groundrule/config.yaml": `apiVersion: groundrule.dev/v1alpha1\nkind: Config\nplatform:\n  org: acme\n${reports ? `  reports: ${reports}\n` : ""}`,
+  "src/app.ts": "export const x = 1;\n",
+});
+
+describe("agent check reports", () => {
+  const env = { NO_COLOR: "1", GROUNDRULE_URL: URL_, GROUNDRULE_TOKEN: TOKEN };
+  const reports = (calls: { path: string; body?: unknown }[]) =>
+    calls
+      .filter((c) => c.path === "/v1/cli/agent-checks")
+      .map((c) => c.body as Record<string, unknown>);
+
+  it("sends counts per rule from the hook, with a hashed session and no path or code", async () => {
+    const { root, write } = await repo(connected());
+    await write("src/keys.ts", LEAK);
+    const ws = fakeWorkspace();
+    const event = JSON.stringify({ cwd: root, stop_hook_active: false, session_id: "s-123" });
+    const r = await cli(root, ["hook", "claude-code"], event, { env, fetch: ws.fetch });
+    expect(JSON.parse(r.stdout).decision).toBe("block");
+    const [sent] = reports(ws.calls);
+    expect(sent).toMatchObject({
+      kind: "AgentCheck",
+      repository: { name: "acme/payments-api" },
+      agent: { name: "claude-code", via: "hook", session: expect.stringMatching(/^[0-9a-f]{64}$/) },
+      check: { mode: "changes", files: 1, standards: 1 },
+      findings: [{ id: "ORG-001", severity: "blocker", count: 1, blocking: true }],
+      stopped: true,
+    });
+    const text = JSON.stringify(sent);
+    expect(text).not.toContain("keys.ts");
+    expect(text).not.toContain("AKIA");
+    expect(text).not.toContain("s-123");
+    // A clean check reports too, so the workspace can tell quiet from absent.
+    await write("src/keys.ts", "export const fine = 1;\n");
+    const ws2 = fakeWorkspace();
+    await cli(root, ["hook", "codex"], JSON.stringify({ cwd: root }), { env, fetch: ws2.fetch });
+    expect(reports(ws2.calls)).toEqual([
+      expect.objectContaining({
+        agent: { name: "codex", via: "hook" },
+        findings: [],
+        stopped: false,
+      }),
+    ]);
+  });
+
+  it("sends nothing with platform.reports: none, or when the repository isn't connected", async () => {
+    const { root, write } = await repo(connected("none"));
+    await write("src/keys.ts", LEAK);
+    const ws = fakeWorkspace();
+    const r = await cli(root, ["hook", "claude-code"], JSON.stringify({ cwd: root }), {
+      env,
+      fetch: ws.fetch,
+    });
+    expect(JSON.parse(r.stdout).decision).toBe("block");
+    expect(reports(ws.calls)).toEqual([]);
+    const local = await repo();
+    await local.write("src/keys.ts", LEAK);
+    const off = fakeWorkspace();
+    await cli(local.root, ["hook", "claude-code"], JSON.stringify({ cwd: local.root }), {
+      env,
+      fetch: off.fetch,
+    });
+    expect(off.calls).toEqual([]);
+  });
+
+  it("reports from the MCP check tool with the client's name, after answering", async () => {
+    const { root, write } = await repo(connected());
+    await write("src/keys.ts", LEAK);
+    const ws = fakeWorkspace();
+    const lines = [
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "Cursor", version: "2.0" },
+        },
+      },
+      { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "check", arguments: {} } },
+    ];
+    const r = await cli(root, ["mcp"], `${lines.map((l) => JSON.stringify(l)).join("\n")}\n`, {
+      env,
+      fetch: ws.fetch,
+    });
+    expect(r.stdout).toContain("Groundrule check failed");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(reports(ws.calls)).toEqual([
+      expect.objectContaining({
+        agent: { name: "cursor", via: "mcp", client: { name: "Cursor", version: "2.0" } },
+        findings: [{ id: "ORG-001", severity: "blocker", count: 1, blocking: true }],
+        stopped: true,
+      }),
+    ]);
   });
 });

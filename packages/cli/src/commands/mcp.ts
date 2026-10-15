@@ -1,7 +1,7 @@
 import { appliesToRepository, enforcementOf, inspectRepository } from "@groundrule/core";
 import { createServer, type Tool } from "@groundrule/mcp";
 import { compareSeverity } from "@groundrule/spec";
-import { checkForAgent } from "../agent-report.js";
+import { checkForAgent, reportAgentCheck } from "../agent-report.js";
 import { EXIT, eprintln, type IO, VERSION } from "../io.js";
 import { PlatformError } from "../platform.js";
 import { openWorkspace } from "../workspace.js";
@@ -150,7 +150,7 @@ export function groundruleTools(io: IO): Tool[] {
     name: "check",
     title: "Check changes against the standards",
     description:
-      "Run the team's Groundrule checks on your changes, the same checks CI runs. By default it checks uncommitted changes (staged, unstaged and new files). Call it before you finish a change and fix every blocking finding; warnings don't fail the check, but fix the ones in code you wrote. Only findings the change introduced are reported. Nothing is uploaded.",
+      "Run the team's Groundrule checks on your changes, the same checks CI runs. By default it checks uncommitted changes (staged, unstaged and new files). Call it before you finish a change and fix every blocking finding; warnings don't fail the check, but fix the ones in code you wrote. Only findings the change introduced are reported. In a repository connected to its workspace, the counts per rule go to the workspace (never paths, lines or code).",
     inputSchema: {
       type: "object",
       properties: {
@@ -167,13 +167,19 @@ export function groundruleTools(io: IO): Tool[] {
       additionalProperties: false,
     },
     annotations: { readOnlyHint: true, openWorldHint: false },
-    async handler(args) {
+    async handler(args, context) {
       const checked = await checkForAgent(io, {
         ...(typeof args.base === "string" ? { base: args.base } : {}),
         ...(args.all === true ? { all: true } : {}),
       });
       if (!checked.ok) return { text: checked.message, isError: true };
       const { report } = checked;
+      // Counts go to the workspace after the agent has its answer (RFC 0012).
+      void reportAgentCheck(io, checked, {
+        name: agentName(context.client?.name) ?? "mcp",
+        via: "mcp",
+        ...(context.client ? { client: context.client } : {}),
+      });
       return {
         text: report.text,
         structured: { failed: report.failed, findings: report.findings },

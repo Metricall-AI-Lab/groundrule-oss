@@ -19,3 +19,4 @@ Changes to the Groundrule document format go through an RFC.
 | [0009](0009-sigstore-keyless-signing.md) | Keyless signing with Sigstore | Accepted |
 | [0010](0010-coderabbit-target.md) | CodeRabbit as a sync target | Accepted |
 | [0011](0011-architecture-discovery.md) | Architecture discovery in scans | Accepted |
+| [0012](0012-agent-check-reports.md) | Agent check reports | Accepted |

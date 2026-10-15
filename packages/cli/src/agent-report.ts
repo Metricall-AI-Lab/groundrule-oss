@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
 import { GitError, type LoadedStandard, type RunResult, runChecks } from "@groundrule/core";
 import { builtinEvaluators } from "@groundrule/evaluators";
-import type { IO } from "./io.js";
-import { openWorkspace } from "./workspace.js";
+import { type AgentCheck as AgentCheckDocument, API_VERSION } from "@groundrule/spec";
+import { type IO, VERSION } from "./io.js";
+import { detectRepository, platformUrl, tokenFor } from "./platform.js";
+import { type OpenedWorkspace, openWorkspace } from "./workspace.js";
 
 /** Findings listed for an agent at most; the rest are counted. */
 const MAX_LISTED = 30;
@@ -94,7 +97,9 @@ export function agentReport(result: RunResult, standards: readonly LoadedStandar
 /** A git ref an agent may pass as a base: no options, no spaces. */
 export const SAFE_REF = /^(?!-)[A-Za-z0-9._/@{}~^-]{1,200}$/;
 
-export type AgentCheck = { ok: true; report: AgentReport } | { ok: false; message: string };
+export type AgentCheck =
+  | { ok: true; report: AgentReport; result: RunResult; workspace: OpenedWorkspace }
+  | { ok: false; message: string };
 
 /**
  * Run the same check as `groundrule check` for a coding agent. Diagnostics go to `io.stderr`;
@@ -120,9 +125,109 @@ export async function checkForAgent(
       ...(options.all ? { mode: "all" as const } : { mode: "changes" as const }),
       ...(options.base && !options.all ? { base: options.base } : {}),
     });
-    return { ok: true, report: agentReport(result, workspace.standards) };
+    return { ok: true, report: agentReport(result, workspace.standards), result, workspace };
   } catch (error) {
     if (error instanceof GitError) return { ok: false, message: error.message };
     throw error;
+  }
+}
+
+/** Seconds a report may take; the agent is never kept waiting longer. */
+const REPORT_TIMEOUT_MS = 2_000;
+
+export interface AgentIdentity {
+  name: string;
+  via: "hook" | "mcp";
+  client?: { name: string; version?: string };
+  /** The agent's own session or conversation id; only its hash leaves the computer. */
+  sessionId?: string;
+}
+
+/** The report a check sends to the workspace (RFC 0012): counts per rule, nothing else. */
+export function agentCheckDocument(
+  checked: Extract<AgentCheck, { ok: true }>,
+  repository: string,
+  agent: AgentIdentity,
+): AgentCheckDocument {
+  const { result, report } = checked;
+  const counts = new Map<string, { severity: string; count: number; blocking: boolean }>();
+  for (const f of report.findings) {
+    const entry = counts.get(f.standardId) ?? { severity: f.severity, count: 0, blocking: false };
+    entry.count += 1;
+    entry.blocking = entry.blocking || f.blocking;
+    counts.set(f.standardId, entry);
+  }
+  return {
+    apiVersion: API_VERSION,
+    kind: "AgentCheck",
+    metadata: { generatedAt: new Date().toISOString(), cliVersion: VERSION },
+    repository: { name: repository },
+    agent: {
+      name: agent.name,
+      via: agent.via,
+      ...(agent.client ? { client: agent.client } : {}),
+      ...(agent.sessionId
+        ? { session: createHash("sha256").update(agent.sessionId).digest("hex") }
+        : {}),
+    },
+    check: {
+      mode: result.context.mode,
+      ...(result.context.base ? { base: result.context.base } : {}),
+      files: result.context.mode === "all" ? result.context.files : result.context.changedFiles,
+      standards: result.outcomes.length,
+      durationMs: result.context.durationMs,
+    },
+    findings: [...counts]
+      .map(([id, c]) => ({
+        id,
+        severity: c.severity as AgentCheckDocument["findings"][number]["severity"],
+        count: c.count,
+        blocking: c.blocking,
+      }))
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .slice(0, 200),
+    stopped: report.failed,
+  };
+}
+
+/**
+ * Send the report when the repository is connected and this computer is signed in to its
+ * workspace, unless the config says `platform.reports: none`. Fire and forget: a failure, a
+ * slow platform or an old platform without the endpoint changes nothing for the agent.
+ */
+export async function reportAgentCheck(
+  io: IO,
+  checked: AgentCheck,
+  agent: AgentIdentity,
+): Promise<boolean> {
+  if (!checked.ok) return false;
+  const { config, root } = checked.workspace;
+  const platform = config.platform;
+  if (!platform || platform.reports === "none") return false;
+  try {
+    const url = platformUrl(io, undefined, config);
+    const auth = await tokenFor(io, url, platform.org);
+    if (!auth) return false;
+    const repository =
+      checked.workspace.platform?.rulebook.target.repository?.name ??
+      platform.repository ??
+      (await detectRepository(root));
+    if (!repository) return false;
+    const document = agentCheckDocument(checked, repository, agent);
+    const doFetch = io.fetch ?? fetch;
+    await doFetch(`${url}/api/v1/cli/agent-checks`, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "user-agent": `groundrule-cli/${VERSION}`,
+        authorization: `Bearer ${auth.token}`,
+      },
+      body: JSON.stringify(document),
+      signal: AbortSignal.timeout(REPORT_TIMEOUT_MS),
+    });
+    return true;
+  } catch {
+    return false;
   }
 }

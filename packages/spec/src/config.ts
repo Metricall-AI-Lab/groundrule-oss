@@ -53,6 +53,12 @@ export const Platform = z.strictObject({
     .max(200)
     .optional()
     .describe("Name registered in Groundrule, e.g. acme/payments-api. Defaults to the git remote."),
+  reports: z
+    .enum(["agent-checks", "none"])
+    .optional()
+    .describe(
+      "What the stop hook and the MCP check tool report to the workspace: counts per rule (agent-checks, the default when signed in) or nothing (none). RFC 0012.",
+    ),
 });
 export type Platform = z.infer<typeof Platform>;
 

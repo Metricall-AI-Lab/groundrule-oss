@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { HOOK_AGENTS, type HookAgent } from "@groundrule/spec";
-import { checkForAgent } from "../agent-report.js";
+import { checkForAgent, reportAgentCheck } from "../agent-report.js";
 import { EXIT, eprintln, type IO, println, style } from "../io.js";
 
 export { HOOK_AGENTS, type HookAgent };
@@ -194,6 +194,9 @@ interface HookInput {
   stop_hook_active?: unknown;
   status?: unknown;
   workspace_roots?: unknown;
+  /** Claude Code and Codex send session_id; Cursor sends conversation_id. */
+  session_id?: unknown;
+  conversation_id?: unknown;
 }
 
 async function readAll(stdin: AsyncIterable<string | Uint8Array>) {
@@ -236,10 +239,18 @@ export async function hook(io: IO, agent: HookAgent): Promise<number> {
     eprintln(io, `Groundrule: ${checked.message}`);
     return EXIT.ok;
   }
-  if (!checked.report.failed) return EXIT.ok;
-  const reason = checked.report.text.slice(0, 9_000);
-  io.stdout.write(
-    `${JSON.stringify(agent === "cursor" ? { followup_message: reason } : { decision: "block", reason })}\n`,
-  );
+  if (checked.report.failed) {
+    const reason = checked.report.text.slice(0, 9_000);
+    io.stdout.write(
+      `${JSON.stringify(agent === "cursor" ? { followup_message: reason } : { decision: "block", reason })}\n`,
+    );
+  }
+  // The agent has its answer; the workspace gets the counts (RFC 0012), never a path.
+  const session = [input.session_id, input.conversation_id].find((v) => typeof v === "string");
+  await reportAgentCheck(quiet, checked, {
+    name: agent,
+    via: "hook",
+    ...(typeof session === "string" && session ? { sessionId: session } : {}),
+  });
   return EXIT.ok;
 }

@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import {
+  AgentCheck,
   AgentSync,
   CheckRun,
   DOCUMENT_SCHEMAS,
@@ -24,6 +25,7 @@ const targets: Record<string, z.ZodType> = {
   ScanReport,
   CheckRun,
   AgentSync,
+  AgentCheck,
 };
 
 for (const [name, schema] of Object.entries(targets)) {
