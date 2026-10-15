@@ -91,6 +91,18 @@ describe("withHook", () => {
             ],
           },
         ],
+        PreToolUse: [
+          {
+            matcher: "Edit|Write|MultiEdit",
+            hooks: [
+              {
+                type: "command",
+                command: "npx --yes '@groundrule/cli@>=0.17.0' hook claude-code --before-edit",
+                timeout: 5,
+              },
+            ],
+          },
+        ],
       },
     });
     expect(withHook(once, "claude-code", true)).toEqual(once);
@@ -466,5 +478,134 @@ describe("agent check reports", () => {
         stopped: true,
       }),
     ]);
+  });
+});
+
+// ---------------------------------------------------------------- just-in-time rules (ADR 0010)
+
+const SCOPED = {
+  ...CONFIG,
+  ".groundrule/standards/pay.yaml": `apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: PAY-001
+  title: Amounts in minor units
+  type: requirement
+spec:
+  severity: blocker
+  requirement: Payment code keeps amounts as integers in minor units; never floats.
+  remediation: Use the Money type from src/payments/money.ts.
+  scope:
+    paths: ["src/payments/**"]
+`,
+  "src/payments/money.ts": "export type Money = { cents: number };\n",
+};
+
+describe("just-in-time rules", () => {
+  it("answers rules_for with the rules that name the files, and counts the rest", async () => {
+    const { root } = await repo(SCOPED);
+    const lines = [
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t" } },
+      },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "rules_for",
+          arguments: { files: ["src/payments/refund.ts", "src/app.ts"] },
+        },
+      },
+      {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "rules_for", arguments: { files: ["src/app.ts"] } },
+      },
+    ];
+    const r = await cli(root, ["mcp"], `${lines.map((l) => JSON.stringify(l)).join("\n")}\n`);
+    const replies = r.stdout
+      .trim()
+      .split("\n")
+      .map(
+        (l) =>
+          JSON.parse(l) as {
+            id: number;
+            result: {
+              content: { text: string }[];
+              structuredContent?: { rules: unknown[]; unscoped: number };
+            };
+          },
+      );
+    const two = replies.find((x) => x.id === 2)?.result;
+    expect(two?.content[0]?.text).toContain(
+      "- PAY-001 (blocker) Amounts in minor units: Payment code keeps amounts as integers in minor units; never floats. Fix: Use the Money type from src/payments/money.ts. [src/payments/refund.ts]",
+    );
+    expect(two?.content[0]?.text).toMatch(/\d+ repository-wide rules are in the agent file/);
+    expect(two?.structuredContent?.rules).toHaveLength(1);
+    expect(two?.structuredContent?.unscoped).toBeGreaterThan(5);
+    const three = replies.find((x) => x.id === 3)?.result;
+    expect(three?.content[0]?.text).toMatch(/^No rule names src\/app\.ts specifically\./);
+  });
+
+  it("tells Claude Code the rules for a file before it edits it, once per session", async () => {
+    const { root } = await repo(SCOPED);
+    const session = `jit-${Date.now()}`;
+    const event = (file: string, s = session) =>
+      JSON.stringify({
+        cwd: root,
+        session_id: s,
+        tool_name: "Edit",
+        tool_input: { file_path: join(root, file) },
+      });
+    const first = await cli(
+      root,
+      ["hook", "claude-code", "--before-edit"],
+      event("src/payments/refund.ts"),
+    );
+    expect(first.code).toBe(0);
+    const out = JSON.parse(first.stdout) as {
+      hookSpecificOutput: { hookEventName: string; additionalContext: string };
+    };
+    expect(out.hookSpecificOutput.hookEventName).toBe("PreToolUse");
+    expect(out.hookSpecificOutput.additionalContext).toContain(
+      "Groundrule rules for src/payments/refund.ts",
+    );
+    expect(out.hookSpecificOutput.additionalContext).toContain("PAY-001 (blocker)");
+    // The same file in the same session: nothing more to say.
+    expect(
+      (await cli(root, ["hook", "claude-code", "--before-edit"], event("src/payments/refund.ts")))
+        .stdout,
+    ).toBe("");
+    // Another session hears it again; a file no rule names gets nothing; a relative path works.
+    expect(
+      (
+        await cli(
+          root,
+          ["hook", "claude-code", "--before-edit"],
+          event("src/payments/refund.ts", `${session}-b`),
+        )
+      ).stdout,
+    ).toContain("PAY-001");
+    expect(
+      (await cli(root, ["hook", "claude-code", "--before-edit"], event("src/app.ts"))).stdout,
+    ).toBe("");
+    const relativeEvent = JSON.stringify({
+      cwd: root,
+      tool_name: "Write",
+      tool_input: { file_path: "src/payments/new.ts" },
+    });
+    expect(
+      (await cli(root, ["hook", "claude-code", "--before-edit"], relativeEvent)).stdout,
+    ).toContain("PAY-001");
+    // Garbage never holds up an edit.
+    expect(await cli(root, ["hook", "claude-code", "--before-edit"], "not json")).toMatchObject({
+      code: 0,
+      stdout: "",
+    });
   });
 });

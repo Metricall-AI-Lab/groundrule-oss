@@ -99,9 +99,10 @@ What each command takes from the platform depends on the rule's rollout stage: `
 
 ### Coding agents (MCP)
 
-`groundrule mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server (stdio) with three tools:
+`groundrule mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server (stdio) with four tools:
 
 - `list_standards`: the rules in effect in the repository, so the agent follows them. Works offline.
+- `rules_for`: the rules that name the files the agent is about to change (by path or language), blocking first, with how to comply ([ADR 0010](docs/adr/0010-just-in-time-rules.md)). The server's instructions tell the agent to call it before editing a file; rules that apply everywhere stay in the agent file. Works offline.
 - `check`: the same check CI runs, on the agent's uncommitted changes (or since a `base` ref, or `all` files). It lists only what the change introduced, with where and how to fix it, so the agent fixes it before it finishes. Works offline. In a repository connected to its workspace, the counts per rule are reported to the workspace (see below).
 - `propose_rule`: when you correct your agent and say (or agree) that it should apply to everyone, it proposes the rule to your organization's review inbox, with where it came up. Nothing changes until a reviewer accepts it. Needs a connected repository and `groundrule login`.
 
@@ -127,7 +128,7 @@ npx @groundrule/cli hooks        # Claude Code, plus Codex, Cursor and Copilot i
 
 | Agent | File | When the check fails |
 |---|---|---|
-| Claude Code | `.claude/settings.json` | The agent is stopped from finishing and told what to fix |
+| Claude Code | `.claude/settings.json` | The agent is stopped from finishing and told what to fix. A second hook tells it the rules for a file right before it edits it, once per file per session ([ADR 0010](docs/adr/0010-just-in-time-rules.md)) |
 | Codex | `.codex/hooks.json` | The same; each developer trusts the hook once with `/hooks` |
 | Cursor | `.cursor/hooks.json` | What to fix is sent as a follow-up message |
 | Copilot (CLI and cloud agent) | `.github/hooks/groundrule.json` | The agent takes another turn with what to fix |

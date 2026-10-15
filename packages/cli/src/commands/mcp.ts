@@ -4,10 +4,11 @@ import { compareSeverity } from "@groundrule/spec";
 import { checkForAgent, reportAgentCheck } from "../agent-report.js";
 import { EXIT, eprintln, type IO, VERSION } from "../io.js";
 import { PlatformError } from "../platform.js";
+import { rulesFor, rulesForText } from "../rules-for.js";
 import { openWorkspace } from "../workspace.js";
 import { Proposal, sendProposal } from "./propose.js";
 
-const INSTRUCTIONS = `Groundrule holds this team's engineering standards. Call list_standards to see the rules in effect before writing or reviewing code, and follow them. Before you finish a change, call check and fix every blocking finding it reports. When the developer corrects you about how code in this codebase should be written and says, or confirms when you ask, that it should apply to everyone from now on, call propose_rule so the team can adopt it. Never propose one-off preferences, rules that already exist, or anything the developer didn't ask for or agree to.`;
+const INSTRUCTIONS = `Groundrule holds this team's engineering standards. Call list_standards to see the rules in effect before writing or reviewing code, and follow them. Before you edit a file, call rules_for with its path: it returns the rules that name that file, which the full list buries. Before you finish a change, call check and fix every blocking finding it reports. When the developer corrects you about how code in this codebase should be written and says, or confirms when you ask, that it should apply to everyone from now on, call propose_rule so the team can adopt it. Never propose one-off preferences, rules that already exist, or anything the developer didn't ask for or agree to.`;
 
 /** A short, stable name for the agent, from what its MCP client calls itself. */
 const agentName = (name: string | undefined) =>
@@ -86,6 +87,45 @@ export function groundruleTools(io: IO): Tool[] {
           ? `No standards match "${query}".`
           : "No standards are in effect in this repository.";
       return { text, structured: { standards: rows } };
+    },
+  };
+
+  const rulesForTool: Tool = {
+    name: "rules_for",
+    title: "Rules for the files you're about to change",
+    description:
+      "The engineering standards that name the given files (by path or language), blocking first, each with what it requires and how to comply. Call it with the repository-relative paths you are about to create or edit, before editing. Rules that apply everywhere are not repeated here; they are in the agent file.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        files: {
+          type: "array",
+          items: { type: "string" },
+          minItems: 1,
+          maxItems: 50,
+          description: "Repository-relative paths, e.g. src/payments/refund.ts.",
+        },
+      },
+      required: ["files"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async handler(args) {
+      const files = Array.isArray(args.files)
+        ? args.files
+            .filter((f): f is string => typeof f === "string" && f.trim() !== "")
+            .slice(0, 50)
+        : [];
+      if (!files.length) return { text: "Give at least one file path.", isError: true };
+      const workspace = await openWorkspace(io, { use: "agents" });
+      if (!workspace)
+        return {
+          text: "This repository has no Groundrule configuration, or it couldn't be loaded. Run `groundrule doctor`.",
+          isError: true,
+        };
+      const repo = await inspectRepository(workspace);
+      const result = rulesFor(workspace.standards, repo, files);
+      return { text: rulesForText(result, files), structured: { ...result } };
     },
   };
 
@@ -187,7 +227,7 @@ export function groundruleTools(io: IO): Tool[] {
     },
   };
 
-  return [listStandards, checkTool, proposeRule];
+  return [listStandards, rulesForTool, checkTool, proposeRule];
 }
 
 /** `groundrule mcp`: serve Groundrule to a coding agent over stdio (Model Context Protocol). */
