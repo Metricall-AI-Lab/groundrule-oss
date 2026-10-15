@@ -146,7 +146,7 @@ Existing settings and hooks are kept. The hook asks once per turn, so an agent t
 | `dependencies` | deterministic | Forbidden packages (npm, Maven, Gradle, pip, Go, Cargo) |
 | `change-set` | deterministic | Rules about a change ("entity changes need a migration") |
 | `semgrep` | static analysis | Semgrep rules you already have |
-| `llm` | AI | Semantic review (coming in 0.2, bring your own key) |
+| `llm` | AI | A question about the change, answered by Groundrule's hosted checks ([RFC 0013](rfcs/0013-ai-checks.md)); advisory, never fails a change. Reported as not run locally and in CI |
 
 ## Packs
 

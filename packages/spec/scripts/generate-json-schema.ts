@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   AgentCheck,
   AgentSync,
+  AiReviewRequests,
   CheckRun,
   DOCUMENT_SCHEMAS,
   Finding,
@@ -26,6 +27,7 @@ const targets: Record<string, z.ZodType> = {
   CheckRun,
   AgentSync,
   AgentCheck,
+  AiReviewRequests,
 };
 
 for (const [name, schema] of Object.entries(targets)) {

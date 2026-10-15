@@ -1,9 +1,12 @@
-import { appendFile, writeFile } from "node:fs/promises";
-import { basename, resolve } from "node:path";
+import { appendFile, readFile, writeFile } from "node:fs/promises";
+import { basename, join, resolve } from "node:path";
 import {
   buildCheckRun,
+  collectAiReviewRequests,
   GitError,
+  getChanges,
   gitAuthorship,
+  inspectRepository,
   parsePrivateKey,
   runChecks,
   SigningError,
@@ -56,6 +59,8 @@ export interface CheckOptions {
   commit?: string;
   /** Also write the result as a CheckRun (RFC 0005) to this file. */
   writeCheckRun?: string;
+  /** Hosted checks: write the AI review requests (RFC 0013) to this file. */
+  aiRequests?: string;
   /** Record which coding agents the commits declare (RFC 0007; default true). */
   authorship?: boolean;
   /** Sign the result (RFC 0008). By default, when GROUNDRULE_SIGNING_KEY is set. */
@@ -263,6 +268,20 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
       return EXIT.usage;
     }
     await writeFile(resolve(io.cwd, options.writeCheckRun), `${JSON.stringify(out)}\n`);
+  }
+  if (options.aiRequests) {
+    // The changed lines the model may see, for the rules with an llm check (RFC 0013).
+    const changes = options.all
+      ? undefined
+      : (hosted.changes ?? (await getChanges(workspace.root, options.base).catch(() => undefined)));
+    const requests = await collectAiReviewRequests({
+      standards: workspace.standards,
+      repo: await inspectRepository(workspace),
+      changes,
+      readFile: (path) => readFile(join(workspace.root, path), "utf8"),
+      cliVersion: VERSION,
+    });
+    await writeFile(resolve(io.cwd, options.aiRequests), `${JSON.stringify(requests)}\n`);
   }
   if (!upload) return code;
 

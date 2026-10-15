@@ -1,7 +1,7 @@
 // Milestone 1 gate (Build Plan §4.5): the four deliberately different foundation
 // standards run end to end through one pipeline, with no special cases.
 //   DEP-008  deterministic   (dependencies)
-//   AUTH-017 static + AI     (semgrep + llm; llm not evaluable until 0.2)
+//   AUTH-017 static + AI     (semgrep + llm; llm runs on hosted checks only, RFC 0013)
 //   PROC-004 process         (change-set)
 //   AI-003   agent-only      (no checks)
 import { execFileSync } from "node:child_process";
@@ -164,7 +164,7 @@ describe("foundation gate", () => {
     });
   });
 
-  it("AUTH-017 runs Semgrep with the rule file next to the standard, and says the AI check is coming", async () => {
+  it("AUTH-017 runs Semgrep with the rule file next to the standard, and says the AI check runs on hosted checks", async () => {
     const result = await run("changes");
     const config = semgrepArgs[semgrepArgs.indexOf("--config") + 1];
     expect(config?.endsWith(".groundrule/rules/auth-017.yaml")).toBe(true);
@@ -181,7 +181,7 @@ describe("foundation gate", () => {
       location: { startLine: 10 },
     });
     expect(result.outcomes.find((o) => o.id === "AUTH-017")?.reason).toMatch(
-      /AI checks arrive in Groundrule 0.2/,
+      /AI checks run on Groundrule's hosted checks; not here/,
     );
   });
 

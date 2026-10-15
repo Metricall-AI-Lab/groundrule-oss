@@ -84,7 +84,7 @@ export function fixture(): ReportInput {
         title: "Authorization",
         severity: "blocker",
         status: "failed",
-        reason: "AI checks arrive in Groundrule 0.2 (bring your own API key).",
+        reason: "AI checks run on Groundrule's hosted checks; not here.",
         violations: 1,
         concerns: 0,
       },

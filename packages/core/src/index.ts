@@ -1,3 +1,4 @@
+export * from "./ai-review.js";
 export * from "./check-run.js";
 export * from "./compliance.js";
 export * from "./diagnostics.js";
