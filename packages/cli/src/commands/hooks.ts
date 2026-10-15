@@ -38,6 +38,9 @@ const NAME: Record<HookAgent, string> = {
 
 // A bare package name lets npx reuse an older cached CLI without the hook command.
 const command = (agent: HookAgent) => `npx --yes '@groundrule/cli@>=0.4.0' hook ${agent}`;
+/** The before-edit hook needs a CLI that knows the option (ADR 0010). */
+const beforeEditCommand = (agent: HookAgent) =>
+  `npx --yes '@groundrule/cli@>=0.17.0' hook ${agent} --before-edit`;
 /** Recognizes a hook this command installed, whatever version wrote it. */
 const OURS = /(^|[\s'"])(@groundrule\/cli|groundrule)(@[^\s'"]+)?['"]?\s+hook\s/;
 /** Seconds an agent waits for the check before giving up on it. */
@@ -114,7 +117,7 @@ export function withHook(config: Json, agent: HookAgent, install: boolean): Json
         hooks: [
           {
             type: "command",
-            command: `${command(agent)} --before-edit`,
+            command: beforeEditCommand(agent),
             timeout: BEFORE_EDIT_TIMEOUT,
           },
         ],

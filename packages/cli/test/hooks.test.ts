@@ -97,7 +97,7 @@ describe("withHook", () => {
             hooks: [
               {
                 type: "command",
-                command: "npx --yes '@groundrule/cli@>=0.4.0' hook claude-code --before-edit",
+                command: "npx --yes '@groundrule/cli@>=0.17.0' hook claude-code --before-edit",
                 timeout: 5,
               },
             ],
