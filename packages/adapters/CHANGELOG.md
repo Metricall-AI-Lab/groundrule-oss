@@ -1,5 +1,12 @@
 # @groundrule/adapters
 
+## 0.17.0
+
+### Patch Changes
+
+- @groundrule/core@0.17.0
+  - @groundrule/spec@0.17.0
+
 ## 0.16.0
 
 ### Patch Changes
