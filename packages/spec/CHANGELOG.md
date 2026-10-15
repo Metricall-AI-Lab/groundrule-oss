@@ -1,5 +1,15 @@
 # @groundrule/spec
 
+## 0.16.0
+
+### Minor Changes
+
+- 42c9562: Agent check reports (RFC 0012): in a repository connected to its workspace, the stop hook and the MCP `check` tool send the counts per rule they found (agent, mode, files, rules, whether the agent was stopped) to `POST /v1/cli/agent-checks`, after the agent has its answer and never slowing it down. Never a path, a line or code. `platform.reports: none` turns it off; `groundrule doctor` says which applies. New document kind `AgentCheck`.
+
+### Patch Changes
+
+- 1d1a810: `AgentCheck.metadata.generatedAt` is a timestamp, as the CLI sends it, not a calendar date.
+
 ## 0.15.0
 
 ### Minor Changes
