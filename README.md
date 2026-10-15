@@ -102,7 +102,7 @@ What each command takes from the platform depends on the rule's rollout stage: `
 `groundrule mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server (stdio) with three tools:
 
 - `list_standards`: the rules in effect in the repository, so the agent follows them. Works offline.
-- `check`: the same check CI runs, on the agent's uncommitted changes (or since a `base` ref, or `all` files). It lists only what the change introduced, with where and how to fix it, so the agent fixes it before it finishes. Works offline; nothing is uploaded.
+- `check`: the same check CI runs, on the agent's uncommitted changes (or since a `base` ref, or `all` files). It lists only what the change introduced, with where and how to fix it, so the agent fixes it before it finishes. Works offline. In a repository connected to its workspace, the counts per rule are reported to the workspace (see below).
 - `propose_rule`: when you correct your agent and say (or agree) that it should apply to everyone, it proposes the rule to your organization's review inbox, with where it came up. Nothing changes until a reviewer accepts it. Needs a connected repository and `groundrule login`.
 
 Add it to your agent once per repository or user:
@@ -133,6 +133,8 @@ npx @groundrule/cli hooks        # Claude Code, plus Codex, Cursor and Copilot i
 | Copilot (CLI and cloud agent) | `.github/hooks/groundrule.json` | The agent takes another turn with what to fix |
 
 Existing settings and hooks are kept. The hook asks once per turn, so an agent that can't fix something isn't kept going forever, and it never fails the agent: without a Groundrule configuration it does nothing. Commit the files so every developer's agent runs it; `--remove` takes the hooks out again.
+
+**What the workspace learns.** In a repository with `platform:` in its config, when this computer is signed in, the hook and the MCP `check` tool send the workspace a report after the agent has its answer ([RFC 0012](rfcs/0012-agent-check-reports.md)): the agent, which rules found something and how many times, how many files and rules were checked, and whether the agent was stopped. Never a path, a line, a snippet, or anything the agent or you wrote. It is sent with a two-second timeout and every failure is ignored, so it can't slow the agent or change the check. The workspace uses it to show how much is caught before a commit exists. `platform.reports: none` turns it off; `groundrule doctor` says which applies. Offline repositories send nothing.
 
 ## Checks
 

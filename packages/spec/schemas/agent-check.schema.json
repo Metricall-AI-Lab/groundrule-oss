@@ -1,0 +1,197 @@
+{
+  "$id": "https://groundrule.dev/schemas/v1alpha1/agent-check.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "groundrule.dev/v1alpha1",
+      "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+    },
+    "kind": {
+      "type": "string",
+      "const": "AgentCheck"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "generatedAt": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "description": "Calendar date, YYYY-MM-DD."
+        },
+        "cliVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      },
+      "required": [
+        "generatedAt",
+        "cliVersion"
+      ],
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "As registered in Groundrule, e.g. acme/payments-api."
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "agent": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "The agent whose hook ran, or the MCP client's name, lower-cased."
+        },
+        "via": {
+          "type": "string",
+          "enum": [
+            "hook",
+            "mcp"
+          ]
+        },
+        "client": {
+          "description": "MCP clients only, as they introduce themselves.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "version": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        "session": {
+          "description": "sha256 of the agent's session id, so one turn's repeats count once.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "name",
+        "via"
+      ],
+      "additionalProperties": false
+    },
+    "check": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "changes",
+            "all"
+          ]
+        },
+        "base": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000,
+          "description": "Files checked."
+        },
+        "standards": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000,
+          "description": "Rules evaluated."
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "mode",
+        "files",
+        "standards",
+        "durationMs"
+      ],
+      "additionalProperties": false
+    },
+    "findings": {
+      "maxItems": 200,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+            "description": "Unique, stable standard identifier, e.g. AUTH-017."
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "advisory",
+              "warning",
+              "blocker"
+            ],
+            "description": "info: context only. advisory: non-blocking recommendation. warning: visible, needs acknowledgment. blocker: fails the check."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000,
+            "description": "Findings of this rule the agent was told about."
+          },
+          "blocking": {
+            "type": "boolean",
+            "description": "Counted toward the agent being stopped."
+          }
+        },
+        "required": [
+          "id",
+          "severity",
+          "count",
+          "blocking"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Rules that found something."
+    },
+    "stopped": {
+      "type": "boolean",
+      "description": "The hook blocked the agent, or the tool reported a failure."
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "repository",
+    "agent",
+    "check",
+    "findings",
+    "stopped"
+  ],
+  "additionalProperties": false
+}

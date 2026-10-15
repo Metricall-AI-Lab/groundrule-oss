@@ -760,6 +760,14 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 200
+            },
+            "reports": {
+              "description": "What the stop hook and the MCP check tool report to the workspace: counts per rule (agent-checks, the default when signed in) or nothing (none). RFC 0012.",
+              "type": "string",
+              "enum": [
+                "agent-checks",
+                "none"
+              ]
             }
           },
           "required": [
