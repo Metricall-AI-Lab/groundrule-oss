@@ -1,5 +1,18 @@
 # @groundrule/cli
 
+## 0.18.1
+
+### Patch Changes
+
+- d6a6565: `groundrule whoami` no longer fails outright when one saved login points at a host that doesn't answer (an old local test server, say). It lists that login as unreachable with the `logout --url` command that removes it, and still shows the others. Naming the host with `--url` or `GROUNDRULE_URL` keeps the error.
+- @groundrule/adapters@0.18.1
+  - @groundrule/core@0.18.1
+  - @groundrule/evaluators@0.18.1
+  - @groundrule/mcp@0.18.1
+  - @groundrule/packs@0.18.1
+  - @groundrule/reporters@0.18.1
+  - @groundrule/spec@0.18.1
+
 ## 0.18.0
 
 ### Minor Changes
