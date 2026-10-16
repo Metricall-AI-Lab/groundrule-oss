@@ -1,5 +1,11 @@
 # @groundrule/spec
 
+## 0.18.0
+
+### Minor Changes
+
+- 89ee403: AI checks (RFC 0013): the `llm` evaluator's options are now `question`, `include`, `exclude` and `minConfidence`, answered by Groundrule's hosted checks over the changed lines of the files the rule names; locally and in CI the rule is reported as not run. `groundrule check --ai-requests <file>` writes the review requests (`AiReviewRequests`: hunks with context, secrets redacted, within per-run limits) for the hosted worker.
+
 ## 0.17.0
 
 No changes in this release.
