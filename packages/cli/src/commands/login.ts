@@ -202,13 +202,27 @@ export async function whoami(io: IO, options: { url?: string; json?: boolean }):
         >(io, t.url, "/v1/cli/whoami", { token: t.token });
         rows.push({ ok: true as const, url: t.url, source: t.label, ...who });
       } catch (error) {
-        if (!(error instanceof PlatformError) || error.status !== 401) throw error;
-        rows.push({
-          ok: false as const,
-          url: t.url,
-          source: t.label,
-          prefix: t.token.slice(0, 12),
-        });
+        if (!(error instanceof PlatformError)) throw error;
+        // 401: the token was revoked or expired. No status: the host didn't answer. When
+        // showing every saved login, one stale host (an old local test server, say) must
+        // not hide the others; when the host was named, the error stands.
+        if (error.status === 401) {
+          rows.push({
+            ok: false as const,
+            reason: "invalid" as const,
+            url: t.url,
+            source: t.label,
+            prefix: t.token.slice(0, 12),
+          });
+        } else if (error.status === undefined && anywhere) {
+          rows.push({
+            ok: false as const,
+            reason: "unreachable" as const,
+            url: t.url,
+            source: t.label,
+            prefix: t.token.slice(0, 12),
+          });
+        } else throw error;
       }
     }
     if (options.json) {
@@ -232,7 +246,9 @@ export async function whoami(io: IO, options: { url?: string; json?: boolean }):
       } else {
         println(
           io,
-          ` ${s.red("✕")} ${r.prefix}… is no longer valid ${s.dim(`(${r.source})`)}. Run \`groundrule login\`.`,
+          r.reason === "unreachable"
+            ? ` ${s.red("✕")} ${r.url} didn't answer ${s.dim(`(${r.source}, ${r.prefix}…)`)}. Remove it with \`groundrule logout --url ${r.url}\`.`
+            : ` ${s.red("✕")} ${r.prefix}… is no longer valid ${s.dim(`(${r.source})`)}. Run \`groundrule login\`.`,
         );
       }
     }

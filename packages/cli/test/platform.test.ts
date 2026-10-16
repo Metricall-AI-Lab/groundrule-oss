@@ -302,6 +302,48 @@ describe("whoami and logout", () => {
     expect(none.code).toBe(1);
     expect(none.stderr).toContain("Not signed in");
   });
+
+  it("lists a saved login whose host no longer answers without hiding the others", async () => {
+    const fake = fakePlatform();
+    const home = await temp("groundrule-home-");
+    const outside = await temp("groundrule-elsewhere-");
+    const noEnv = { GROUNDRULE_URL: "" };
+    const dead = "http://localhost:5180";
+    const live = fake.fetch;
+    fake.fetch = (async (input: string, init?: RequestInit) =>
+      input.startsWith(dead)
+        ? Promise.reject(new TypeError("fetch failed"))
+        : live(input, init)) as typeof fetch;
+    await cli(outside, fake, home, ["login", "--url", URL_], noEnv);
+    const file = join(home, "credentials.json");
+    const saved = JSON.parse(await readFile(file, "utf8"));
+    saved.hosts[dead] = {
+      orgs: { old: { ...saved.hosts[URL_].orgs.acme, org: "old", token: "grt_old_000000000000" } },
+    };
+    await writeFile(file, JSON.stringify(saved));
+
+    const who = await cli(outside, fake, home, ["whoami"], noEnv);
+    expect(who.code).toBe(1);
+    expect(who.stdout).toContain("Acme (acme) as ada@acme.test");
+    expect(who.stdout).toContain(`${dead} didn't answer`);
+    expect(who.stdout).toContain(`groundrule logout --url ${dead}`);
+    const json = JSON.parse((await cli(outside, fake, home, ["whoami", "--json"], noEnv)).stdout);
+    expect(json.logins).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ok: true, url: URL_ }),
+        expect.objectContaining({ ok: false, reason: "unreachable", url: dead }),
+      ]),
+    );
+
+    // Named explicitly, the unreachable host is still an error.
+    const named = await cli(outside, fake, home, ["whoami", "--url", dead], noEnv);
+    expect(named.code).not.toBe(0);
+    expect(named.stderr).toContain("Couldn't reach Groundrule");
+
+    const out = await cli(outside, fake, home, ["logout", "--url", dead], noEnv);
+    expect(out.stdout).toContain("Signed out of");
+    expect((await cli(outside, fake, home, ["whoami"], noEnv)).code).toBe(0);
+  });
 });
 
 describe("sync and check with platform:", () => {
