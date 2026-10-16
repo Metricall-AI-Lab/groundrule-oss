@@ -32,7 +32,9 @@ describe("terminal", () => {
   });
 
   it("explains what was not evaluated and ends with a verdict", () => {
-    expect(text).toContain("– AUTH-017 partly evaluated: AI checks arrive in Groundrule 0.2");
+    expect(text).toContain(
+      "– AUTH-017 partly evaluated: AI checks run on Groundrule's hosted checks; not here.",
+    );
     expect(text).toContain("Failed  ✓ 1 passed  ✕ 1 failed  ⚠ 1 warning  ◇ 1 guidance  · 0.4s");
     expect(text).toContain("groundrule check · 4 standards · 3 files changed vs origin/main");
   });

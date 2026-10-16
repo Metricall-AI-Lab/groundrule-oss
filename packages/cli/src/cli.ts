@@ -279,6 +279,9 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     .addOption(
       new Option("--write-check-run <file>", "also write the result as a CheckRun").hideHelp(),
     )
+    .addOption(
+      new Option("--ai-requests <file>", "write the AI review requests (RFC 0013)").hideHelp(),
+    )
     .action(
       async (o: {
         offline?: boolean;
@@ -287,6 +290,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
         pullRequest?: string;
         commit?: string;
         writeCheckRun?: string;
+        aiRequests?: string;
         base?: string;
         all?: boolean;
         format: Format;
@@ -327,6 +331,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
           ...(o.pullRequest ? { pullRequest: o.pullRequest } : {}),
           ...(o.commit ? { commit: o.commit } : {}),
           ...(o.writeCheckRun ? { writeCheckRun: o.writeCheckRun } : {}),
+          ...(o.aiRequests ? { aiRequests: o.aiRequests } : {}),
         });
       },
     );

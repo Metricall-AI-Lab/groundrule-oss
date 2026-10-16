@@ -1,5 +1,6 @@
 export * from "./agent-check.js";
 export * from "./agent-sync.js";
+export * from "./ai-review.js";
 export * from "./check-run.js";
 export * from "./common.js";
 export * from "./config.js";

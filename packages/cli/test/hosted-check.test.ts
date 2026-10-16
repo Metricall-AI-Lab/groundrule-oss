@@ -423,3 +423,73 @@ describe("the compliance record (RFC 0007)", () => {
     expect(off.metadata.authorship).toBe(false);
   });
 });
+
+describe("AI review requests (RFC 0013)", () => {
+  it("writes the changed lines of the files an llm rule names, and nothing for --all", async () => {
+    const root = await tmp("gr-hosted-");
+    const auth = {
+      ...standard("AUTH-017", "never-matches", "warning", "security"),
+      spec: {
+        severity: "warning",
+        requirement: "Authorize every state-changing endpoint.",
+        scope: { paths: ["src/**"] },
+        checks: [
+          {
+            evaluator: "llm",
+            question: "Does any new endpoint reach business logic without an authorization check?",
+          },
+        ],
+      },
+    };
+    await write(root, { ...FILES, ".groundrule/standards/AUTH-017.yaml": JSON.stringify(auth) });
+    const inputs = await tmp("gr-inputs-");
+    await writeFile(
+      join(inputs, "changes.json"),
+      JSON.stringify([
+        { path: "src/legacy.ts", status: "modified", changedLines: [{ start: 1, end: 1 }] },
+      ]),
+    );
+    const r = await cli(
+      root,
+      "check",
+      "--offline",
+      "--changes",
+      join(inputs, "changes.json"),
+      "--write-check-run",
+      join(inputs, "run.json"),
+      "--ai-requests",
+      join(inputs, "ai.json"),
+    );
+    expect(r.code).toBe(1);
+    const run = CheckRun.parse(JSON.parse(await readFile(join(inputs, "run.json"), "utf8")));
+    // Locally the AI check is reported as not run; the deterministic checks still run.
+    expect(run.outcomes.find((o) => o.id === "AUTH-017")).toMatchObject({
+      status: "not-evaluable",
+    });
+    const requests = JSON.parse(await readFile(join(inputs, "ai.json"), "utf8"));
+    expect(requests).toMatchObject({
+      kind: "AiReviewRequests",
+      requests: [
+        {
+          standardId: "AUTH-017",
+          file: "src/legacy.ts",
+          minConfidence: "medium",
+          hunks: [
+            { startLine: 1, lines: ["export const total = (amount: number) => amount * 1.0;"] },
+          ],
+        },
+      ],
+      skipped: { files: 0, standards: [] },
+    });
+    const all = await cli(
+      root,
+      "check",
+      "--offline",
+      "--all",
+      "--ai-requests",
+      join(inputs, "all.json"),
+    );
+    expect(all.code).toBe(1);
+    expect(JSON.parse(await readFile(join(inputs, "all.json"), "utf8")).requests).toEqual([]);
+  });
+});
