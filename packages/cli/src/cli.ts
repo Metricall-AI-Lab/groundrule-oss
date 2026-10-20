@@ -28,7 +28,9 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
   let code: number = EXIT.ok;
   const program = new Command()
     .name("groundrule")
-    .description("Define engineering standards once. Enforce them everywhere.")
+    .description(
+      "Define engineering standards once. Enforce them everywhere.\n`gr` is the same command.",
+    )
     .version(VERSION, "-v, --version")
     .option("-C, --cwd <dir>", "run as if started in <dir>")
     .configureOutput({ writeOut: (t) => io.stdout.write(t), writeErr: (t) => io.stderr.write(t) })
