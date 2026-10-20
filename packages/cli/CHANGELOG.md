@@ -1,5 +1,21 @@
 # @groundrule/cli
 
+## 0.19.0
+
+### Minor Changes
+
+- 8021b75: The CLI also installs as `gr`: `gr check`, `gr sync` and every other command work exactly like `groundrule …`. Messages and documentation keep the full name.
+
+### Patch Changes
+
+- @groundrule/adapters@0.19.0
+  - @groundrule/core@0.19.0
+  - @groundrule/evaluators@0.19.0
+  - @groundrule/mcp@0.19.0
+  - @groundrule/packs@0.19.0
+  - @groundrule/reporters@0.19.0
+  - @groundrule/spec@0.19.0
+
 ## 0.18.1
 
 ### Patch Changes
