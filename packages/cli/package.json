@@ -15,7 +15,8 @@
   },
   "type": "module",
   "bin": {
-    "groundrule": "./dist/bin.js"
+    "groundrule": "./dist/bin.js",
+    "gr": "./dist/bin.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
