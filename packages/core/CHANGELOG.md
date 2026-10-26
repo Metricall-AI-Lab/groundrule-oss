@@ -1,5 +1,12 @@
 # @groundrule/core
 
+## 0.20.0
+
+### Patch Changes
+
+- Updated dependencies [be592fc]
+  - @groundrule/spec@0.20.0
+
 ## 0.19.0
 
 ### Patch Changes
