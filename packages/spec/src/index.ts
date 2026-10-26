@@ -4,6 +4,7 @@ export * from "./ai-review.js";
 export * from "./check-run.js";
 export * from "./common.js";
 export * from "./config.js";
+export * from "./contributors.js";
 export * from "./document.js";
 export * from "./exception.js";
 export * from "./finding.js";

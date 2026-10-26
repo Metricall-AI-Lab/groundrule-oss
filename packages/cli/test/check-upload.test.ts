@@ -8,9 +8,11 @@ import { dirname, join } from "node:path";
 import { CheckRun } from "@groundrule/spec";
 import { afterEach, describe, expect, it } from "vitest";
 import { pullRequestFromCi } from "../src/ci.js";
+import { digestOf } from "../src/contributors.js";
 import { type IO, run } from "../src/index.js";
 
 const URL_ = "https://app.groundrule.test";
+const SALT = "ab".repeat(32);
 const TOKEN = `grt_${"a".repeat(43)}`;
 const dirs: string[] = [];
 afterEach(async () => {
@@ -76,6 +78,9 @@ function fakePlatform(status = 201) {
   const calls: Call[] = [];
   const fetch = (async (input: string, init?: RequestInit) => {
     const url = new URL(input);
+    // The salt (RFC 0014) is fetched before every upload; only uploads are recorded.
+    if (url.pathname.endsWith("/v1/cli/contributors/salt"))
+      return new Response(JSON.stringify({ salt: SALT }), { status: 200 });
     calls.push({
       path: `${url.pathname.replace(/^\/api/, "")}${url.search}`,
       auth: (init?.headers as Record<string, string>)?.authorization,
@@ -277,5 +282,46 @@ describe("the pull request from CI", () => {
         io({ GITHUB_EVENT_NAME: "pull_request", GITHUB_EVENT_PATH: "/does/not/exist.json" }),
       ),
     ).toBeUndefined();
+  });
+});
+
+describe("the contributor digest (RFC 0014)", () => {
+  it("hashes each distinct author with the workspace's salt; never an address", async () => {
+    const root = await repo();
+    const { calls, fetch } = fakePlatform();
+    const r = await cli(root, ["check", "--all", "--upload"], fetch, { GROUNDRULE_TOKEN: TOKEN });
+    expect(r.code).toBe(1);
+    expect(calls.map((c) => c.path)).toEqual(["/v1/cli/checks"]);
+    const body = calls[0]?.body as { contributors?: { digests: string[]; complete: boolean } };
+    expect(body.contributors).toEqual({
+      since: expect.any(String),
+      complete: true,
+      digests: [digestOf(SALT, "t@t")],
+    });
+    expect(JSON.stringify(body)).not.toContain("t@t");
+    expect(CheckRun.safeParse(body).success).toBe(true);
+  });
+
+  it("--no-contributors sends none, and so does a platform without a salt", async () => {
+    const root = await repo();
+    const { calls, fetch } = fakePlatform();
+    await cli(root, ["check", "--all", "--upload", "--no-contributors"], fetch, {
+      GROUNDRULE_TOKEN: TOKEN,
+    });
+    expect(calls.map((c) => c.path)).toEqual(["/v1/cli/checks"]);
+    expect(
+      (calls[0]?.body as { contributors?: unknown } | undefined)?.contributors,
+    ).toBeUndefined();
+
+    const older = fakePlatform();
+    const plain = older.fetch;
+    const fetch2 = (async (input: string, init?: RequestInit) => {
+      if (String(input).endsWith("/v1/cli/contributors/salt"))
+        return new Response(JSON.stringify({ error: { code: "not_found" } }), { status: 404 });
+      return plain(input, init);
+    }) as unknown as typeof globalThis.fetch;
+    await cli(root, ["check", "--all", "--upload"], fetch2, { GROUNDRULE_TOKEN: TOKEN });
+    const upload = older.calls.find((c) => c.path.startsWith("/v1/cli/checks"));
+    expect((upload?.body as { contributors?: unknown } | undefined)?.contributors).toBeUndefined();
   });
 });

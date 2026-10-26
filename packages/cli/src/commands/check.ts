@@ -25,6 +25,7 @@ import {
   renderTerminal,
 } from "@groundrule/reporters";
 import { pullRequestFromCi } from "../ci.js";
+import { contributorsForUpload } from "../contributors.js";
 import { HostedInputError, readChanges, readPullRequest, readRulebook } from "../hosted.js";
 import { EXIT, eprintln, type IO, println, style, VERSION } from "../io.js";
 import { call, detectRepository, PlatformError, platformUrl, tokenFor } from "../platform.js";
@@ -63,6 +64,8 @@ export interface CheckOptions {
   aiRequests?: string;
   /** Record which coding agents the commits declare (RFC 0007; default true). */
   authorship?: boolean;
+  /** Send the salted contributor digest for billing (RFC 0014; default true). */
+  contributors?: boolean;
   /** Sign the result (RFC 0008). By default, when GROUNDRULE_SIGNING_KEY is set. */
   sign?: boolean;
   /** Sign with the GitHub Actions job's identity through Sigstore (RFC 0009). Opt-in. */
@@ -303,6 +306,13 @@ export async function check(io: IO, options: CheckOptions): Promise<number> {
         basename(workspace.root),
       pullRequest: await pullRequestFromCi(io),
     });
+    const contributors = await contributorsForUpload(
+      io,
+      workspace.root,
+      upload,
+      options.contributors !== false,
+    );
+    if (contributors) run.contributors = contributors;
     const query = upload.org ? `?org=${encodeURIComponent(upload.org)}` : "";
     const res = await call<{ id: string; url: string; org: { slug: string; name: string } }>(
       io,
