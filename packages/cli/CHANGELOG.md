@@ -1,5 +1,22 @@
 # @groundrule/cli
 
+## 0.20.0
+
+### Minor Changes
+
+- be592fc: The contributor digest on uploads (RFC 0014): `check --upload` and `scan --upload` send one salted SHA-256 hash per distinct commit author in the last 90 days, so the workspace counts active contributors exactly, without any address. `--no-contributors` leaves it out.
+
+### Patch Changes
+
+- Updated dependencies [be592fc]
+  - @groundrule/spec@0.20.0
+  - @groundrule/adapters@0.20.0
+  - @groundrule/core@0.20.0
+  - @groundrule/evaluators@0.20.0
+  - @groundrule/packs@0.20.0
+  - @groundrule/reporters@0.20.0
+  - @groundrule/mcp@0.20.0
+
 ## 0.19.0
 
 ### Minor Changes
