@@ -553,6 +553,37 @@
       "additionalProperties": false,
       "description": "Who or what wrote the change, as declared in its commits."
     },
+    "contributors": {
+      "type": "object",
+      "properties": {
+        "since": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+          "description": "Start of the window: 90 days before the run."
+        },
+        "complete": {
+          "type": "boolean",
+          "description": "false when the clone is shallow, so history may be missing."
+        },
+        "digests": {
+          "maxItems": 5000,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "description": "SHA-256 of \"<salt>:\" + lowercased author email, hex; one per distinct author."
+        }
+      },
+      "required": [
+        "since",
+        "complete",
+        "digests"
+      ],
+      "additionalProperties": false,
+      "description": "Salted hashes of commit authors (RFC 0014). Never an address, name or commit."
+    },
     "signature": {
       "oneOf": [
         {

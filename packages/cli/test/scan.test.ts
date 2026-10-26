@@ -64,6 +64,9 @@ function fakePlatform(status = 201, scanRules: number | object[] = []) {
   const calls: Call[] = [];
   const respond = (async (input: string, init?: RequestInit) => {
     const url = new URL(input);
+    // The contributor salt (RFC 0014) is fetched before an upload; only uploads are recorded.
+    if (url.pathname.endsWith("/v1/cli/contributors/salt"))
+      return new Response(JSON.stringify({ salt: "cd".repeat(32) }), { status: 200 });
     calls.push({
       path: `${url.pathname.replace(/^\/api/, "")}${url.search}`,
       auth: (init?.headers as Record<string, string>)?.authorization,

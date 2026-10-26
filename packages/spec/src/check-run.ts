@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ApiVersion, IsoDate, RolloutStage, Severity, StandardId } from "./common.js";
+import { ContributorDigest } from "./contributors.js";
 import { FindingSource } from "./finding.js";
 
 const RelPath = z.string().min(1).max(400).describe("Repository-relative POSIX path.");
@@ -252,6 +253,7 @@ export const CheckRun = z
       .optional()
       .describe("Exceptions that suppressed at least one finding in this run."),
     authorship: CheckRunAuthorship.optional(),
+    contributors: ContributorDigest.optional(),
     signature: CheckRunSignature.optional(),
   })
   .describe("A check run, produced by `groundrule check` and uploaded with --upload.");

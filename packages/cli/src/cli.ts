@@ -99,6 +99,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
       "--no-import",
       "leave out instructions, tool settings, and owners found in the repository",
     )
+    .option("--no-contributors", "with --upload: don't send the contributor digest (RFC 0014)")
     .option("--repository <name>", "repository name, e.g. acme/api (default: from the git remote)")
     .option("--org <slug>", "organization to upload to")
     .option("--url <url>", "Groundrule platform address")
@@ -109,6 +110,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
         upload?: boolean;
         snippets?: boolean;
         import?: boolean;
+        contributors?: boolean;
         repository?: string;
         org?: string;
         url?: string;
@@ -263,6 +265,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
       "--no-authorship",
       "with --upload: don't record which coding agents the commits declare",
     )
+    .option("--no-contributors", "with --upload: don't send the contributor digest (RFC 0014)")
     .option("--sign", "sign the result with GROUNDRULE_SIGNING_KEY (the default when it is set)")
     .option("--no-sign", "don't sign the result")
     .option(
@@ -304,6 +307,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
         upload?: boolean;
         snippets?: boolean;
         authorship?: boolean;
+        contributors?: boolean;
         sign?: boolean;
         sigstore?: boolean;
         repository?: string;
@@ -322,6 +326,7 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
           ...(o.upload ? { upload: true } : {}),
           ...(o.snippets === false ? { snippets: false } : {}),
           ...(o.authorship === false ? { authorship: false } : {}),
+          ...(o.contributors === false ? { contributors: false } : {}),
           ...(o.sign !== undefined ? { sign: o.sign } : {}),
           ...(o.sigstore ? { sigstore: true } : {}),
           ...(o.repository ? { repository: o.repository } : {}),

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ApiVersion, Severity, StandardId } from "./common.js";
+import { ContributorDigest } from "./contributors.js";
 
 /** Coding-agent instruction files `groundrule scan` recognizes. */
 export const AGENT_FILE_KINDS = [
@@ -238,6 +239,7 @@ export const ScanReport = z
     imports: ScanImports.optional().describe(
       "Existing instructions, tool settings, and owners, as proposals (RFC 0004). Omitted with --no-import.",
     ),
+    contributors: ContributorDigest.optional(),
     summary: z.strictObject({
       rules: Count,
       clean: Count,

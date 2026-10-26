@@ -10,6 +10,7 @@ import {
 import { builtinEvaluators } from "@groundrule/evaluators";
 import { CATALOG_DIR, listPacks, TOOL_MAPPING } from "@groundrule/packs";
 import { type Config, type ScanReport, type ScanRule, Standard } from "@groundrule/spec";
+import { contributorsForUpload } from "../contributors.js";
 import { EXIT, eprintln, type IO, println, style, VERSION } from "../io.js";
 import { call, detectRepository, PlatformError, platformUrl, tokenFor } from "../platform.js";
 
@@ -19,6 +20,8 @@ export interface ScanOptions {
   upload?: boolean;
   snippets?: boolean;
   import?: boolean;
+  /** Send the salted contributor digest for billing (RFC 0014; default true). */
+  contributors?: boolean;
   repository?: string;
   org?: string;
   url?: string;
@@ -145,6 +148,13 @@ export async function scan(io: IO, options: ScanOptions): Promise<number> {
 
   if (!upload) return EXIT.ok;
   try {
+    const contributors = await contributorsForUpload(
+      io,
+      root,
+      upload,
+      options.contributors !== false,
+    );
+    if (contributors) report.contributors = contributors;
     const query = upload.org ? `?org=${encodeURIComponent(upload.org)}` : "";
     const res = await call<{ id: string; url: string; org: { slug: string; name: string } }>(
       io,

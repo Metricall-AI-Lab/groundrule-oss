@@ -20,3 +20,5 @@ Changes to the Groundrule document format go through an RFC.
 | [0010](0010-coderabbit-target.md) | CodeRabbit as a sync target | Accepted |
 | [0011](0011-architecture-discovery.md) | Architecture discovery in scans | Accepted |
 | [0012](0012-agent-check-reports.md) | Agent check reports | Accepted |
+| [0013](0013-ai-checks.md) | AI checks, done honestly | Accepted |
+| [0014](0014-contributor-digest.md) | The contributor digest on uploads | Accepted |
