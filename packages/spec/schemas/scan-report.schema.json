@@ -742,6 +742,110 @@
             "additionalProperties": false
           }
         },
+        "layouts": {
+          "default": [],
+          "description": "Layout conventions the code already keeps, as proposals (RFC 0016).",
+          "maxItems": 15,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "place",
+                  "companion"
+                ]
+              },
+              "from": {
+                "minItems": 1,
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "description": "The files the rule applies to."
+              },
+              "exclude": {
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "place": {
+                "description": "Where the kind of file lives, e.g. **/api/**.",
+                "minItems": 1,
+                "maxItems": 5,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "companion": {
+                "description": "The companion every file has, e.g. {dir}/{base}.test{ext}.",
+                "minItems": 1,
+                "maxItems": 5,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Files the convention was measured on."
+              },
+              "violations": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Of them, the ones that break it today."
+              },
+              "examples": {
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400,
+                      "description": "Repository-relative POSIX path."
+                    }
+                  },
+                  "required": [
+                    "file"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "kind",
+              "from",
+              "files",
+              "violations",
+              "examples",
+              "fingerprint"
+            ],
+            "additionalProperties": false
+          }
+        },
         "graph": {
           "description": "The resolved import graph (RFC 0015): file, line, and the path or package each import points at. The platform previews architecture rules against it.",
           "type": "object",

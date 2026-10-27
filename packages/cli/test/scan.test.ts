@@ -215,6 +215,29 @@ describe("groundrule scan", () => {
     ]);
   });
 
+  it("discovers the layout conventions a repository keeps (RFC 0016)", async () => {
+    const files: Record<string, string> = { ...APP };
+    for (const n of ["orders", "users", "billing", "health"])
+      files[`src/api/${n}.controller.ts`] = "export const x = 1;\n";
+    files["src/jobs/nightly.controller.ts"] = "export const x = 1;\n";
+    const root = await repo(files);
+    const r = await cli(root, ["scan"]);
+    expect(r.stdout).toMatch(/Layout\s+1 convention this code already keeps/);
+    expect(r.stdout).toContain("**/*.controller.ts lives under **/api/**");
+    expect(r.stdout).toContain("1 file would fail today");
+    const report = ScanReport.parse(JSON.parse((await cli(root, ["scan", "--json"])).stdout));
+    expect(report.imports?.layouts).toEqual([
+      expect.objectContaining({
+        kind: "place",
+        from: ["**/*.controller.ts"],
+        place: ["**/api/**"],
+        files: 5,
+        violations: 1,
+        examples: [{ file: "src/jobs/nightly.controller.ts" }],
+      }),
+    ]);
+  });
+
   it("leaves imports out with --no-import", async () => {
     const root = await repo(APP);
     const report = JSON.parse((await cli(root, ["scan", "--json", "--no-import"])).stdout);

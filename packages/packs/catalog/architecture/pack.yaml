@@ -3,9 +3,9 @@ kind: Pack
 metadata:
   id: architecture
   title: Architecture
-  description: Dependency direction, module boundaries, technology gates and layout, checked deterministically on every change. Adjust the paths in each rule to your layout; every rule starts at Observe so you see the impact first.
+  description: Dependency direction, module boundaries, technology gates, layout and size limits, checked deterministically on every change. Adjust the paths in each rule to your layout; every rule starts at Observe so you see the impact first.
   owner: groundrule
-  version: 1.2.0
+  version: 1.3.0
   tags: [architecture, boundaries, layers, typescript, javascript, python, java, kotlin, go]
 spec:
   include: ["standards/**/*.yaml"]

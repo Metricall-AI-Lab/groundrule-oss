@@ -184,6 +184,38 @@ export const ImportedGate = z.strictObject({
 });
 export type ImportedGate = z.infer<typeof ImportedGate>;
 
+/** A layout convention the repository already keeps (RFC 0016), as a proposed `layout` rule. */
+export const ImportedLayout = z
+  .strictObject({
+    kind: z.enum(["place", "companion"]),
+    from: z
+      .array(z.string().min(1).max(200))
+      .min(1)
+      .max(10)
+      .describe("The files the rule applies to."),
+    exclude: z.array(z.string().min(1).max(200)).max(10).optional(),
+    place: z
+      .array(z.string().min(1).max(200))
+      .min(1)
+      .max(5)
+      .optional()
+      .describe("Where the kind of file lives, e.g. **/api/**."),
+    companion: z
+      .array(z.string().min(1).max(200))
+      .min(1)
+      .max(5)
+      .optional()
+      .describe("The companion every file has, e.g. {dir}/{base}.test{ext}."),
+    files: z.number().int().nonnegative().describe("Files the convention was measured on."),
+    violations: z.number().int().nonnegative().describe("Of them, the ones that break it today."),
+    examples: z.array(z.strictObject({ file: RelPath })).max(3),
+    fingerprint: z.string().regex(/^[0-9a-f]{64}$/),
+  })
+  .refine((l) => (l.kind === "place" ? Boolean(l.place) : Boolean(l.companion)), {
+    message: "A place has `place`; a companion has `companion`.",
+  });
+export type ImportedLayout = z.infer<typeof ImportedLayout>;
+
 /** One import statement, resolved (RFC 0015): a repository path or a package, never code. */
 export const ImportEdge = z
   .strictObject({
@@ -226,6 +258,11 @@ export const ScanImports = z.strictObject({
     .max(15)
     .default([])
     .describe("Packages one module owns, as proposals (RFC 0011)."),
+  layouts: z
+    .array(ImportedLayout)
+    .max(15)
+    .default([])
+    .describe("Layout conventions the code already keeps, as proposals (RFC 0016)."),
   graph: ImportGraph.optional().describe(
     "The resolved import graph (RFC 0015): file, line, and the path or package each import points at. The platform previews architecture rules against it.",
   ),
