@@ -8,7 +8,7 @@ metadata:
 spec:
   severity: warning
   scope:
-    languages: [typescript, javascript, python]
+    languages: [typescript, javascript, python, java, kotlin, go]
   intent: >
     Business rules that import databases, HTTP clients or controllers can't be tested
     without them and can't be reused when the infrastructure changes. Agents cross this
@@ -26,6 +26,8 @@ spec:
       - { code: "import type { OrderRepository } from \"./ports\";", language: typescript, note: "the domain owns the port" }
     forbidden:
       - { code: "import { db } from \"../infra/db/client\";", language: typescript, note: "domain reaching into infrastructure" }
+      - { code: "import com.acme.shop.infra.db.OrderRow;", language: java, note: "domain reaching into infrastructure" }
+      - { code: "import \"github.com/acme/shop/internal/infra/db\"", language: go, note: "domain reaching into infrastructure" }
   checks:
     - evaluator: imports
       from: ["**/domain/**"]

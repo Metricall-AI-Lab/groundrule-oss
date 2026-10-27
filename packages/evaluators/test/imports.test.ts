@@ -3,7 +3,13 @@
 // can't be resolved to the repository is a package, never a layer violation.
 import type { EvaluatorFinding } from "@groundrule/core";
 import { describe, expect, it } from "vitest";
-import { importsEvaluator, scanJsImports, scanPyImports } from "../src/index.js";
+import {
+  importsEvaluator,
+  scanGoImports,
+  scanJavaImports,
+  scanJsImports,
+  scanPyImports,
+} from "../src/index.js";
 import { fakeContext, run } from "./helpers.js";
 
 const summarize = (findings: readonly EvaluatorFinding[]) =>
@@ -38,6 +44,56 @@ const url = "https://example.com/not-an-import";
       { specifier: "sys", line: 1 },
       { specifier: ".models", line: 2 },
       { specifier: "app.infra", line: 3 },
+    ]);
+  });
+});
+
+describe("scanning Java, Kotlin and Go imports", () => {
+  it("reads Java and Kotlin qualified names, static members dropped, wildcards kept", () => {
+    const java = `package com.acme.shop.orders;
+
+import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.acme.shop.infra.db.*;
+// import com.acme.nope.Nope;
+/* import com.acme.also.Also; */
+import org.springframework.jdbc.core.JdbcTemplate;
+`;
+    expect(scanJavaImports(java)).toEqual([
+      { specifier: "java.util.List", line: 3 },
+      { specifier: "org.junit.jupiter.api.Assertions", line: 4 },
+      { specifier: "com.acme.shop.infra.db.*", line: 5 },
+      { specifier: "org.springframework.jdbc.core.JdbcTemplate", line: 8 },
+    ]);
+    expect(
+      scanJavaImports("import com.acme.shop.domain.Money as M\nimport kotlinx.coroutines.*\n"),
+    ).toEqual([
+      { specifier: "com.acme.shop.domain.Money", line: 1 },
+      { specifier: "kotlinx.coroutines.*", line: 2 },
+    ]);
+  });
+
+  it("reads Go single imports and blocks, with aliases, blank and dot imports", () => {
+    const go = `package orders
+
+import "fmt"
+import db "github.com/acme/shop/internal/infra/db"
+
+import (
+	"context"
+	// "github.com/acme/nope"
+	_ "github.com/lib/pq"
+	. "github.com/acme/shop/internal/domain"
+	stripe "github.com/stripe/stripe-go/v76"
+)
+`;
+    expect(scanGoImports(go)).toEqual([
+      { specifier: "fmt", line: 3 },
+      { specifier: "github.com/acme/shop/internal/infra/db", line: 4 },
+      { specifier: "context", line: 7 },
+      { specifier: "github.com/lib/pq", line: 9 },
+      { specifier: "github.com/acme/shop/internal/domain", line: 10 },
+      { specifier: "github.com/stripe/stripe-go/v76", line: 11 },
     ]);
   });
 });
@@ -167,6 +223,82 @@ describe("layer rules", () => {
     );
     expect(summarize(gate)).toEqual([
       "app/domain/order.py:3 app/domain/order.py imports sqlalchemy: only app/infra/** may use it",
+    ]);
+  });
+
+  it("resolve Java through source roots, nested classes and wildcards; gate JDBC by package", async () => {
+    const repo = {
+      "pom.xml": "<project/>",
+      "src/main/java/com/acme/shop/domain/Order.java":
+        "package com.acme.shop.domain;\n\nimport com.acme.shop.infra.db.OrderRow;\nimport com.acme.shop.infra.*;\nimport com.acme.shop.domain.Money.Cents;\nimport org.springframework.jdbc.core.JdbcTemplate;\nimport java.util.List;\n",
+      "src/main/java/com/acme/shop/domain/Money.java":
+        "package com.acme.shop.domain;\npublic class Money { public static class Cents {} }\n",
+      "src/main/java/com/acme/shop/infra/Clock.java": "package com.acme.shop.infra;\n",
+      "src/main/java/com/acme/shop/infra/db/OrderRow.java": "package com.acme.shop.infra.db;\n",
+      "src/main/java/com/acme/shop/infra/db/Jdbc.kt":
+        "package com.acme.shop.infra.db\n\nimport org.springframework.jdbc.core.JdbcTemplate\n",
+      "src/test/java/com/acme/shop/domain/OrderTest.java":
+        "package com.acme.shop.domain;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport com.acme.shop.infra.db.OrderRow;\n",
+    };
+    const layer = await run(
+      importsEvaluator,
+      { from: ["**/domain/**"], forbid: ["**/infra/**"] },
+      fakeContext(repo),
+    );
+    expect(summarize(layer)).toEqual([
+      "src/main/java/com/acme/shop/domain/Order.java:3 src/main/java/com/acme/shop/domain/Order.java imports src/main/java/com/acme/shop/infra/db/OrderRow.java: files in **/domain/** must not import **/infra/**",
+      "src/main/java/com/acme/shop/domain/Order.java:4 src/main/java/com/acme/shop/domain/Order.java imports src/main/java/com/acme/shop/infra: files in **/domain/** must not import **/infra/**",
+      "src/test/java/com/acme/shop/domain/OrderTest.java:4 src/test/java/com/acme/shop/domain/OrderTest.java imports src/main/java/com/acme/shop/infra/db/OrderRow.java: files in **/domain/** must not import **/infra/**",
+    ]);
+    // The nested class resolved to Money.java, inside the domain: no finding. java.util is a package.
+    const gate = await run(
+      importsEvaluator,
+      { package: ["org.springframework.jdbc.*", "java.sql.*"], only: ["**/infra/**"] },
+      fakeContext(repo),
+    );
+    expect(summarize(gate)).toEqual([
+      "src/main/java/com/acme/shop/domain/Order.java:6 src/main/java/com/acme/shop/domain/Order.java imports org.springframework.jdbc.core.JdbcTemplate: only **/infra/** may use it",
+    ]);
+  });
+
+  it("resolve Go through go.mod modules, nested modules included; gate a driver by import path", async () => {
+    const repo = {
+      "go.mod": "module github.com/acme/shop\n\ngo 1.22\n",
+      "internal/domain/order.go":
+        'package domain\n\nimport (\n\t"context"\n\t"github.com/acme/shop/internal/infra/db"\n\t"github.com/acme/shop/internal/domain/money"\n\t"github.com/lib/pq"\n)\n',
+      "internal/domain/money/money.go": "package money\n",
+      "internal/infra/db/db.go": 'package db\n\nimport _ "github.com/lib/pq"\n',
+      "services/billing/go.mod": "module github.com/acme/billing\n",
+      "services/billing/charge.go":
+        'package billing\n\nimport (\n\t"github.com/acme/billing/stripe"\n\t"github.com/acme/shop/internal/domain"\n)\n',
+      "services/billing/stripe/client.go":
+        'package stripe\n\nimport stripe "github.com/stripe/stripe-go/v76"\n',
+    };
+    const layer = await run(
+      importsEvaluator,
+      { from: ["internal/domain/**"], forbid: ["internal/infra/**"] },
+      fakeContext(repo),
+    );
+    expect(summarize(layer)).toEqual([
+      "internal/domain/order.go:5 internal/domain/order.go imports internal/infra/db: files in internal/domain/** must not import internal/infra/**",
+    ]);
+    // The nested module resolves by its own path; the root module's package by the root's.
+    const cross = await run(
+      importsEvaluator,
+      { from: ["services/billing/**"], forbid: ["internal/**"], allow: ["services/billing/**"] },
+      fakeContext(repo),
+    );
+    expect(summarize(cross).map((s) => s.split(" ")[0])).toEqual(["services/billing/charge.go:5"]);
+    const gate = await run(
+      importsEvaluator,
+      {
+        package: ["github.com/lib/pq", "github.com/stripe/**"],
+        only: ["internal/infra/**", "services/billing/stripe/**"],
+      },
+      fakeContext(repo),
+    );
+    expect(summarize(gate)).toEqual([
+      "internal/domain/order.go:7 internal/domain/order.go imports github.com/lib/pq: only internal/infra/**, services/billing/stripe/** may use it",
     ]);
   });
 

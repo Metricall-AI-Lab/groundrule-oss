@@ -1,7 +1,7 @@
 // Architecture discovery (RFC 0011): boundaries and package gates a repository already keeps,
 // read from its import graph, with the files that would fail each proposed rule today.
 import { describe, expect, it } from "vitest";
-import { buildImportGraph, discoverArchitecture, moduleOf } from "../src/index.js";
+import { buildImportGraph, discoverArchitecture, javaBases, moduleOf } from "../src/index.js";
 
 /** A repository as files; `read` serves them the way the scan does. */
 async function discover(files: Record<string, string>) {
@@ -39,6 +39,21 @@ describe("moduleOf", () => {
     expect(moduleOf("app/models/user.py")).toBe("app/models");
     expect(moduleOf("README.md")).toBeNull();
     expect(moduleOf("scripts/build.ts")).toBe("scripts");
+    // Go: internal, pkg and cmd are source roots.
+    expect(moduleOf("internal/orders/service.go")).toBe("internal/orders");
+    expect(moduleOf("cmd/api/main.go")).toBe("cmd/api");
+    // Java: the module is the first directory under the shared package of the source root.
+    const bases = javaBases([
+      "src/main/java/com/acme/shop/orders/Order.java",
+      "src/main/java/com/acme/shop/infra/Db.java",
+      "src/test/java/com/acme/shop/orders/OrderTest.java",
+      "src/test/java/com/acme/shop/infra/DbTest.java",
+    ]);
+    expect(bases).toEqual(["src/main/java/com/acme/shop", "src/test/java/com/acme/shop"]);
+    expect(moduleOf("src/main/java/com/acme/shop/orders/Order.java", bases)).toBe(
+      "src/main/java/com/acme/shop/orders",
+    );
+    expect(moduleOf("src/main/java/com/acme/shop/App.java", bases)).toBeNull();
   });
 });
 
@@ -136,6 +151,47 @@ describe("discoverArchitecture", () => {
     ]);
     expect(gates.map((g) => [g.package, g.only, g.users])).toEqual([
       ["sqlalchemy", "app/infra", 3],
+    ]);
+  });
+
+  it("understands Java source roots and proposes a Spring JDBC gate by package", async () => {
+    const files: Record<string, string> = { "pom.xml": "<project/>" };
+    const base = "src/main/java/com/acme/shop";
+    for (let i = 0; i < 3; i++) {
+      files[`${base}/domain/D${i}.java`] = "package com.acme.shop.domain;\n";
+      files[`${base}/infra/I${i}.java`] =
+        `package com.acme.shop.infra;\n\nimport com.acme.shop.domain.D${i};\nimport org.springframework.jdbc.core.JdbcTemplate;\n`;
+      files[`${base}/api/A${i}.java`] =
+        `package com.acme.shop.api;\n\nimport com.acme.shop.domain.D${i};\nimport com.acme.shop.infra.I${i};\n`;
+    }
+    const { boundaries, gates } = await discover(files);
+    expect(boundaries.map((b) => [b.from, b.forbid])).toEqual([
+      [`${base}/domain`, `${base}/api`],
+      [`${base}/domain`, `${base}/infra`],
+      [`${base}/infra`, `${base}/api`],
+    ]);
+    expect(gates.map((g) => [g.package, g.only, g.users])).toEqual([
+      ["org.springframework.jdbc.*", `${base}/infra`, 3],
+    ]);
+  });
+
+  it("understands Go modules and internal packages", async () => {
+    const files: Record<string, string> = { "go.mod": "module github.com/acme/shop\n" };
+    for (let i = 0; i < 3; i++) {
+      files[`internal/domain/d${i}.go`] = "package domain\n";
+      files[`internal/infra/i${i}.go`] =
+        `package infra\n\nimport (\n\t"github.com/acme/shop/internal/domain"\n\t"database/sql"\n)\n`;
+      files[`internal/api/a${i}.go`] =
+        `package api\n\nimport (\n\t"github.com/acme/shop/internal/domain"\n\t"github.com/acme/shop/internal/infra"\n)\n`;
+    }
+    const { boundaries, gates } = await discover(files);
+    expect(boundaries.map((b) => [b.from, b.forbid])).toEqual([
+      ["internal/domain", "internal/api"],
+      ["internal/domain", "internal/infra"],
+      ["internal/infra", "internal/api"],
+    ]);
+    expect(gates.map((g) => [g.package, g.only, g.users])).toEqual([
+      ["database/sql", "internal/infra", 3],
     ]);
   });
 });

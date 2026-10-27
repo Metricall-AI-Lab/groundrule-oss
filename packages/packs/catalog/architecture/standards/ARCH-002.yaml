@@ -8,7 +8,7 @@ metadata:
 spec:
   severity: warning
   scope:
-    languages: [typescript, javascript, python]
+    languages: [typescript, javascript, python, java, kotlin, go]
   intent: >
     Use cases that import controllers, request types or route handlers become tied to one
     transport, and can't be driven from a job, a CLI or a test.
