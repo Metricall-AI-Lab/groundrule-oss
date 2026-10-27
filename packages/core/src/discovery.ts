@@ -5,10 +5,11 @@
 // databases, HTTP clients, cloud SDKs) is used from one module only, or nearly so.
 
 import { createHash } from "node:crypto";
-import { dirOf, type ImportEdge, isJsFile, isPyFile } from "./import-graph.js";
+import { dirOf, type ImportEdge, isImportSource, isJavaFile } from "./import-graph.js";
 
-/** Directories whose children are modules, rather than modules themselves. */
-const SOURCE_ROOTS = ["src", "app", "lib", "source"];
+/** Directories whose children are modules, rather than modules themselves (Go's internal, pkg and cmd included). */
+const SOURCE_ROOTS = ["src", "app", "lib", "source", "internal", "pkg", "cmd"];
+const JAVA_ROOT = /^(.*?\/)?src\/(main|test)\/(java|kotlin)\//;
 const WORKSPACE_ROOTS = ["packages", "apps", "libs", "services", "modules"];
 /** Files a module needs before it counts; smaller directories are noise. */
 const MIN_MODULE_FILES = 3;
@@ -78,6 +79,42 @@ export const GATED_PACKAGES: readonly string[] = [
   "jose",
   "passport",
   "bcrypt",
+  // Java and Kotlin (a trailing dot is a prefix; ADR 0011)
+  "com.stripe.",
+  "org.springframework.jdbc.",
+  "org.springframework.data.jpa.",
+  "org.hibernate.",
+  "jakarta.persistence.",
+  "javax.persistence.",
+  "java.sql.",
+  "software.amazon.awssdk.",
+  "com.amazonaws.",
+  "com.google.cloud.",
+  "com.azure.",
+  "okhttp3.",
+  "org.apache.http.",
+  "io.lettuce.",
+  "redis.clients.",
+  "org.apache.kafka.",
+  "io.jsonwebtoken.",
+  // Go
+  "github.com/stripe/stripe-go",
+  "github.com/stripe/stripe-go/",
+  "database/sql",
+  "gorm.io/",
+  "github.com/jackc/pgx",
+  "github.com/jackc/pgx/",
+  "github.com/lib/pq",
+  "go.mongodb.org/",
+  "github.com/redis/go-redis/",
+  "github.com/go-redis/redis/",
+  "github.com/aws/aws-sdk-go",
+  "github.com/aws/aws-sdk-go/",
+  "github.com/aws/aws-sdk-go-v2/",
+  "cloud.google.com/go/",
+  "github.com/Azure/",
+  "github.com/segmentio/kafka-go",
+  "github.com/golang-jwt/",
   "argon2",
 ];
 
@@ -111,8 +148,45 @@ export interface GateProposal {
 const fingerprint = (...parts: string[]) =>
   createHash("sha256").update(parts.join("\0")).digest("hex");
 
-/** The module a file belongs to: its first directory under a source or workspace root. */
-export function moduleOf(file: string): string | null {
+/**
+ * Java and Kotlin source roots with the package prefix all their files share (the group and
+ * artifact), so a module is the next segment: `src/main/java/com/acme/shop` → `…/orders`.
+ */
+export function javaBases(files: readonly string[]): string[] {
+  const common = new Map<string, string[] | null>();
+  for (const f of files) {
+    if (!isJavaFile(f)) continue;
+    const m = JAVA_ROOT.exec(f);
+    if (!m) continue;
+    const root = m[0].slice(0, -1);
+    const dir = dirOf(f.slice(root.length + 1))
+      .split("/")
+      .filter(Boolean);
+    const prev = common.get(root);
+    if (prev === undefined) {
+      common.set(root, dir);
+      continue;
+    }
+    if (prev === null) continue;
+    let n = 0;
+    while (n < prev.length && n < dir.length && prev[n] === dir[n]) n++;
+    common.set(root, prev.slice(0, n));
+  }
+  return [...common]
+    .map(([root, prefix]) => (prefix?.length ? `${root}/${prefix.join("/")}` : root))
+    .sort((a, b) => b.length - a.length || a.localeCompare(b));
+}
+
+/**
+ * The module a file belongs to: its first directory under a source or workspace root; for
+ * Java and Kotlin, the first directory under the source root's shared package (`bases`).
+ */
+export function moduleOf(file: string, bases: readonly string[] = []): string | null {
+  for (const base of bases) {
+    if (!file.startsWith(`${base}/`)) continue;
+    const rest = file.slice(base.length + 1).split("/");
+    return rest.length >= 2 ? `${base}/${rest[0]}` : null;
+  }
   const parts = file.split("/");
   if (parts.length < 2) return null;
   const [a, b, c] = parts;
@@ -135,10 +209,20 @@ export function discoverArchitecture(
   files: readonly string[],
   edges: readonly ImportEdge[],
 ): { boundaries: BoundaryProposal[]; gates: GateProposal[] } {
-  const code = files.filter((f) => isJsFile(f) || isPyFile(f));
+  const code = files.filter(isImportSource);
+  const bases = javaBases(files);
+  // A Go package or a Java wildcard resolves to a directory; its module is the directory's.
+  const dirs = new Set<string>();
+  for (const f of files) {
+    let dir = dirOf(f);
+    while (dir && !dirs.has(dir)) {
+      dirs.add(dir);
+      dir = dirOf(dir);
+    }
+  }
   const moduleFiles = new Map<string, number>();
   for (const f of code) {
-    const m = moduleOf(f);
+    const m = moduleOf(f, bases);
     if (m) moduleFiles.set(m, (moduleFiles.get(m) ?? 0) + 1);
   }
   const modules = new Set(
@@ -149,10 +233,11 @@ export function discoverArchitecture(
   const cross = new Map<string, Map<string, Map<string, { line: number; target: string }>>>();
   const packageUse = new Map<string, Map<string, Map<string, number>>>();
   for (const edge of edges) {
-    const from = moduleOf(edge.file);
+    const from = moduleOf(edge.file, bases);
     if (!from || !modules.has(from)) continue;
     if (edge.resolved.kind === "path") {
-      const to = moduleOf(edge.resolved.path);
+      const target = edge.resolved.path;
+      const to = moduleOf(dirs.has(target) ? `${target}/_` : target, bases);
       if (!to || to === from || !modules.has(to)) continue;
       const byTo = cross.get(from) ?? new Map();
       cross.set(from, byTo);
@@ -161,11 +246,15 @@ export function discoverArchitecture(
       if (!byFile.has(edge.file))
         byFile.set(edge.file, { line: edge.line, target: edge.resolved.path });
     } else {
-      const name = edge.resolved.name;
-      const gated = GATED_PACKAGES.some((p) =>
-        p.endsWith("/") || p.endsWith("-") ? name.startsWith(p) : name === p,
+      const resolvedName = edge.resolved.name;
+      const entry = GATED_PACKAGES.find((p) =>
+        p.endsWith("/") || p.endsWith("-") || p.endsWith(".")
+          ? resolvedName.startsWith(p)
+          : resolvedName === p,
       );
-      if (!gated) continue;
+      if (!entry) continue;
+      // A Java prefix proposes the package, not one class: `org.springframework.jdbc.*`.
+      const name = entry.endsWith(".") ? `${entry}*` : resolvedName;
       const byModule = packageUse.get(name) ?? new Map();
       packageUse.set(name, byModule);
       const byFile = byModule.get(from) ?? new Map();

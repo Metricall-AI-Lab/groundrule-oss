@@ -6,19 +6,18 @@
 // - placeholders: `{name}` in `from` captures a path segment and substitutes it into
 //             `forbid` and `allow`, so "features don't import each other" is one rule.
 // Imports are resolved to repository paths (relative paths, tsconfig/jsconfig `paths`, npm
-// workspaces, Python packages); whatever can't be resolved to the repository counts as a
-// package and never as a layer violation, so precision stays high.
+// workspaces, Python packages, Java and Kotlin source roots, Go modules; ADR 0011); whatever
+// can't be resolved to the repository counts as a package and never as a layer violation, so
+// precision stays high.
 
 import {
   defineEvaluator,
   type EvaluatorFinding,
   type ImportAliases,
-  isJsFile,
-  isPyFile,
+  isImportSource,
   readImportAliases,
   resolveImport,
-  scanJsImports,
-  scanPyImports,
+  scanImports,
 } from "@groundrule/core";
 import picomatch from "picomatch";
 import { z } from "zod";
@@ -48,7 +47,7 @@ const Options = z
 type ImportOptions = z.infer<typeof Options>;
 
 export type { ImportRef } from "@groundrule/core";
-export { scanJsImports, scanPyImports } from "@groundrule/core";
+export { scanGoImports, scanJavaImports, scanJsImports, scanPyImports } from "@groundrule/core";
 
 // ---------------------------------------------------------------- placeholders
 
@@ -90,11 +89,11 @@ export const importsEvaluator = defineEvaluator({
   id: "imports",
   source: "deterministic",
   description:
-    "Architecture rules over import statements: layers that must not import each other, modules reachable only through their public entry, and packages only some code may use. TypeScript, JavaScript and Python.",
+    "Architecture rules over import statements: layers that must not import each other, modules reachable only through their public entry, and packages only some code may use. TypeScript, JavaScript, Python, Java, Kotlin and Go.",
   optionsSchema: Options as unknown as z.ZodType<ImportOptions>,
   async evaluate({ options, context }) {
     const files = new Set(context.files);
-    const targets = context.targetFiles.filter((f) => isJsFile(f) || isPyFile(f));
+    const targets = context.targetFiles.filter(isImportSource);
     if (!targets.length) return [];
     const read = (p: string) => readText(context.readFile, p);
     const aliases: ImportAliases = await readImportAliases(read, files);
@@ -117,7 +116,7 @@ export const importsEvaluator = defineEvaluator({
       const text = await read(file);
       if (text === undefined) continue;
       const index = lineIndex(text);
-      const refs = isJsFile(file) ? scanJsImports(text) : scanPyImports(text);
+      const refs = scanImports(file, text);
       const forbid = options.forbid
         ? picomatch(
             options.forbid.map((g) => fill(g, captured)),

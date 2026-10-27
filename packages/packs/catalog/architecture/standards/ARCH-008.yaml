@@ -8,7 +8,7 @@ metadata:
 spec:
   severity: warning
   scope:
-    languages: [typescript, javascript, python]
+    languages: [typescript, javascript, python, java, kotlin, go]
   intent: >
     Queries scattered across controllers and jobs can't be reviewed for tenant scoping,
     indexes or transactions in one place, and every schema change touches the whole codebase.

@@ -7,7 +7,13 @@ import { llmEvaluator } from "./llm.js";
 import { regexEvaluator } from "./regex.js";
 import { semgrepEvaluator } from "./semgrep.js";
 
-export { type ImportRef, scanJsImports, scanPyImports } from "./imports.js";
+export {
+  type ImportRef,
+  scanGoImports,
+  scanJavaImports,
+  scanJsImports,
+  scanPyImports,
+} from "./imports.js";
 export { type Dependency, type Ecosystem, manifestEcosystem, parseManifest } from "./manifests.js";
 export { semgrepRuntime } from "./semgrep.js";
 export {

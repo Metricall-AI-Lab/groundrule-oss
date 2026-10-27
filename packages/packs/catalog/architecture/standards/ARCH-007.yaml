@@ -8,7 +8,7 @@ metadata:
 spec:
   severity: warning
   scope:
-    languages: [typescript, javascript, python]
+    languages: [typescript, javascript, python, java, kotlin, go]
   intent: >
     When every module can call Stripe, retries, idempotency keys, audit logging and provider
     switches have to be done in every module. One gateway module owns the provider.
@@ -22,9 +22,11 @@ spec:
       - { code: "import { charge } from \"../payments/gateway\";", language: typescript }
     forbidden:
       - { code: "import Stripe from \"stripe\";", language: typescript, note: "outside payments/" }
+      - { code: "import com.stripe.model.Charge;", language: java, note: "outside payments/" }
+      - { code: "import \"github.com/stripe/stripe-go/v76\"", language: go, note: "outside payments/" }
   checks:
     - evaluator: imports
-      package: ["stripe", "@stripe/*", "braintree", "@adyen/*", "@paypal/*", "paypalrestsdk", "adyen"]
+      package: ["stripe", "@stripe/*", "braintree", "@adyen/*", "@paypal/*", "paypalrestsdk", "adyen", "com.stripe.*", "com.braintreegateway.*", "com.adyen.*", "com.paypal.*", "github.com/stripe/**", "github.com/braintree/**", "github.com/adyen/**", "github.com/paypal/**"]
       only: ["**/payments/**", "**/billing/**"]
       message: The payment SDK is used outside the payments module
       remediation: Add the operation to the payments module and call that.

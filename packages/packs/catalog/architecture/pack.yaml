@@ -5,7 +5,7 @@ metadata:
   title: Architecture
   description: Dependency direction, module boundaries and technology gates, checked deterministically on every change. Adjust the paths in each rule to your layout; every rule starts at Observe so you see the impact first.
   owner: groundrule
-  version: 1.0.0
-  tags: [architecture, boundaries, layers, typescript, javascript, python]
+  version: 1.1.0
+  tags: [architecture, boundaries, layers, typescript, javascript, python, java, kotlin, go]
 spec:
   include: ["standards/**/*.yaml"]

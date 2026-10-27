@@ -8,7 +8,7 @@ metadata:
 spec:
   severity: blocker
   scope:
-    languages: [typescript, javascript, python]
+    languages: [typescript, javascript, python, java, kotlin, go]
     exclude: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**", "test/**", "tests/**", "**/testing/**", "**/fixtures/**", "**/conftest.py"]
   intent: >
     A helper, fixture or mock pulled into production code ships test behaviour to users,
