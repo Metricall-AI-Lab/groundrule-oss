@@ -3,12 +3,17 @@ import { changeSetEvaluator } from "./change-set.js";
 import { dependenciesEvaluator } from "./dependencies.js";
 import { filesEvaluator } from "./files.js";
 import { importsEvaluator } from "./imports.js";
+import { layoutEvaluator } from "./layout.js";
 import { llmEvaluator } from "./llm.js";
 import { regexEvaluator } from "./regex.js";
 import { semgrepEvaluator } from "./semgrep.js";
 
 export {
+  compileImportRule,
+  type ImportPreview,
   type ImportRef,
+  previewImports,
+  type ResolvedEdge,
   scanGoImports,
   scanJavaImports,
   scanJsImports,
@@ -21,6 +26,7 @@ export {
   dependenciesEvaluator,
   filesEvaluator,
   importsEvaluator,
+  layoutEvaluator,
   llmEvaluator,
   regexEvaluator,
   semgrepEvaluator,
@@ -32,6 +38,7 @@ export const builtinEvaluators: readonly Evaluator<unknown>[] = [
   regexEvaluator,
   dependenciesEvaluator,
   importsEvaluator,
+  layoutEvaluator,
   changeSetEvaluator,
   semgrepEvaluator,
   llmEvaluator,

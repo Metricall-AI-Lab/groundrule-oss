@@ -1,0 +1,22 @@
+standard: ARCH-009
+cases:
+  - name: a module with no test file anywhere
+    expect: violation
+    files:
+      src/orders/service.ts: |
+        export const total = () => 1;
+  - name: a test beside the module
+    expect: clean
+    files:
+      src/orders/service.ts: |
+        export const total = () => 1;
+      src/orders/service.test.ts: |
+        import { total } from "./service";
+        export const ok = total() === 1;
+  - name: a test under tests/ with the module's base name
+    expect: clean
+    files:
+      src/orders/service.ts: |
+        export const total = () => 1;
+      tests/orders/service.test.ts: |
+        export const ok = true;

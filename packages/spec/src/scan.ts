@@ -184,6 +184,34 @@ export const ImportedGate = z.strictObject({
 });
 export type ImportedGate = z.infer<typeof ImportedGate>;
 
+/** One import statement, resolved (RFC 0015): a repository path or a package, never code. */
+export const ImportEdge = z
+  .strictObject({
+    file: RelPath.describe("The importing file."),
+    line: z.number().int().positive().describe("The import statement's line."),
+    path: RelPath.optional().describe("The repository file or directory the import resolved to."),
+    package: z
+      .string()
+      .min(1)
+      .max(200)
+      .optional()
+      .describe("The package name or import path, when the import is not repository code."),
+  })
+  .refine((e) => Boolean(e.path) !== Boolean(e.package), {
+    message: "An edge has either `path` or `package`.",
+  });
+export type ImportEdge = z.infer<typeof ImportEdge>;
+
+export const IMPORT_GRAPH_MAX_EDGES = 20_000;
+export const ImportGraph = z.strictObject({
+  edges: z
+    .array(ImportEdge)
+    .max(IMPORT_GRAPH_MAX_EDGES)
+    .describe("Every resolved import, sorted by file then line, capped."),
+  truncated: z.boolean().describe("True when the cap cut the list."),
+});
+export type ImportGraph = z.infer<typeof ImportGraph>;
+
 export const ScanImports = z.strictObject({
   instructions: z.array(ImportedInstruction).max(500),
   toolSettings: z.array(ImportedToolSetting).max(300),
@@ -198,6 +226,9 @@ export const ScanImports = z.strictObject({
     .max(15)
     .default([])
     .describe("Packages one module owns, as proposals (RFC 0011)."),
+  graph: ImportGraph.optional().describe(
+    "The resolved import graph (RFC 0015): file, line, and the path or package each import points at. The platform previews architecture rules against it.",
+  ),
 });
 export type ScanImports = z.infer<typeof ScanImports>;
 

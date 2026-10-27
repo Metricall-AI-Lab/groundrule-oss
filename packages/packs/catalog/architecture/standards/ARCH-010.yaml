@@ -1,0 +1,57 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-010
+  title: HTTP handlers live in the delivery layer
+  type: requirement
+  category: architecture
+spec:
+  severity: warning
+  scope:
+    languages: [typescript, javascript, python, java, kotlin, go]
+  intent: >
+    A handler that lives next to the domain code it calls is the first step towards the
+    domain importing the framework. Keeping handlers in one place keeps the import boundary
+    visible and the routing table readable.
+  requirement: >
+    Files named as HTTP handlers (controllers, routes, handlers, views, resources) live under
+    the delivery directory (api, http, controllers, routes, handlers, web, delivery,
+    transport). Adjust the names and directories in the check to your layout.
+  remediation: >
+    Move the handler under the delivery directory and import the domain from there.
+  examples:
+    approved:
+      - { code: "src/api/orders.controller.ts", language: typescript }
+      - { code: "internal/transport/http/orders_handler.go", language: go }
+    forbidden:
+      - { code: "src/domain/orders.controller.ts", language: typescript, note: "a handler inside the domain" }
+      - { code: "internal/orders/http_handler.go", language: go, note: "a handler inside the module" }
+  checks:
+    - evaluator: layout
+      from:
+        - "**/*.controller.{ts,js,py,java,kt}"
+        - "**/*Controller.{java,kt}"
+        - "**/*.routes.{ts,js}"
+        - "**/*_handler.go"
+        - "**/*_handlers.go"
+        - "**/views.py"
+        - "**/*.resource.{ts,java,kt}"
+      place:
+        - "**/api/**"
+        - "**/http/**"
+        - "**/controllers/**"
+        - "**/routes/**"
+        - "**/handlers/**"
+        - "**/web/**"
+        - "**/delivery/**"
+        - "**/transport/**"
+        - "**/views/**"
+        - "**/resources/**"
+      message: HTTP handler outside the delivery layer
+      remediation: Move the handler under the delivery directory and import the domain from there.
+  quality:
+    noise: low
+    knownFalsePositives:
+      - A framework that names handlers differently. Add its names to `from` and its directory to `place`.
+  rollout:
+    recommendedStage: observe

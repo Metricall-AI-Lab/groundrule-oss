@@ -22,3 +22,4 @@ Changes to the Groundrule document format go through an RFC.
 | [0012](0012-agent-check-reports.md) | Agent check reports | Accepted |
 | [0013](0013-ai-checks.md) | AI checks, done honestly | Accepted |
 | [0014](0014-contributor-digest.md) | The contributor digest on uploads | Accepted |
+| [0015](0015-import-graph.md) | The import graph in scan reports | Accepted |
