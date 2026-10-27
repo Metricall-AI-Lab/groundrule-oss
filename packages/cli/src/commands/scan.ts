@@ -292,7 +292,7 @@ function printSummary(
   println(io);
   println(io, ` ${label("Packs")}${list(packs, "none")} ${s.dim("apply to this repository")}`);
   if (report.imports) {
-    const { instructions, toolSettings, owners, boundaries, gates } = report.imports;
+    const { instructions, toolSettings, owners, boundaries, gates, layouts } = report.imports;
     println(
       io,
       ` ${label("Imports")}${instructions.length} instructions from agent files · ${toolSettings.length} tool settings that match catalog rules · ${owners.length} CODEOWNERS entries`,
@@ -329,6 +329,26 @@ function printSummary(
         Math.min(gates.length, 4);
       if (more > 0)
         println(io, ` ${" ".repeat(12)}${s.dim(`and ${more} more in the JSON report`)}`);
+    }
+    if (layouts.length) {
+      println(
+        io,
+        ` ${label("Layout")}${layouts.length} ${layouts.length === 1 ? "convention" : "conventions"} this code already keeps ${s.dim("(proposed rules, with what would fail today)")}`,
+      );
+      const today = (n: number) =>
+        n === 0
+          ? s.green("clean today")
+          : s.yellow(`${n} ${n === 1 ? "file" : "files"} would fail today`);
+      for (const l of layouts.slice(0, 5))
+        println(
+          io,
+          ` ${" ".repeat(12)}${l.kind === "place" ? `${l.from[0]} lives under ${l.place?.[0]}` : `every ${l.from.join(", ")} file has ${l.companion?.[0]}`} ${s.dim(`· ${l.files} files ·`)} ${today(l.violations)}`,
+        );
+      if (layouts.length > 5)
+        println(
+          io,
+          ` ${" ".repeat(12)}${s.dim(`and ${layouts.length - 5} more in the JSON report`)}`,
+        );
     }
     println(io);
   }

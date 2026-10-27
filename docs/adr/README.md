@@ -17,3 +17,4 @@ Platform decisions live in the private `groundrule-backend` repository (local fo
 | [0010](0010-just-in-time-rules.md) | Just-in-time rules for coding agents | Accepted |
 | [0011](0011-architecture-rules-java-kotlin-go.md) | Architecture rules for Java, Kotlin and Go | Accepted |
 | [0012](0012-layout-rules.md) | Layout rules as a deterministic primitive | Accepted |
+| [0013](0013-metrics-rules.md) | Metrics rules as a deterministic primitive | Accepted |

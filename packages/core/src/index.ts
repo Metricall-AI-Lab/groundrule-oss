@@ -13,6 +13,7 @@ export * from "./git.js";
 export * from "./import-graph.js";
 export * from "./importers.js";
 export * from "./languages.js";
+export * from "./layout-discovery.js";
 export * from "./load.js";
 export * from "./repository.js";
 export * from "./runner.js";

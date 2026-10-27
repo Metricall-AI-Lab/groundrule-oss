@@ -1,0 +1,38 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-011
+  title: Files stay under 500 lines
+  type: requirement
+  category: architecture
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript, python, java, kotlin, go]
+  intent: >
+    A file that keeps growing is where an agent adds the next function, because it is already
+    open. Past a few hundred lines nobody reads it whole, and the module boundary it was
+    supposed to be dissolves into one.
+  requirement: >
+    A source file has at most 500 lines. Split by responsibility before it gets there: one
+    module per concept, with its own tests. Generated code, migrations and vendored files are
+    exempt. Adjust the limit and the exemptions in the check to your codebase.
+  remediation: >
+    Split the file along the responsibilities it already mixes, and move each with its tests.
+  examples:
+    approved:
+      - { code: "src/orders/service.ts (180 lines) + src/orders/pricing.ts (120 lines)", language: typescript }
+    forbidden:
+      - { code: "src/orders/service.ts (1,400 lines, everything about orders)", language: typescript }
+  checks:
+    - evaluator: metrics
+      exclude: ["**/*.generated.*", "**/*.min.js", "**/migrations/**", "**/vendor/**", "**/*.pb.go", "**/*_pb2.py", "**/schema.*"]
+      maxFileLines: 500
+      message: File over 500 lines
+      remediation: Split the file along the responsibilities it mixes.
+  quality:
+    noise: low
+    knownFalsePositives:
+      - Data tables, fixtures and generated code. Add their paths to the check's `exclude`.
+  rollout:
+    recommendedStage: observe

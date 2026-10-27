@@ -33,6 +33,7 @@ import {
   indexStandards,
   type ToolMapping,
 } from "./importers.js";
+import { discoverLayout } from "./layout-discovery.js";
 import { inspectRepository } from "./repository.js";
 import { runChecks } from "./runner.js";
 import { matchesScope } from "./scope.js";
@@ -332,7 +333,7 @@ async function discoverFromImports(root: string, files: readonly string[]) {
     })),
     truncated: sorted.length > IMPORT_GRAPH_MAX_EDGES,
   };
-  return { ...discoverArchitecture(files, edges), graph };
+  return { ...discoverArchitecture(files, edges), layouts: discoverLayout(files), graph };
 }
 
 export async function scanRepository(options: ScanOptions): Promise<ScanReport> {

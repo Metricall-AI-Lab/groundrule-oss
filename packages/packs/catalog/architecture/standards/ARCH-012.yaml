@@ -1,0 +1,41 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-012
+  title: Functions stay short and flat
+  type: requirement
+  category: architecture
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript, python, java, kotlin, go]
+  intent: >
+    Agents grow the function they are in rather than split it, and reviewers notice when it
+    no longer fits on a screen. A function with many parameters or deep nesting is the one
+    that gets a flag added instead of a second function.
+  requirement: >
+    A function has at most 60 lines, at most 5 parameters, and nests at most 4 levels deep.
+    Extract a helper, pass an options object, or return early. Adjust the limits in the check
+    to your codebase.
+  remediation: >
+    Extract the nested block into a named function; replace the parameter list with one options
+    object; return early instead of nesting.
+  examples:
+    approved:
+      - { code: "function place(order: Order, options: PlaceOptions) { … }", language: typescript }
+    forbidden:
+      - { code: "function place(a, b, c, d, e, f, g) { if (a) { if (b) { for (…) { if (c) { … } } } } }", language: typescript, note: "seven parameters, five levels" }
+  checks:
+    - evaluator: metrics
+      exclude: ["**/*.generated.*", "**/*.min.js", "**/migrations/**", "**/vendor/**", "**/*.pb.go", "**/*_pb2.py"]
+      maxFunctionLines: 60
+      maxParameters: 5
+      maxNesting: 4
+      message: Function over the size or nesting limit
+      remediation: Extract a helper, pass an options object, or return early.
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Builders and table-driven code that is long but flat. Record an exception, or raise the limit in the check.
+  rollout:
+    recommendedStage: observe

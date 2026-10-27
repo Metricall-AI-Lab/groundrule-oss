@@ -5,6 +5,7 @@ import { filesEvaluator } from "./files.js";
 import { importsEvaluator } from "./imports.js";
 import { layoutEvaluator } from "./layout.js";
 import { llmEvaluator } from "./llm.js";
+import { metricsEvaluator } from "./metrics.js";
 import { regexEvaluator } from "./regex.js";
 import { semgrepEvaluator } from "./semgrep.js";
 
@@ -20,6 +21,7 @@ export {
   scanPyImports,
 } from "./imports.js";
 export { type Dependency, type Ecosystem, manifestEcosystem, parseManifest } from "./manifests.js";
+export { type MeasuredFunction, measureFunctions } from "./metrics.js";
 export { semgrepRuntime } from "./semgrep.js";
 export {
   changeSetEvaluator,
@@ -28,6 +30,7 @@ export {
   importsEvaluator,
   layoutEvaluator,
   llmEvaluator,
+  metricsEvaluator,
   regexEvaluator,
   semgrepEvaluator,
 };
@@ -39,6 +42,7 @@ export const builtinEvaluators: readonly Evaluator<unknown>[] = [
   dependenciesEvaluator,
   importsEvaluator,
   layoutEvaluator,
+  metricsEvaluator,
   changeSetEvaluator,
   semgrepEvaluator,
   llmEvaluator,
