@@ -1,5 +1,13 @@
 # @groundrule/adapters
 
+## 0.22.0
+
+### Patch Changes
+
+- Updated dependencies [2040dff]
+  - @groundrule/spec@0.22.0
+  - @groundrule/core@0.22.0
+
 ## 0.21.0
 
 ### Patch Changes
