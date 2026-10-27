@@ -5,6 +5,7 @@ import type { EvaluatorFinding } from "@groundrule/core";
 import { describe, expect, it } from "vitest";
 import {
   importsEvaluator,
+  previewImports,
   scanGoImports,
   scanJavaImports,
   scanJsImports,
@@ -300,6 +301,30 @@ describe("layer rules", () => {
     expect(summarize(gate)).toEqual([
       "internal/domain/order.go:7 internal/domain/order.go imports github.com/lib/pq: only internal/infra/**, services/billing/stripe/** may use it",
     ]);
+  });
+
+  it("preview what a rule would report over a stored graph (RFC 0015)", () => {
+    const edges = [
+      { file: "src/domain/order.ts", line: 1, path: "src/infra/db/client.ts" },
+      { file: "src/domain/order.ts", line: 2, path: "src/domain/money.ts" },
+      { file: "src/domain/order.ts", line: 3, package: "zod" },
+      { file: "src/api/orders.ts", line: 1, path: "src/infra/db/client.ts" },
+      { file: "src/api/orders.ts", line: 2, package: "stripe" },
+      { file: "src/payments/charge.ts", line: 1, package: "stripe" },
+    ];
+    expect(previewImports({ from: ["src/domain/**"], forbid: ["src/infra/**"] }, edges)).toEqual({
+      violations: 1,
+      files: 1,
+      applicable: 1,
+      examples: [{ file: "src/domain/order.ts", line: 1, target: "src/infra/db/client.ts" }],
+    });
+    expect(previewImports({ package: "stripe", only: ["src/payments/**"] }, edges)).toMatchObject({
+      violations: 1,
+      files: 1,
+      applicable: 3,
+      examples: [{ file: "src/api/orders.ts", line: 2, target: "stripe" }],
+    });
+    expect(() => previewImports({ from: ["x/**"] }, edges)).toThrow(/forbid/);
   });
 
   it("validate its options", () => {

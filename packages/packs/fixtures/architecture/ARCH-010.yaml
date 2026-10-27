@@ -1,0 +1,23 @@
+standard: ARCH-010
+cases:
+  - name: a controller inside the domain
+    expect: violation
+    files:
+      src/domain/orders.controller.ts: |
+        export const handler = () => 1;
+  - name: a Go handler inside its module
+    expect: violation
+    files:
+      go.mod: |
+        module github.com/acme/shop
+      internal/orders/http_handler.go: |
+        package orders
+  - name: handlers under the delivery directories
+    expect: clean
+    files:
+      src/api/orders.controller.ts: |
+        export const handler = () => 1;
+      internal/transport/http/orders_handler.go: |
+        package http
+      src/domain/order.ts: |
+        export const order = 1;

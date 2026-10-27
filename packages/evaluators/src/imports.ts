@@ -85,6 +85,119 @@ const fill = (pattern: string, captured: Record<string, string>) =>
 
 const describe = (globs: readonly string[]) => globs.join(", ");
 
+/** One resolved import, as the evaluator or a stored graph (RFC 0015) sees it. */
+export interface ResolvedEdge {
+  file: string;
+  line: number;
+  /** The import as written; absent in a stored graph. */
+  specifier?: string;
+  resolved: { kind: "path"; path: string } | { kind: "package"; name: string };
+}
+
+/**
+ * The rule's matching, compiled once: `test` says whether an edge violates it and how. Shared
+ * by the evaluator (over files it reads) and `previewImports` (over a stored graph).
+ */
+export function compileImportRule(options: ImportOptions) {
+  const fromPatterns = (options.from ?? ["**"]).map(fromMatcher);
+  const packages = options.package
+    ? picomatch(Array.isArray(options.package) ? options.package : [options.package], {
+        dot: true,
+      })
+    : null;
+  const only = options.only ? picomatch(options.only, { dot: true }) : null;
+  const fromText = describe(options.from ?? ["**"]);
+  return {
+    /** The captures when the file is one the rule applies to, else null. */
+    applies(file: string): Record<string, string> | null {
+      for (const match of fromPatterns) {
+        const captured = match(file);
+        if (captured) return captured;
+      }
+      return null;
+    },
+    test(
+      edge: ResolvedEdge,
+      captured: Record<string, string>,
+    ): { message: string; evidence: string } | null {
+      const written = edge.specifier ? `"${edge.specifier}"` : "an import";
+      if (options.forbid && edge.resolved.kind === "path" && edge.resolved.path !== edge.file) {
+        const forbid = picomatch(
+          options.forbid.map((g) => fill(g, captured)),
+          { dot: true },
+        );
+        const allow = options.allow
+          ? picomatch(
+              options.allow.map((g) => fill(g, captured)),
+              { dot: true },
+            )
+          : () => false;
+        if (forbid(edge.resolved.path) && !allow(edge.resolved.path))
+          return {
+            message: `${edge.file} imports ${edge.resolved.path}: files in ${fromText} must not import ${describe(options.forbid)}`,
+            evidence: `${edge.file}:${edge.line} imports ${written}, which resolves to ${edge.resolved.path}`,
+          };
+        return null;
+      }
+      if (packages && edge.resolved.kind === "package" && packages(edge.resolved.name)) {
+        if (!only || !only(edge.file))
+          return {
+            message: `${edge.file} imports ${edge.resolved.name}: only ${describe(options.only as string[])} may use it`,
+            evidence: `${edge.file}:${edge.line} imports ${written} (package ${edge.resolved.name})`,
+          };
+      }
+      return null;
+    },
+  };
+}
+
+export interface ImportPreview {
+  /** Imports that would violate the rule. */
+  violations: number;
+  /** Distinct files with at least one. */
+  files: number;
+  /** Files the rule applies to (matching `from`) that have imports. */
+  applicable: number;
+  examples: { file: string; line: number; target: string }[];
+}
+
+/** What an `imports` rule would report today over a stored graph (RFC 0015). Never throws for bad options: validate first. */
+export function previewImports(
+  options: unknown,
+  edges: readonly {
+    file: string;
+    line: number;
+    path?: string | undefined;
+    package?: string | undefined;
+  }[],
+  maxExamples = 5,
+): ImportPreview {
+  const parsed = Options.parse(options);
+  const rule = compileImportRule(parsed);
+  const files = new Set<string>();
+  const applicable = new Set<string>();
+  const examples: ImportPreview["examples"] = [];
+  let violations = 0;
+  for (const e of edges) {
+    const captured = rule.applies(e.file);
+    if (!captured) continue;
+    applicable.add(e.file);
+    const resolved = e.path
+      ? ({ kind: "path", path: e.path } as const)
+      : ({ kind: "package", name: e.package ?? "" } as const);
+    if (!rule.test({ file: e.file, line: e.line, resolved }, captured)) continue;
+    violations++;
+    files.add(e.file);
+    if (examples.length < maxExamples)
+      examples.push({
+        file: e.file,
+        line: e.line,
+        target: resolved.kind === "path" ? resolved.path : resolved.name,
+      });
+  }
+  return { violations, files: files.size, applicable: applicable.size, examples };
+}
+
 export const importsEvaluator = defineEvaluator({
   id: "imports",
   source: "deterministic",
@@ -97,64 +210,30 @@ export const importsEvaluator = defineEvaluator({
     if (!targets.length) return [];
     const read = (p: string) => readText(context.readFile, p);
     const aliases: ImportAliases = await readImportAliases(read, files);
-    const fromPatterns = (options.from ?? ["**"]).map(fromMatcher);
-    const packages = options.package
-      ? picomatch(Array.isArray(options.package) ? options.package : [options.package], {
-          dot: true,
-        })
-      : null;
-    const only = options.only ? picomatch(options.only, { dot: true }) : null;
+    const rule = compileImportRule(options);
     const findings: EvaluatorFinding[] = [];
 
     for (const file of targets) {
-      let captured: Record<string, string> | null = null;
-      for (const match of fromPatterns) {
-        captured = match(file);
-        if (captured) break;
-      }
+      const captured = rule.applies(file);
       if (!captured) continue;
       const text = await read(file);
       if (text === undefined) continue;
       const index = lineIndex(text);
-      const refs = scanImports(file, text);
-      const forbid = options.forbid
-        ? picomatch(
-            options.forbid.map((g) => fill(g, captured)),
-            { dot: true },
-          )
-        : null;
-      const allow = options.allow
-        ? picomatch(
-            options.allow.map((g) => fill(g, captured)),
-            { dot: true },
-          )
-        : () => false;
-
-      for (const ref of refs) {
+      for (const ref of scanImports(file, text)) {
         const resolved = resolveImport(file, ref.specifier, aliases, files);
-        let message: string | undefined;
-        let evidence: string | undefined;
-        if (forbid && resolved.kind === "path" && resolved.path !== file) {
-          if (forbid(resolved.path) && !allow(resolved.path)) {
-            message = `${file} imports ${resolved.path}: files in ${describe(options.from ?? ["**"])} must not import ${describe(options.forbid as string[])}`;
-            evidence = `${file}:${ref.line} imports "${ref.specifier}", which resolves to ${resolved.path}`;
-          }
-        } else if (packages && resolved.kind === "package" && packages(resolved.name)) {
-          if (!only || !only(file)) {
-            message = `${file} imports ${resolved.name}: only ${describe(options.only as string[])} may use it`;
-            evidence = `${file}:${ref.line} imports "${ref.specifier}" (package ${resolved.name})`;
-          }
-        }
-        if (!message || !evidence) continue;
-        const snippet = index.line(ref.line);
+        const hit = rule.test(
+          { file, line: ref.line, specifier: ref.specifier, resolved },
+          captured,
+        );
+        if (!hit) continue;
         findings.push({
           status: "violation",
           confidence: "certain",
-          message: options.message ?? message,
+          message: options.message ?? hit.message,
           location: { file, startLine: ref.line },
-          evidence: [evidence],
+          evidence: [hit.evidence],
           ...(options.remediation ? { remediation: options.remediation } : {}),
-          snippet: truncate(snippet),
+          snippet: truncate(index.line(ref.line)),
         });
       }
     }

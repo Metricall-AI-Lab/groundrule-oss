@@ -1,0 +1,44 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Standard
+metadata:
+  id: ARCH-009
+  title: Every source file has a test file
+  type: requirement
+  category: architecture
+spec:
+  severity: advisory
+  scope:
+    languages: [typescript, javascript]
+  intent: >
+    A module without a test file is the one an agent changes most freely, because nothing
+    answers back. The convention is cheap to keep when every new file brings its test with it,
+    and expensive to restore later.
+  requirement: >
+    Every source file under src has a test file: next to it (`name.test.ts` or `name.spec.ts`)
+    or under tests/ with the same base name. Index files, type declarations, stories and mocks
+    are exempt. Adjust the directories and suffixes in the check to your layout.
+  remediation: >
+    Add a test file beside the module, or under tests/, with the module's base name.
+  examples:
+    approved:
+      - { code: "src/orders/service.ts + src/orders/service.test.ts", language: typescript, note: "a test beside the module" }
+    forbidden:
+      - { code: "src/orders/service.ts with no service.test.ts or service.spec.ts anywhere", language: typescript }
+  checks:
+    - evaluator: layout
+      from: ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/*.d.ts", "**/index.*", "**/*.stories.*", "**/types/**", "**/__tests__/**", "**/__mocks__/**"]
+      companion:
+        - "{dir}/{base}.test{ext}"
+        - "{dir}/{base}.spec{ext}"
+        - "{dir}/__tests__/{base}.test{ext}"
+        - "tests/**/{base}.test{ext}"
+        - "test/**/{base}.test{ext}"
+      message: Source file without a test file
+      remediation: Add a test file beside the module or under tests/, with the module's base name.
+  quality:
+    noise: medium
+    knownFalsePositives:
+      - Configuration, constants and entry points that need no test. Add their paths to the check's `exclude`; the test files must stay in the standard's scope so the companions are found.
+  rollout:
+    recommendedStage: observe

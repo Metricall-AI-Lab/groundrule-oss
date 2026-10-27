@@ -12,6 +12,8 @@ import {
   API_VERSION,
   Config,
   type Finding,
+  IMPORT_GRAPH_MAX_EDGES,
+  type ImportGraph,
   type ScanAgentFile,
   type ScanExample,
   type ScanOutcome,
@@ -319,7 +321,18 @@ async function discoverFromImports(root: string, files: readonly string[]) {
     }
   };
   const { edges } = await buildImportGraph(files, read);
-  return discoverArchitecture(files, edges);
+  const sorted = [...edges].sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+  const graph: ImportGraph = {
+    edges: sorted.slice(0, IMPORT_GRAPH_MAX_EDGES).map((e) => ({
+      file: e.file,
+      line: e.line,
+      ...(e.resolved.kind === "path"
+        ? { path: e.resolved.path }
+        : { package: e.resolved.name.slice(0, 200) }),
+    })),
+    truncated: sorted.length > IMPORT_GRAPH_MAX_EDGES,
+  };
+  return { ...discoverArchitecture(files, edges), graph };
 }
 
 export async function scanRepository(options: ScanOptions): Promise<ScanReport> {
