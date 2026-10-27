@@ -1,6 +1,6 @@
 {
   "name": "@groundrule/mcp",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "A minimal Model Context Protocol server (stdio, tools only) for Groundrule.",
   "license": "Apache-2.0",
   "author": "Vyana Compute",
