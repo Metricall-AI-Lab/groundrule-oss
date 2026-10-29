@@ -154,7 +154,7 @@ Existing settings and hooks are kept. The hook asks once per turn, so an agent t
 
 ## GitHub
 
-See [`action/`](action/README.md): checks every pull request, writes a job summary, and uploads findings to code scanning.
+[`Metricall-AI-Lab/groundrule-action@v1`](https://github.com/marketplace/actions/groundrule-check) checks every pull request, writes a job summary, and uploads findings to code scanning. Source in [`action/`](action/README.md).
 
 ## Development
 
