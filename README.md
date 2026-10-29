@@ -1,18 +1,29 @@
 # Groundrule
 
-**Define once. Enforce everywhere.**
+[![npm](https://img.shields.io/npm/v/%40groundrule%2Fcli?label=%40groundrule%2Fcli&color=C2420D)](https://www.npmjs.com/package/@groundrule/cli)
+[![CI](https://github.com/Metricall-AI-Lab/groundrule-oss/actions/workflows/ci.yml/badge.svg)](https://github.com/Metricall-AI-Lab/groundrule-oss/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/Metricall-AI-Lab/groundrule-oss?color=111111)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-docs.groundrule.dev-111111)](https://docs.groundrule.dev)
 
-Groundrule turns your engineering standards into executable rules for every developer, repository, and AI coding agent.
+**Your engineering standards, taught to every coding agent and checked on every PR.**
 
 Write a standard once, as a small YAML file in git. Groundrule:
 
-- **teaches your coding agents.** It generates `AGENTS.md`, `CLAUDE.md`, Cursor rules, and Copilot instructions containing only the standards that apply, without touching what you wrote by hand.
-- **checks the code.** It runs locally and in CI against your changes or the whole repository, using deterministic checks, Semgrep, and (soon) AI review.
+- **teaches your coding agents.** It generates `AGENTS.md`, `CLAUDE.md`, Cursor rules, and Copilot instructions containing only the standards that apply, without touching what you wrote by hand. An MCP server and stop hooks let Claude Code, Codex, Cursor and Copilot check their own changes before they finish.
+- **checks the code.** It runs locally and in CI against your changes or the whole repository, with deterministic checks (files, patterns, dependencies, imports, layout, metrics, change sets), Semgrep, and optional AI checks on the Groundrule platform.
 - **tells you why.** Every finding names the standard, shows the evidence, says how to fix it, and labels whether it came from a deterministic check or AI.
 
-> **Status:** pre-alpha (0.1). The document format is `groundrule.dev/v1alpha1` and may change.
+Everything in this repository works offline and without an account. The [Groundrule platform](https://groundrule.dev) adds a shared rulebook, staged rollout, hosted checks and a compliance report on top of it.
+
+> **Status:** 0.x. Groundrule checks its own repositories with it. The document format is `groundrule.dev/v1alpha1` and may still change before 1.0; changes are announced in [Discussions](https://github.com/Metricall-AI-Lab/groundrule-oss/discussions).
+
+## See it in 60 seconds
+
+[![Groundrule in 60 seconds](docs/media/groundrule-60s.png)](https://groundrule.dev)
 
 ## Quick start
+
+Thirty seconds, no account, nothing leaves your machine:
 
 ```bash
 npx @groundrule/cli init      # detects your stack, picks packs, writes .groundrule/config.yaml
