@@ -1,4 +1,4 @@
-name: Groundrule
+name: Groundrule Check
 description: Check pull requests against your engineering standards and keep agent instructions in sync.
 author: Groundrule
 branding:

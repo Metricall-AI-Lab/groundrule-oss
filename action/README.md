@@ -20,12 +20,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0     # needed to compare against the base branch
-      - uses: Metricall-AI-Lab/groundrule-oss/action@main
+      - uses: Metricall-AI-Lab/groundrule-action@v1
         with:
           token: ${{ secrets.GROUNDRULE_TOKEN }}   # optional: send results to Groundrule
 ```
 
-Pin the action to a commit SHA (`@<sha>`) for reproducible builds. Create the token in Groundrule under **Settings → API tokens** with **Upload scans and check results**, and save it as the repository secret `GROUNDRULE_TOKEN`.
+The action is published on the [GitHub Marketplace](https://github.com/marketplace/actions/groundrule-check) as `Metricall-AI-Lab/groundrule-action`, a copy of this folder; `v1` follows the latest 1.x release. Pin to a commit SHA (`@<sha>`) for reproducible builds. Create the token in Groundrule under **Settings → API tokens** with **Upload scans and check results**, and save it as the repository secret `GROUNDRULE_TOKEN`.
 
 | Input | Default | Description |
 |-------|---------|-------------|
