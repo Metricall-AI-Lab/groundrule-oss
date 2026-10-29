@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Metricall-AI-Lab/groundrule",
+  "description": "Your repository's engineering standards for coding agents: rules_for (the rules for a file before it is edited), check (the same check CI runs, on the agent's uncommitted changes), list_standards, and propose_rule. Works offline.",
+  "repository": { "url": "https://github.com/Metricall-AI-Lab/groundrule-oss", "source": "github" },
+  "websiteUrl": "https://docs.groundrule.dev/developers/agents/mcp/",
+  "version": "0.23.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@groundrule/cli",
+      "version": "0.23.1",
+      "runtimeHint": "npx",
+      "transport": { "type": "stdio" },
+      "packageArguments": [
+        { "type": "positional", "value": "mcp", "description": "Start the MCP server (stdio)" }
+      ]
+    }
+  ]
+}
