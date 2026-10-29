@@ -1,7 +1,8 @@
 {
   "name": "@groundrule/cli",
   "version": "0.23.0",
-  "description": "Groundrule: define engineering standards once, enforce them everywhere.",
+  "mcpName": "io.github.Metricall-AI-Lab/groundrule",
+  "description": "Groundrule: your engineering standards, taught to every coding agent and checked on every PR. CLI, checks, packs, MCP server and hooks.",
   "license": "Apache-2.0",
   "author": "Vyana Compute",
   "homepage": "https://groundrule.dev",
@@ -51,5 +52,20 @@
     "commander": "^15.0.0",
     "yaml": "^2.9.1",
     "zod": "^4.6.5"
-  }
+  },
+  "keywords": [
+    "coding-agents",
+    "agents-md",
+    "claude-code",
+    "cursor",
+    "github-copilot",
+    "mcp",
+    "mcp-server",
+    "code-quality",
+    "engineering-standards",
+    "coding-standards",
+    "developer-tools",
+    "static-analysis",
+    "ci"
+  ]
 }
