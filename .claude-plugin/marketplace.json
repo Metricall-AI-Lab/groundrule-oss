@@ -1,0 +1,14 @@
+{
+  "name": "groundrule",
+  "owner": { "name": "Groundrule", "url": "https://groundrule.dev" },
+  "metadata": { "description": "Groundrule: your engineering standards, taught to every coding agent and checked on every PR." },
+  "plugins": [
+    {
+      "name": "groundrule",
+      "source": "./plugin",
+      "description": "Your engineering standards in Claude Code: the rules for each file before it is edited, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.",
+      "category": "productivity",
+      "keywords": ["engineering-standards", "code-quality", "agents-md", "mcp", "hooks"]
+    }
+  ]
+}

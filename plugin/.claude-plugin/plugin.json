@@ -1,0 +1,16 @@
+{
+  "name": "groundrule",
+  "displayName": "Groundrule",
+  "version": "0.1.0",
+  "description": "Your engineering standards in Claude Code: the rules for each file before it is edited, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.",
+  "author": { "name": "Groundrule", "email": "hello@groundrule.dev", "url": "https://groundrule.dev" },
+  "homepage": "https://docs.groundrule.dev/developers/agents/mcp/",
+  "repository": "https://github.com/Metricall-AI-Lab/groundrule-oss",
+  "license": "Apache-2.0",
+  "keywords": ["engineering-standards", "coding-standards", "code-quality", "agents-md", "mcp", "hooks", "ci"],
+  "icon": "./logo.png",
+  "documentationUrl": "https://docs.groundrule.dev",
+  "supportUrl": "https://github.com/Metricall-AI-Lab/groundrule-oss/discussions",
+  "privacyPolicyUrl": "https://groundrule.dev/privacy",
+  "termsOfServiceUrl": "https://groundrule.dev/terms"
+}
