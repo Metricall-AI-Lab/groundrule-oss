@@ -1,7 +1,9 @@
 {
   "name": "groundrule",
   "owner": { "name": "Groundrule", "url": "https://groundrule.dev" },
-  "metadata": { "description": "Groundrule: your engineering standards, taught to every coding agent and checked on every PR." },
+  "metadata": {
+    "description": "Groundrule: your engineering standards, taught to every coding agent and checked on every PR."
+  },
   "plugins": [
     {
       "name": "groundrule",
