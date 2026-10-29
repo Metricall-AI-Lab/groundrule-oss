@@ -1,5 +1,18 @@
 # @groundrule/cli
 
+## 0.23.1
+
+### Patch Changes
+
+- d5ece14: Add `mcpName` and npm keywords to the package, so the MCP server can be listed in the official MCP Registry and found in npm search.
+- @groundrule/adapters@0.23.1
+  - @groundrule/core@0.23.1
+  - @groundrule/evaluators@0.23.1
+  - @groundrule/mcp@0.23.1
+  - @groundrule/packs@0.23.1
+  - @groundrule/reporters@0.23.1
+  - @groundrule/spec@0.23.1
+
 ## 0.23.0
 
 ### Minor Changes
