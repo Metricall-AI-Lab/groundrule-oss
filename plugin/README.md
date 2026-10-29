@@ -18,4 +18,6 @@ The plugin bundles three things, all backed by the open-source CLI (`npx @ground
 
 In a repository without `.groundrule/`, nothing runs. `npx @groundrule/cli init` sets one up; it works offline and without an account. Nothing leaves your machine unless the repository is connected to a workspace, in which case the hook reports counts per rule, never code ([what is sent](https://docs.groundrule.dev/developers/agents/hooks/#what-the-workspace-learns)).
 
-Validate after a change: `claude plugin validate ./plugin --strict`.
+What the plugin runs and sends: every component runs `npx @groundrule/cli` at the exact version pinned in `.mcp.json` and `hooks/hooks.json` (npm downloads it on first use). The CLI reads the repository's `.groundrule/` folder and the files being changed; it makes no network request unless the repository's config names a Groundrule workspace (`platform:`) and the developer has run `groundrule login`, in which case it sends counts per rule, never code. No credentials are read from the environment.
+
+Releasing: raise `version` in `.claude-plugin/plugin.json` and the pinned CLI version in `.mcp.json` and `hooks/hooks.json` together. Validate after a change: `claude plugin validate ./plugin --strict`.

@@ -2,7 +2,7 @@
   "mcpServers": {
     "groundrule": {
       "command": "npx",
-      "args": ["--yes", "@groundrule/cli@>=0.17.0", "mcp"]
+      "args": ["--yes", "@groundrule/cli@0.23.0", "mcp"]
     }
   }
 }
