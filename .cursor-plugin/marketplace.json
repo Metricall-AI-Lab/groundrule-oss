@@ -1,0 +1,16 @@
+{
+  "name": "groundrule",
+  "owner": { "name": "Groundrule", "email": "hello@groundrule.dev" },
+  "metadata": {
+    "description": "Groundrule: your engineering standards, taught to every coding agent and checked on every PR."
+  },
+  "plugins": [
+    {
+      "name": "groundrule",
+      "source": "cursor-plugin",
+      "description": "Your engineering standards in Cursor: the rules for each file, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.",
+      "category": "Developer Tools",
+      "tags": ["engineering-standards", "code-quality", "mcp", "hooks"]
+    }
+  ]
+}

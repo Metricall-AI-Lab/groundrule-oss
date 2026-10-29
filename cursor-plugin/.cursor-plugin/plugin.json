@@ -1,0 +1,19 @@
+{
+  "name": "groundrule",
+  "version": "0.1.0",
+  "description": "Your engineering standards in Cursor: the rules for each file, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.",
+  "author": { "name": "Groundrule", "email": "hello@groundrule.dev" },
+  "homepage": "https://docs.groundrule.dev/developers/agents/mcp/",
+  "repository": "https://github.com/Metricall-AI-Lab/groundrule-oss",
+  "license": "Apache-2.0",
+  "keywords": [
+    "engineering-standards",
+    "coding-standards",
+    "code-quality",
+    "agents-md",
+    "mcp",
+    "hooks",
+    "ci"
+  ],
+  "logo": "assets/logo.png"
+}
