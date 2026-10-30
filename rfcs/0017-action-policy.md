@@ -78,15 +78,15 @@ A policy matches when every listed field matches (within a field, any pattern). 
 
 Rollout stages apply when the policy comes from the platform: `observe` and `teach` take no decision (teach still reaches agent files); `advise` gives the agent the reason as context and takes no decision; `enforce` decides. A local policy has no stage and decides.
 
-**Default `ask`, 50 ms budget, nothing on error.** A wrong deny stops a developer mid-task, and a hook that is slow gets turned off. So: the default effect is `ask`; evaluation is pure string matching with patterns compiled once; the hook has a five-second timeout at the agent and answers in well under 50 ms once Node has started; and any failure (no config, unreadable file, bad input) means no decision and the agent's own permission flow applies.
+**Default `ask`, 50 ms budget, nothing on error.** A wrong deny stops a developer mid-task, and a hook that is slow gets turned off. So: the default effect is `ask`; evaluation is pure string matching with patterns compiled once; the hook answers in well under 50 ms once Node has started, and its command pins the exact CLI version so npx serves it from a cache warmed at install (a 30-second budget at the agent covers a cold cache, since a timed-out hook lets the call through); and any failure (no config, unreadable file, bad input) means no decision and the agent's own permission flow applies.
 
 ### The hook
 `groundrule hooks` installs, next to the stop hook, a before-tool hook that runs `groundrule hook <agent> --before-tool`:
 
 | Agent | Installed as | Decisions delivered |
 |---|---|---|
-| Claude Code | one `PreToolUse` entry for every tool (it replaces the `Edit\|Write\|MultiEdit` entry from ADR 0010; the rules for a file are still added to the same answer) | allow, ask, deny |
-| Codex | `PreToolUse` for every tool | allow, deny; `ask` is delivered as deny with a reason that says a person must run it (fail closed, never silently open) |
+| Claude Code | one `PreToolUse` entry matching the tools a policy can decide (`Bash\|PowerShell\|Edit\|Write\|MultiEdit\|NotebookEdit\|Read\|WebFetch\|mcp__.*`; it replaces the `Edit\|Write\|MultiEdit` entry from ADR 0010, and the rules for a file are still added to the same answer) | allow, ask, deny |
+| Codex | `PreToolUse` with the same matcher | allow, deny; `ask` is delivered as deny with a reason that says a person must run it (fail closed, never silently open) |
 | Cursor | `beforeShellExecution`, `beforeMCPExecution`, `beforeReadFile` | allow, ask, deny; reads: `ask` as deny |
 | Copilot | `preToolUse` in Groundrule's own hook file | allow, ask, deny; the cloud agent treats ask as deny |
 
