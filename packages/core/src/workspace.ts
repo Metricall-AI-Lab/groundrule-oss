@@ -11,6 +11,7 @@ import {
   type Severity,
   type Standard,
 } from "@groundrule/spec";
+import type { LoadedActionPolicy } from "./actions.js";
 import type { Diagnostic } from "./diagnostics.js";
 import { exists, globFiles, toPosix } from "./fs.js";
 import { isGroundruleDocument, stripManagedBlocks } from "./generated.js";
@@ -43,6 +44,8 @@ export interface Workspace {
   configFile: string;
   config: Config;
   standards: LoadedStandard[];
+  /** Action policies (RFC 0017), loaded from the same globs as standards. */
+  actions: LoadedActionPolicy[];
   exceptions: ExceptionEntry[];
   diagnostics: Diagnostic[];
 }
@@ -100,14 +103,26 @@ export async function loadWorkspace(
   const seen = new Map<string, string>();
   const visitedPacks = new Set<string>();
 
+  const actions: LoadedActionPolicy[] = [];
+
+  /** A standard or an action policy; both share the identifier space. */
   const addStandardFile = async (file: string, origin: string) => {
-    const result = await loadFile(file, "Standard");
+    const result = await loadFile(file);
     if (!result.ok) {
       diagnostics.push(...result.diagnostics);
       return;
     }
-    const standard = result.document;
-    const id = standard.metadata.id;
+    const document = result.document;
+    if (document.kind !== "Standard" && document.kind !== "ActionPolicy") {
+      diagnostics.push({
+        severity: "error",
+        file,
+        path: "kind",
+        message: `Expected kind "Standard" or "ActionPolicy", found ${JSON.stringify(document.kind)}.`,
+      });
+      return;
+    }
+    const id = document.metadata.id;
     const previous = seen.get(id);
     if (previous) {
       diagnostics.push({
@@ -119,7 +134,8 @@ export async function loadWorkspace(
       return;
     }
     seen.set(id, file);
-    standards.push({ standard, file, origin, disabled: false });
+    if (document.kind === "ActionPolicy") actions.push({ policy: document, file, origin });
+    else standards.push({ standard: document, file, origin, disabled: false });
   };
 
   const loadPackFile = async (packFile: string, origin: string, chain: string[]): Promise<void> => {
@@ -201,6 +217,15 @@ export async function loadWorkspace(
   for (const [id, override] of Object.entries(config.overrides)) {
     const loaded = standards.find((s) => s.standard.metadata.id === id);
     if (!loaded) {
+      if (actions.some((a) => a.policy.metadata.id === id)) {
+        diagnostics.push({
+          severity: "warning",
+          file: configFile,
+          path: `overrides.${id}`,
+          message: `${id} is an action policy; overrides apply to standards. Change its effect in the policy, or add an exception.`,
+        });
+        continue;
+      }
       diagnostics.push({
         severity: "warning",
         file: configFile,
@@ -248,8 +273,12 @@ export async function loadWorkspace(
   }
 
   standards.sort((a, b) => a.standard.metadata.id.localeCompare(b.standard.metadata.id));
+  actions.sort((a, b) => a.policy.metadata.id.localeCompare(b.policy.metadata.id));
   if (diagnostics.some((d) => d.severity === "error")) return { ok: false, diagnostics };
-  return { ok: true, workspace: { root, configFile, config, standards, exceptions, diagnostics } };
+  return {
+    ok: true,
+    workspace: { root, configFile, config, standards, actions, exceptions, diagnostics },
+  };
 }
 
 /** Standards that are in effect: active or deprecated, and not disabled. */

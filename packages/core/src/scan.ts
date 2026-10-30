@@ -349,6 +349,7 @@ export async function scanRepository(options: ScanOptions): Promise<ScanReport> 
       enforcement: { scope: "all", legacy: "report", failOn: "none" },
     }),
     standards: options.standards,
+    actions: [],
     exceptions: [],
     diagnostics: [],
   };

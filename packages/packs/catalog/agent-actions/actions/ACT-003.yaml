@@ -1,0 +1,32 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-003
+  title: Never bypass hooks or checks
+  category: git
+spec:
+  severity: blocker
+  intent: >
+    Pre-commit hooks, CI and signed commits exist so that a check cannot be skipped; an agent that
+    skips them to make a change land defeats the reason they exist.
+  requirement: >
+    Do not commit or push with --no-verify, and do not disable hooks or checks to make a change
+    go through. Fix what the check reports, or tell the developer why it is wrong.
+  effect: deny
+  when:
+    actions: [shell]
+    commands:
+      - "git commit * --no-verify*"
+      - "git commit --no-verify*"
+      - "git push * --no-verify*"
+      - "git push --no-verify*"
+      - "git commit * -n *"
+      - "git config * core.hooksPath*"
+      - "git config * commit.gpgsign false*"
+  agent:
+    summary: Never commit or push with --no-verify or disable hooks; fix what the check reports.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
+  rollout:
+    recommendedStage: enforce

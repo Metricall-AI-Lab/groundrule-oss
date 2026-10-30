@@ -1,0 +1,41 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-006
+  title: Ask before changing infrastructure
+  category: infrastructure
+spec:
+  severity: blocker
+  intent: >
+    terraform apply, kubectl apply or helm upgrade change running systems; a plan is for the agent,
+    the apply is for a person.
+  requirement: >
+    Do not apply, delete or upgrade infrastructure on your own. Produce the plan or the diff and
+    ask the developer to apply it.
+  effect: ask
+  when:
+    actions: [shell]
+    commands:
+      - "terraform apply*"
+      - "terraform destroy*"
+      - "tofu apply*"
+      - "tofu destroy*"
+      - "pulumi up*"
+      - "pulumi destroy*"
+      - "kubectl apply*"
+      - "kubectl delete*"
+      - "kubectl rollout*"
+      - "kubectl scale*"
+      - "helm install*"
+      - "helm upgrade*"
+      - "helm uninstall*"
+      - "aws * delete*"
+      - "gcloud * delete*"
+      - "az * delete*"
+  agent:
+    summary: Ask before terraform/pulumi apply or destroy, kubectl apply/delete, helm install/upgrade, or a cloud delete.
+  compliance:
+    - { framework: soc2, controls: [CC8.1, CC7.1] }
+    - { framework: iso-27001, controls: ["8.32"] }
+  rollout:
+    recommendedStage: enforce

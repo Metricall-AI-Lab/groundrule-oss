@@ -1,8 +1,9 @@
-import type { AgentTarget, Standard } from "@groundrule/spec";
+import type { ActionPolicy, AgentTarget, Standard } from "@groundrule/spec";
 import { CODERABBIT_FILE, mergeCodeRabbit, renderCodeRabbit } from "./coderabbit.js";
 import {
   groupByScope,
   PREAMBLE,
+  renderActions,
   renderStandard,
   renderStandardsDocument,
   SOURCE_NOTE,
@@ -29,6 +30,8 @@ export interface OutputFile {
 export interface AdapterInput {
   /** Effective standards to deliver to agents, already filtered for this repository. */
   standards: readonly Standard[];
+  /** Action policies to deliver (RFC 0017): what the agent may not do alone. */
+  actions?: readonly ActionPolicy[];
   targets: readonly AgentTarget[];
 }
 
@@ -40,6 +43,7 @@ export const OWNED_PATTERNS: Partial<Record<AgentTarget, { dir: string; match: R
 
 export function renderTargets(input: AdapterInput): OutputFile[] {
   const standards = input.standards.filter((s) => s.spec.agent.instruction);
+  const actions = (input.actions ?? []).filter((a) => a.spec.agent.instruction);
   const outputs: OutputFile[] = [];
   for (const target of new Set(input.targets)) {
     switch (target) {
@@ -47,7 +51,7 @@ export function renderTargets(input: AdapterInput): OutputFile[] {
         outputs.push({
           path: "AGENTS.md",
           mode: "managed",
-          content: renderStandardsDocument(standards),
+          content: renderStandardsDocument(standards, 2, actions),
         });
         break;
       case "claude-code":
@@ -57,14 +61,14 @@ export function renderTargets(input: AdapterInput): OutputFile[] {
           // Claude Code follows @imports; don't spend context on a second copy.
           content: input.targets.includes("agents-md")
             ? "Engineering standards for this repository are in AGENTS.md:\n\n@AGENTS.md"
-            : renderStandardsDocument(standards),
+            : renderStandardsDocument(standards, 2, actions),
         });
         break;
       case "cursor":
-        outputs.push(...renderCursor(standards));
+        outputs.push(...renderCursor(standards, actions));
         break;
       case "copilot":
-        outputs.push(...renderCopilot(standards));
+        outputs.push(...renderCopilot(standards, actions));
         break;
       case "coderabbit": {
         const entries = renderCodeRabbit(standards);
@@ -81,7 +85,10 @@ export function renderTargets(input: AdapterInput): OutputFile[] {
   return outputs;
 }
 
-function renderCursor(standards: readonly Standard[]): OutputFile[] {
+function renderCursor(
+  standards: readonly Standard[],
+  actions: readonly ActionPolicy[],
+): OutputFile[] {
   return groupByScope(standards).map((group) => {
     const everywhere = group.key === "";
     const frontmatter = [
@@ -99,6 +106,7 @@ function renderCursor(standards: readonly Standard[]): OutputFile[] {
       PREAMBLE,
       "",
       ...group.standards.flatMap((s) => [renderStandard(s), ""]),
+      ...(everywhere && actions.length ? [renderActions(actions, 2), ""] : []),
     ];
     return {
       path: `.cursor/rules/${everywhere ? "groundrule.mdc" : `groundrule-${scopeSlug(group)}.mdc`}`,
@@ -108,14 +116,17 @@ function renderCursor(standards: readonly Standard[]): OutputFile[] {
   });
 }
 
-function renderCopilot(standards: readonly Standard[]): OutputFile[] {
+function renderCopilot(
+  standards: readonly Standard[],
+  actions: readonly ActionPolicy[],
+): OutputFile[] {
   const groups = groupByScope(standards);
   const everywhere = groups.find((g) => g.key === "");
   const outputs: OutputFile[] = [
     {
       path: ".github/copilot-instructions.md",
       mode: "managed",
-      content: renderStandardsDocument(everywhere?.standards ?? []),
+      content: renderStandardsDocument(everywhere?.standards ?? [], 2, actions),
     },
   ];
   for (const group of groups.filter((g) => g.key !== "")) {

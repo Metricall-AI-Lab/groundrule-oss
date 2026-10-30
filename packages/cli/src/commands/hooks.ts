@@ -3,12 +3,13 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
-import { inspectRepository } from "@groundrule/core";
+import { inspectRepository, repositoryName } from "@groundrule/core";
 import { HOOK_AGENTS, type HookAgent } from "@groundrule/spec";
 import { checkForAgent, reportAgentCheck } from "../agent-report.js";
+import { actionFromHook, answerFor, reportAgentAction } from "../before-tool.js";
 import { EXIT, eprintln, type IO, println, style } from "../io.js";
 import { rulesFor, rulesForText } from "../rules-for.js";
-import { openWorkspace } from "../workspace.js";
+import { type OpenedWorkspace, openWorkspace } from "../workspace.js";
 
 export { HOOK_AGENTS, type HookAgent };
 
@@ -38,17 +39,17 @@ const NAME: Record<HookAgent, string> = {
 
 // A bare package name lets npx reuse an older cached CLI without the hook command.
 const command = (agent: HookAgent) => `npx --yes '@groundrule/cli@>=0.4.0' hook ${agent}`;
-/** The before-edit hook needs a CLI that knows the option (ADR 0010). */
-const beforeEditCommand = (agent: HookAgent) =>
-  `npx --yes '@groundrule/cli@>=0.17.0' hook ${agent} --before-edit`;
+/** The before-tool hook needs a CLI that knows action policies (RFC 0017). */
+const beforeToolCommand = (agent: HookAgent) =>
+  `npx --yes '@groundrule/cli@>=0.24.0' hook ${agent} --before-tool`;
 /** Recognizes a hook this command installed, whatever version wrote it. */
 const OURS = /(^|[\s'"])(@groundrule\/cli|groundrule)(@[^\s'"]+)?['"]?\s+hook\s/;
 /** Seconds an agent waits for the check before giving up on it. */
 const TIMEOUT = 120;
-/** Seconds the before-edit hook may take; an edit is never held longer (ADR 0010). */
-const BEFORE_EDIT_TIMEOUT = 5;
-/** The tools whose file the before-edit hook explains. */
-const EDIT_TOOLS = "Edit|Write|MultiEdit";
+/** Seconds the before-tool hook may take; a tool call is never held longer (RFC 0017). */
+const BEFORE_TOOL_TIMEOUT = 10;
+/** Minutes a hook reuses the rulebook it fetched, so a tool call never waits on the network. */
+const RULEBOOK_CACHE_MS = 10 * 60_000;
 
 type Json = Record<string, unknown>;
 const isObject = (v: unknown): v is Json =>
@@ -77,6 +78,18 @@ export function withHook(config: Json, agent: HookAgent, install: boolean): Json
       });
     if (stop.length) hooks.agentStop = stop;
     else delete hooks.agentStop;
+    const before = (Array.isArray(hooks.preToolUse) ? hooks.preToolUse : []).filter(
+      (h) => !OURS.test(commandOf(h)),
+    );
+    if (install)
+      before.push({
+        type: "command",
+        bash: beforeToolCommand(agent),
+        powershell: beforeToolCommand(agent),
+        timeoutSec: BEFORE_TOOL_TIMEOUT,
+      });
+    if (before.length) hooks.preToolUse = before;
+    else delete hooks.preToolUse;
     return tidy(
       { version: typeof config.version === "number" ? config.version : 1, ...config },
       hooks,
@@ -90,6 +103,16 @@ export function withHook(config: Json, agent: HookAgent, install: boolean): Json
     if (install) stop.push({ command: command(agent), timeout: TIMEOUT, loop_limit: 1 });
     if (stop.length) hooks.stop = stop;
     else delete hooks.stop;
+    // Cursor decides shell commands, MCP calls and file reads in three events (RFC 0017).
+    for (const event of ["beforeShellExecution", "beforeMCPExecution", "beforeReadFile"]) {
+      const entries = (Array.isArray(hooks[event]) ? (hooks[event] as unknown[]) : []).filter(
+        (h) => !OURS.test(commandOf(h)),
+      );
+      if (install)
+        entries.push({ command: beforeToolCommand(agent), timeout: BEFORE_TOOL_TIMEOUT });
+      if (entries.length) hooks[event] = entries;
+      else delete hooks[event];
+    }
     return tidy(
       { version: typeof config.version === "number" ? config.version : 1, ...config },
       hooks,
@@ -108,23 +131,15 @@ export function withHook(config: Json, agent: HookAgent, install: boolean): Json
     stop.push({ hooks: [{ type: "command", command: command(agent), timeout: TIMEOUT }] });
   if (stop.length) hooks.Stop = stop;
   else delete hooks.Stop;
-  // Claude Code also hears the rules for a file right before it edits it (ADR 0010).
-  if (agent === "claude-code") {
-    const before = withoutOurs("PreToolUse");
-    if (install)
-      before.push({
-        matcher: EDIT_TOOLS,
-        hooks: [
-          {
-            type: "command",
-            command: beforeEditCommand(agent),
-            timeout: BEFORE_EDIT_TIMEOUT,
-          },
-        ],
-      });
-    if (before.length) hooks.PreToolUse = before;
-    else delete hooks.PreToolUse;
-  }
+  // Before every tool call: action policies (RFC 0017), and for Claude Code the rules for the
+  // file about to be edited (ADR 0010), in one answer.
+  const before = withoutOurs("PreToolUse");
+  if (install)
+    before.push({
+      hooks: [{ type: "command", command: beforeToolCommand(agent), timeout: BEFORE_TOOL_TIMEOUT }],
+    });
+  if (before.length) hooks.PreToolUse = before;
+  else delete hooks.PreToolUse;
   return tidy(config, hooks);
 }
 
@@ -257,15 +272,15 @@ async function alreadyTold(
   return false;
 }
 
-/** `groundrule hook claude-code --before-edit`: the rules for the file about to be edited. */
-async function beforeEdit(io: IO, input: HookInput): Promise<number> {
+/** The rules for the file an agent is about to edit, once per file per session (ADR 0010). */
+async function editContext(
+  workspace: OpenedWorkspace,
+  input: HookInput,
+  dir: string,
+): Promise<string | undefined> {
   const tool = isObject(input.tool_input) ? input.tool_input : {};
   const given = typeof tool.file_path === "string" ? tool.file_path : "";
-  if (!given) return EXIT.ok;
-  const dir = typeof input.cwd === "string" ? resolve(io.cwd, input.cwd) : io.cwd;
-  const quiet: IO = { ...io, cwd: dir, stdout: io.stderr };
-  const workspace = await openWorkspace(quiet, { use: "agents" });
-  if (!workspace) return EXIT.ok;
+  if (!given) return undefined;
   const absolute = isAbsolute(given) ? given : resolve(dir, given);
   // Real paths on both sides: a temp dir or a symlinked checkout must not look outside.
   const real = async (p: string): Promise<string> => {
@@ -276,20 +291,89 @@ async function beforeEdit(io: IO, input: HookInput): Promise<number> {
     }
   };
   const file = relative(await real(workspace.root), await real(absolute)).replace(/\\/g, "/");
-  if (!file || file.startsWith("../")) return EXIT.ok;
+  if (!file || file.startsWith("../")) return undefined;
   const session = typeof input.session_id === "string" ? input.session_id : undefined;
-  if (await alreadyTold(session, workspace.root, file)) return EXIT.ok;
+  if (await alreadyTold(session, workspace.root, file)) return undefined;
   const repo = await inspectRepository(workspace);
   const result = rulesFor(workspace.standards, repo, [file]);
-  if (!result.rules.length) return EXIT.ok;
+  if (!result.rules.length) return undefined;
+  return rulesForText(result, [file]);
+}
+
+/** The directory the agent works in, from its event; otherwise where the hook was started. */
+function workingDir(io: IO, input: HookInput): string {
+  const roots = Array.isArray(input.workspace_roots) ? input.workspace_roots : [];
+  const dir =
+    typeof input.cwd === "string" ? input.cwd : typeof roots[0] === "string" ? roots[0] : undefined;
+  return dir ? resolve(io.cwd, dir) : io.cwd;
+}
+
+/** `groundrule hook claude-code --before-edit`: the rules for the file about to be edited. */
+async function beforeEdit(io: IO, input: HookInput): Promise<number> {
+  const dir = workingDir(io, input);
+  const quiet: IO = { ...io, cwd: dir, stdout: io.stderr };
+  const workspace = await openWorkspace(quiet, {
+    use: "agents",
+    rulebookCacheMs: RULEBOOK_CACHE_MS,
+  });
+  if (!workspace) return EXIT.ok;
+  const context = await editContext(workspace, input, dir);
+  if (!context) return EXIT.ok;
   io.stdout.write(
     `${JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        additionalContext: rulesForText(result, [file]),
-      },
+      hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: context },
     })}\n`,
   );
+  return EXIT.ok;
+}
+
+/**
+ * `groundrule hook <agent> --before-tool`: decide the action the agent is about to take against
+ * the action policies in effect (RFC 0017), and for Claude Code add the rules for a file it is
+ * about to edit. No decision when nothing matches, when the repository has no configuration,
+ * or when anything goes wrong: the agent's own permission flow applies.
+ */
+async function beforeTool(io: IO, agent: HookAgent, input: HookInput): Promise<number> {
+  const dir = workingDir(io, input);
+  const quiet: IO = { ...io, cwd: dir, stdout: io.stderr };
+  const workspace = await openWorkspace(quiet, {
+    use: "agents",
+    rulebookCacheMs: RULEBOOK_CACHE_MS,
+  });
+  if (!workspace) return EXIT.ok;
+  const action = await actionFromHook(agent, input as Json, workspace.root, dir);
+  const context =
+    agent === "claude-code" && action?.kind === "edit"
+      ? await editContext(workspace, input, dir)
+      : undefined;
+  if (!action) return EXIT.ok;
+  const answer = answerFor(
+    agent,
+    input as Json,
+    workspace,
+    action,
+    {
+      repository:
+        workspace.platform?.rulebook.target.repository?.name ??
+        workspace.config.platform?.repository ??
+        repositoryName(workspace.root),
+      tags: workspace.config.tags,
+    },
+    context,
+  );
+  if (answer.output) io.stdout.write(`${JSON.stringify(answer.output)}\n`);
+  if (answer.delivered === "ask" || answer.delivered === "deny") {
+    const session = [input.session_id, input.conversation_id].find((v) => typeof v === "string");
+    await reportAgentAction(
+      quiet,
+      workspace,
+      agent,
+      typeof session === "string" && session ? session : undefined,
+      action,
+      answer.delivered,
+      answer.decision,
+    );
+  }
   return EXIT.ok;
 }
 
@@ -309,7 +393,7 @@ async function readAll(stdin: AsyncIterable<string | Uint8Array>) {
 export async function hook(
   io: IO,
   agent: HookAgent,
-  options: { beforeEdit?: boolean } = {},
+  options: { beforeEdit?: boolean; beforeTool?: boolean } = {},
 ): Promise<number> {
   let input: HookInput = {};
   try {
@@ -319,6 +403,14 @@ export async function hook(
     if (isObject(parsed)) input = parsed;
   } catch {
     // An agent that sends no JSON still gets checked.
+  }
+  if (options.beforeTool) {
+    try {
+      return await beforeTool(io, agent, input);
+    } catch {
+      // A tool call is never held up by this hook; without an answer the agent decides.
+      return EXIT.ok;
+    }
   }
   if (options.beforeEdit) {
     try {
@@ -335,11 +427,8 @@ export async function hook(
       : input.stop_hook_active === true
   )
     return EXIT.ok;
-  const roots = Array.isArray(input.workspace_roots) ? input.workspace_roots : [];
-  const dir =
-    typeof input.cwd === "string" ? input.cwd : typeof roots[0] === "string" ? roots[0] : undefined;
   // stdout is the agent's channel; the check's own diagnostics go to stderr.
-  const quiet: IO = { ...io, cwd: dir ? resolve(io.cwd, dir) : io.cwd, stdout: io.stderr };
+  const quiet: IO = { ...io, cwd: workingDir(io, input), stdout: io.stderr };
   const checked = await checkForAgent(quiet);
   if (!checked.ok) {
     eprintln(io, `Groundrule: ${checked.message}`);

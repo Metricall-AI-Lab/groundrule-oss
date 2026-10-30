@@ -1,0 +1,31 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-010
+  title: Ask before editing CI workflows and pipeline files
+  category: process
+spec:
+  severity: warning
+  intent: >
+    A workflow change can grant permissions, leak secrets or skip checks for every later change;
+    a person reviews it before it is written.
+  requirement: >
+    Ask before changing CI workflows or pipeline files. Say what the change does and why, and let
+    the developer confirm.
+  effect: ask
+  when:
+    actions: [edit]
+    paths:
+      - ".github/workflows/**"
+      - ".gitlab-ci.yml"
+      - ".circleci/**"
+      - "Jenkinsfile"
+      - "azure-pipelines.yml"
+      - "bitbucket-pipelines.yml"
+      - ".buildkite/**"
+  agent:
+    summary: Ask before editing CI workflows or pipeline files, and say what the change does.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+  rollout:
+    recommendedStage: enforce

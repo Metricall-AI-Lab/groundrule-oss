@@ -1,0 +1,29 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-001
+  title: Never force-push
+  category: git
+spec:
+  severity: blocker
+  intent: >
+    A force-push rewrites history other people have; a person decides when that is worth it.
+  requirement: >
+    Do not force-push. Ask the developer to do it, or push to a new branch and say why the
+    history needs rewriting.
+  effect: deny
+  when:
+    actions: [shell]
+    commands:
+      - "git push --force*"
+      - "git push -f *"
+      - "git push -f"
+      - "git push * --force*"
+      - "git push * -f"
+      - "git push * -f *"
+  agent:
+    summary: Never force-push; ask the developer, or push to a new branch.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+  rollout:
+    recommendedStage: enforce

@@ -1,0 +1,11 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: agent-actions
+  title: What coding agents may do
+  description: Action policies for coding agents - the operations an agent may run on its own, the ones a person confirms first, and the ones that are refused. Enforced in the agent's before-tool hook (RFC 0017).
+  owner: groundrule
+  version: 1.0.0
+  tags: [agents, ai, actions, security, process]
+spec:
+  include: ["actions/**/*.yaml"]

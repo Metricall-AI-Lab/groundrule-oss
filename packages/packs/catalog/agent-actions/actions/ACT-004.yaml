@@ -1,0 +1,42 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-004
+  title: Never pipe a download into a shell
+  category: security
+spec:
+  severity: blocker
+  intent: >
+    curl | sh runs whatever the server sends, with the developer's permissions, with no record
+    of what ran.
+  requirement: >
+    Do not pipe curl or wget output into sh, bash, zsh, python or node. Download the file, show
+    the developer what it is, and let them decide.
+  effect: deny
+  when:
+    actions: [shell]
+    commands:
+      - "curl *|*sh"
+      - "curl *|*sh *"
+      - "curl *|*bash*"
+      - "curl *|*zsh*"
+      - "curl *|*python*"
+      - "curl *|*node*"
+      - "wget *|*sh"
+      - "wget *|*sh *"
+      - "wget *|*bash*"
+      - "wget *|*zsh*"
+      - "wget *|*python*"
+      - "wget *|*node*"
+      - "sh -c *curl*"
+      - "bash -c *curl*"
+      - "sh -c *wget*"
+      - "bash -c *wget*"
+  agent:
+    summary: Never pipe curl or wget into a shell; download the file and show the developer first.
+  references:
+    - { id: CWE-494, title: Download of Code Without Integrity Check }
+  compliance:
+    - { framework: soc2, controls: [CC6.8] }
+  rollout:
+    recommendedStage: enforce

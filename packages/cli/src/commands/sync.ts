@@ -1,6 +1,12 @@
 import { basename } from "node:path";
 import { renderTargets, syncOutputs } from "@groundrule/adapters";
-import { appliesToRepository, effectiveStandards, inspectRepository } from "@groundrule/core";
+import {
+  appliesToRepository,
+  effectiveActionPolicies,
+  effectiveStandards,
+  inspectRepository,
+  matchesScope,
+} from "@groundrule/core";
 import { buildAgentSync } from "../agent-sync.js";
 import { pullRequestFromCi } from "../ci.js";
 import { EXIT, eprintln, type IO, println, style, VERSION } from "../io.js";
@@ -51,7 +57,10 @@ export async function sync(io: IO, options: SyncOptions): Promise<number> {
   const standards = effectiveStandards(workspace)
     .map((l) => l.standard)
     .filter((standard) => appliesToRepository(standard, repo));
-  const outputs = renderTargets({ standards, targets: workspace.config.targets });
+  const actions = effectiveActionPolicies(workspace.actions)
+    .map((a) => a.policy)
+    .filter((a) => matchesScope(a.spec.scope, { repository: repo.name, tags: repo.tags }));
+  const outputs = renderTargets({ standards, actions, targets: workspace.config.targets });
   const changes = await syncOutputs(workspace.root, outputs, {
     dryRun: options.check ?? false,
     targets: workspace.config.targets,

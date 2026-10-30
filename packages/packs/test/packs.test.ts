@@ -52,7 +52,7 @@ describe("catalog", () => {
       ]),
     );
     for (const pack of packs) {
-      expect(pack.standards, pack.id).toBeGreaterThan(0);
+      expect(pack.standards + pack.actions, pack.id).toBeGreaterThan(0);
       expect(pack.version, pack.id).toMatch(/^\d+\.\d+\.\d+/);
     }
   });

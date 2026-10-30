@@ -1,6 +1,7 @@
 import { renderTargets, syncOutputs } from "@groundrule/adapters";
 import {
   appliesToRepository,
+  effectiveActionPolicies,
   effectiveStandards,
   gitRoot,
   inspectRepository,
@@ -8,6 +9,7 @@ import {
 import { builtinEvaluators } from "@groundrule/evaluators";
 import { EXIT, type IO, println, style } from "../io.js";
 import { openWorkspace } from "../workspace.js";
+import { installedHooks } from "./hooks.js";
 
 export async function doctor(io: IO): Promise<number> {
   const s = style(io);
@@ -62,6 +64,23 @@ export async function doctor(io: IO): Promise<number> {
   );
   if (workspace.diagnostics.length)
     warn(`${workspace.diagnostics.length} configuration warning(s) (see above)`);
+  const policies = effectiveActionPolicies(workspace.actions);
+  if (policies.length) {
+    const hooks = await installedHooks(workspace.root);
+    const withHook = hooks.filter((h) => h.installed).map((h) => h.agent);
+    if (withHook.length)
+      ok(
+        `${policies.length} action ${policies.length === 1 ? "policy applies" : "policies apply"}: decided before each tool call in ${withHook.join(", ")}`,
+      );
+    else
+      warn(
+        `${policies.length} action ${policies.length === 1 ? "policy applies" : "policies apply"}, but no agent hook is installed`,
+        "Run `groundrule hooks` so agents are stopped before the action, not told after it.",
+      );
+    ok(
+      "Decisions by agent: Claude Code allow/ask/deny; Cursor shell, MCP and reads (ask on reads is deny); Codex and Copilot cloud allow/deny (ask is deny)",
+    );
+  }
 
   const registry = new Map(builtinEvaluators.map((e) => [e.id, e]));
   const used = new Set(effective.flatMap((l) => l.standard.spec.checks.map((c) => c.evaluator)));
@@ -91,6 +110,7 @@ export async function doctor(io: IO): Promise<number> {
 
   const outputs = renderTargets({
     standards: effective.map((l) => l.standard),
+    actions: policies.map((p) => p.policy),
     targets: workspace.config.targets,
   });
   const stale = (

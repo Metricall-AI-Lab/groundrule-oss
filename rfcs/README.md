@@ -24,3 +24,4 @@ Changes to the Groundrule document format go through an RFC.
 | [0014](0014-contributor-digest.md) | The contributor digest on uploads | Accepted |
 | [0015](0015-import-graph.md) | The import graph in scan reports | Accepted |
 | [0016](0016-layout-discovery.md) | Layout discovery in scans | Accepted |
+| [0017](0017-action-policy.md) | Action policies: what a coding agent may do | Accepted |

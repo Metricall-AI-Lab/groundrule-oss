@@ -1,0 +1,375 @@
+{
+  "$id": "https://groundrule.dev/schemas/v1alpha1/action-policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "groundrule.dev/v1alpha1",
+      "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
+    },
+    "kind": {
+      "type": "string",
+      "const": "ActionPolicy"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+$",
+          "description": "Unique, stable identifier in the same space as standards, e.g. ACT-001, so exceptions can name it."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "status": {
+          "default": "active",
+          "type": "string",
+          "enum": [
+            "draft",
+            "active",
+            "deprecated",
+            "retired"
+          ]
+        },
+        "version": {
+          "default": 1,
+          "description": "Bump on every semantic change.",
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "owner": {
+          "description": "Who owns and can change this policy, e.g. team:platform.",
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "description": "Free-form grouping, e.g. git, infrastructure.",
+          "type": "string",
+          "minLength": 1
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "severity": {
+          "type": "string",
+          "enum": [
+            "info",
+            "advisory",
+            "warning",
+            "blocker"
+          ],
+          "description": "How much a breach matters, for evidence and agent files."
+        },
+        "scope": {
+          "default": {},
+          "description": "Where the policy applies: repositories and tags; paths and exclude narrow file actions only.",
+          "type": "object",
+          "properties": {
+            "repositories": {
+              "description": "Repository name globs, e.g. backend-*.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Glob pattern, e.g. src/main/**/*.java"
+              }
+            },
+            "paths": {
+              "description": "Path globs the standard applies to.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Glob pattern, e.g. src/main/**/*.java"
+              }
+            },
+            "exclude": {
+              "description": "Path globs excluded even if matched by paths.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Glob pattern, e.g. src/main/**/*.java"
+              }
+            },
+            "languages": {
+              "description": "e.g. java, typescript.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "frameworks": {
+              "description": "e.g. spring-boot, react.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "tags": {
+              "description": "Repository tags declared in config, e.g. multi-tenant.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "intent": {
+          "description": "Why the policy exists, in one or two lines.",
+          "type": "string",
+          "minLength": 1
+        },
+        "requirement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What the agent must or must not do, and what to do instead. Shown as the reason."
+        },
+        "effect": {
+          "default": "ask",
+          "description": "What the hook answers when the policy matches.",
+          "type": "string",
+          "enum": [
+            "allow",
+            "ask",
+            "deny"
+          ]
+        },
+        "when": {
+          "type": "object",
+          "properties": {
+            "actions": {
+              "description": "Kinds of operation the policy applies to. Omitted: every kind.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "shell",
+                  "edit",
+                  "read",
+                  "fetch",
+                  "mcp",
+                  "other"
+                ],
+                "description": "shell: a command. edit: writing a file. read: reading a file. fetch: a web request. mcp: a tool on an MCP server. other: any other tool."
+              }
+            },
+            "commands": {
+              "description": "Globs over each segment of a shell command (split on &&, ||, ;, | and newlines), e.g. \"git push --force*\". `*` matches spaces and slashes too.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "paths": {
+              "description": "Globs over the repository-relative path of the file an edit or read touches.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Glob pattern, e.g. src/main/**/*.java"
+              }
+            },
+            "hosts": {
+              "description": "Globs over the host of a fetched URL, e.g. \"*.internal\".",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "servers": {
+              "description": "Globs over the MCP server name.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "tools": {
+              "description": "Globs over the tool name as the agent reports it (Bash, Edit, mcp__github__create_issue, apply_patch…); for MCP, also the tool's own name.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            }
+          },
+          "additionalProperties": false,
+          "description": "What the policy matches. Every listed field narrows it."
+        },
+        "agent": {
+          "default": {
+            "instruction": true
+          },
+          "type": "object",
+          "properties": {
+            "instruction": {
+              "default": true,
+              "description": "Include this standard in generated agent context (AGENTS.md, CLAUDE.md, ...).",
+              "type": "boolean"
+            },
+            "summary": {
+              "description": "One or two sentences written for an agent. Defaults to the requirement.",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "exceptions": {
+          "type": "object",
+          "properties": {
+            "allowed": {
+              "default": true,
+              "type": "boolean"
+            },
+            "approvers": {
+              "description": "Who may approve exceptions, e.g. team:security-engineering.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "maxDurationDays": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "additionalProperties": false
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "Identifier in a public catalog, e.g. CWE-798, OWASP-A02:2021.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "compliance": {
+          "description": "Compliance controls this policy supports (evidence, not certification).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "framework": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "Framework ID, e.g. soc2, iso-27001, owasp-asvs, pci-dss, hipaa. See COMPLIANCE_FRAMEWORKS."
+              },
+              "controls": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "description": "Control IDs within the framework, e.g. CC6.1 or 8.28."
+              }
+            },
+            "required": [
+              "framework",
+              "controls"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "rollout": {
+          "description": "Recommended starting stage when adopting.",
+          "type": "object",
+          "properties": {
+            "recommendedStage": {
+              "type": "string",
+              "enum": [
+                "observe",
+                "teach",
+                "advise",
+                "enforce"
+              ],
+              "description": "The stage to start at when adopting this standard."
+            }
+          },
+          "required": [
+            "recommendedStage"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "severity",
+        "requirement",
+        "when"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "additionalProperties": false,
+  "description": "An action policy: what a coding agent may do on its own, what needs a person, and what is refused. RFC 0017."
+}

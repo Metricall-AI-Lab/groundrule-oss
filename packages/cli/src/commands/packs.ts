@@ -10,7 +10,11 @@ export async function packs(io: IO): Promise<number> {
   );
   println(io);
   for (const p of await listPacks()) {
-    println(io, `   ${s.bold(p.ref)} ${s.dim(`· ${p.standards} standards`)}`);
+    const counts = [
+      ...(p.standards ? [`${p.standards} standards`] : []),
+      ...(p.actions ? [`${p.actions} action ${p.actions === 1 ? "policy" : "policies"}`] : []),
+    ].join(", ");
+    println(io, `   ${s.bold(p.ref)} ${s.dim(`· ${counts || "empty"}`)}`);
     if (p.description) println(io, `   ${p.description}`);
     println(io);
   }

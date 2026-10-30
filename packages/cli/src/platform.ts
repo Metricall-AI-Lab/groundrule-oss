@@ -2,12 +2,19 @@
 // rulebook it serves. The open-source CLI works fully offline; this is used only when a
 // repository's config has `platform:` or you run `groundrule login`.
 import { execFile, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { homedir, hostname } from "node:os";
+import { homedir, hostname, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
-import type { Diagnostic, LoadedStandard } from "@groundrule/core";
-import { type Config, compareRolloutStage, type RolloutStage, Standard } from "@groundrule/spec";
+import type { Diagnostic, LoadedActionPolicy, LoadedStandard } from "@groundrule/core";
+import {
+  ActionPolicy,
+  type Config,
+  compareRolloutStage,
+  type RolloutStage,
+  Standard,
+} from "@groundrule/spec";
 import type { IO } from "./io.js";
 import { VERSION } from "./io.js";
 
@@ -235,6 +242,8 @@ export interface PlatformStandards {
   url: string;
   rulebook: PlatformRulebook;
   standards: LoadedStandard[];
+  /** Action policies (RFC 0017) at Advise or above for checks; every stage otherwise. */
+  actions: LoadedActionPolicy[];
   /** Every rule received at Teach or above, as set, for the rulebook digest (RFC 0007). */
   received: LoadedStandard[];
   diagnostics: Diagnostic[];
@@ -250,6 +259,7 @@ export async function loadPlatformStandards(
   root: string,
   configFile: string,
   use: Use,
+  options: { cacheMs?: number } = {},
 ): Promise<PlatformStandards> {
   const platform = config.platform;
   if (!platform) throw new PlatformError("This repository isn't connected to the platform.");
@@ -263,22 +273,27 @@ export async function loadPlatformStandards(
   const repository = platform.repository ?? (await detectRepository(root));
   const query = repository ? `?repository=${encodeURIComponent(repository)}` : "";
   let rulebook: PlatformRulebook;
-  try {
-    rulebook = await call<PlatformRulebook>(io, url, `/v1/cli/rulebook${query}`, {
-      token: auth.token,
-    });
-  } catch (error) {
-    if (error instanceof PlatformError && error.status === 401) {
-      throw new PlatformError(
-        auth.source === "env"
-          ? "GROUNDRULE_TOKEN isn't valid. It may have expired or been revoked; create a new one in Groundrule → Settings → API tokens."
-          : `Your sign-in to ${platform.org} has expired or was revoked. Run \`groundrule login\` again.`,
-        error.code,
-        401,
-      );
+  const cacheKey = options.cacheMs ? rulebookCacheKey(url, platform.org, repository) : undefined;
+  const cached = cacheKey ? await readRulebookCache(cacheKey, options.cacheMs ?? 0) : undefined;
+  if (cached) rulebook = cached;
+  else
+    try {
+      rulebook = await call<PlatformRulebook>(io, url, `/v1/cli/rulebook${query}`, {
+        token: auth.token,
+      });
+      if (cacheKey) await writeRulebookCache(cacheKey, rulebook);
+    } catch (error) {
+      if (error instanceof PlatformError && error.status === 401) {
+        throw new PlatformError(
+          auth.source === "env"
+            ? "GROUNDRULE_TOKEN isn't valid. It may have expired or been revoked; create a new one in Groundrule → Settings → API tokens."
+            : `Your sign-in to ${platform.org} has expired or was revoked. Run \`groundrule login\` again.`,
+          error.code,
+          401,
+        );
+      }
+      throw error;
     }
-    throw error;
-  }
   if (rulebook.org.slug !== platform.org) {
     throw new PlatformError(
       `This token is for ${rulebook.org.slug}, but this repository uses ${platform.org}. Run \`groundrule login\` and approve it for ${platform.org}.`,
@@ -300,10 +315,30 @@ export function standardsFromRulebook(
   const repository = p.repository;
   const diagnostics: Diagnostic[] = [];
   const standards: LoadedStandard[] = [];
+  const actions: LoadedActionPolicy[] = [];
   const received: LoadedStandard[] = [];
   for (const entry of rulebook.standards) {
-    const parsed = Standard.safeParse(entry.document);
     const id = (entry.document as { metadata?: { id?: string } })?.metadata?.id ?? "unknown";
+    if ((entry.document as { kind?: unknown })?.kind === "ActionPolicy") {
+      const policy = ActionPolicy.safeParse(entry.document);
+      if (!policy.success) {
+        diagnostics.push({
+          severity: "warning",
+          file: configFile,
+          message: `Skipped ${id} from the platform: it doesn't match this CLI's spec (upgrade @groundrule/cli).`,
+        });
+        continue;
+      }
+      if (use === "checks" && compareRolloutStage(entry.stage, "advise") < 0) continue;
+      actions.push({
+        policy: policy.data,
+        file: `${url}/${platform.org}/standards/${policy.data.metadata.id}`,
+        origin: `platform:${entry.origin === "organization" ? platform.org : entry.origin}`,
+        stage: entry.stage,
+      });
+      continue;
+    }
+    const parsed = Standard.safeParse(entry.document);
     if (!parsed.success) {
       diagnostics.push({
         severity: "warning",
@@ -340,7 +375,45 @@ export function standardsFromRulebook(
       message: `${repository} isn't registered in ${platform.org}, so the organization's rules apply. Add it under Teams → Repositories to use its team's settings.`,
     });
   }
-  return { url, rulebook, standards, received, diagnostics };
+  return { url, rulebook, standards, actions, received, diagnostics };
+}
+
+// ---------------------------------------------------------------- rulebook cache
+
+/**
+ * Hooks run on every tool call, so they read a recent copy of the rulebook from the OS
+ * temporary directory instead of asking the platform each time. Keyed by platform, organization
+ * and repository; readable by this user only; a stale or unreadable copy is simply refetched.
+ */
+function rulebookCacheKey(url: string, org: string, repository: string | undefined): string {
+  const key = createHash("sha256")
+    .update(`${url}\0${org}\0${repository ?? ""}`)
+    .digest("hex");
+  return join(tmpdir(), `groundrule-rulebook-${key}.json`);
+}
+
+async function readRulebookCache(
+  path: string,
+  maxAgeMs: number,
+): Promise<PlatformRulebook | undefined> {
+  try {
+    const raw: unknown = JSON.parse(await readFile(path, "utf8"));
+    if (typeof raw !== "object" || raw === null) return undefined;
+    const { savedAt, rulebook } = raw as { savedAt?: unknown; rulebook?: unknown };
+    if (typeof savedAt !== "number" || Date.now() - savedAt > maxAgeMs) return undefined;
+    if (typeof rulebook !== "object" || rulebook === null) return undefined;
+    return rulebook as PlatformRulebook;
+  } catch {
+    return undefined;
+  }
+}
+
+async function writeRulebookCache(path: string, rulebook: PlatformRulebook): Promise<void> {
+  try {
+    await writeFile(path, JSON.stringify({ savedAt: Date.now(), rulebook }), { mode: 0o600 });
+  } catch {
+    // No temp dir to remember in: the next hook asks the platform again.
+  }
 }
 
 // ---------------------------------------------------------------- local machine

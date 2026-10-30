@@ -1,0 +1,50 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-009
+  title: Never read or edit secret files
+  category: security
+spec:
+  severity: blocker
+  intent: >
+    .env files, private keys and credential stores hold secrets that must not reach the agent's
+    context, a transcript, or a provider.
+  requirement: >
+    Do not open or edit .env files (except .env.example), private keys, keystores or credential
+    files. Read configuration names from .env.example and ask the developer for anything else.
+  effect: deny
+  when:
+    actions: [edit, read]
+    paths:
+      - ".env"
+      - ".env.*"
+      - "**/.env"
+      - "**/.env.*"
+      - "**/*.pem"
+      - "**/*.key"
+      - "**/*.p12"
+      - "**/*.pfx"
+      - "**/*.jks"
+      - "**/*.keystore"
+      - "**/id_rsa"
+      - "**/id_ecdsa"
+      - "**/id_ed25519"
+      - "**/.netrc"
+      - "**/.npmrc"
+      - "**/credentials"
+      - "**/.aws/credentials"
+      - "**/.docker/config.json"
+  scope:
+    exclude:
+      - "**/.env.example"
+      - "**/.env.sample"
+      - "**/*.pub"
+  agent:
+    summary: Never open or edit .env files (except .env.example), private keys, keystores or credential files.
+  references:
+    - { id: CWE-312, title: Cleartext Storage of Sensitive Information }
+  compliance:
+    - { framework: soc2, controls: [CC6.1] }
+    - { framework: iso-27001, controls: ["8.24"] }
+  rollout:
+    recommendedStage: enforce

@@ -14,7 +14,7 @@ Product context: `../Groundrule_Product_Vision.md` and `../Groundrule_Build_Plan
 | `packages/evaluators` | Built-in checks: `files`, `regex`, `dependencies`, `imports`, `change-set`, `semgrep`, `llm` (answered on hosted checks only, RFC 0013) |
 | `packages/reporters` | Output: terminal, JSON, SARIF, Markdown |
 | `packages/adapters` | Agent instructions: AGENTS.md, CLAUDE.md, Cursor rules, Copilot instructions |
-| `packages/packs` | Bundled standard packs in `catalog/` (`groundrule:packs/<name>`) |
+| `packages/packs` | Bundled packs in `catalog/` (`groundrule:packs/<name>`): standards, and action policies (RFC 0017) |
 | `packages/cli` | The `groundrule` command |
 | `packages/mcp` | Minimal Model Context Protocol server (stdio, tools only) behind `groundrule mcp` |
 | `action/` | GitHub Action |

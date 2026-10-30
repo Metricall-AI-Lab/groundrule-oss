@@ -1,0 +1,28 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-002
+  title: Ask before rewriting or discarding git history
+  category: git
+spec:
+  severity: warning
+  intent: >
+    A hard reset, a rebase of shared commits, or a clean of untracked files can lose work that
+    was never committed; the developer knows what is safe to lose.
+  requirement: >
+    Ask before running git reset --hard, git rebase, git checkout -- or git clean -f. Prefer a
+    new commit, git stash, or a new branch.
+  effect: ask
+  when:
+    actions: [shell]
+    commands:
+      - "git reset --hard*"
+      - "git rebase*"
+      - "git clean -*f*"
+      - "git checkout -- *"
+      - "git restore *"
+      - "git branch -D *"
+  agent:
+    summary: Ask before git reset --hard, rebase, clean -f, checkout -- or restore; prefer a stash or a new branch.
+  rollout:
+    recommendedStage: enforce

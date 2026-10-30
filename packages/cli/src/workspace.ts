@@ -28,6 +28,8 @@ export interface OpenOptions {
   offline?: boolean;
   /** The organization's rulebook, handed over (hosted checks) instead of fetched. */
   rulebook?: PlatformRulebook;
+  /** Hooks: reuse a copy of the rulebook fetched within this many milliseconds. */
+  rulebookCacheMs?: number;
 }
 
 export interface OpenedWorkspace extends Workspace {
@@ -94,7 +96,9 @@ async function usePlatform(
         configFile,
         use,
       })
-    : await loadPlatformStandards(io, config, root, configFile, use);
+    : await loadPlatformStandards(io, config, root, configFile, use, {
+        ...(options.rulebookCacheMs ? { cacheMs: options.rulebookCacheMs } : {}),
+      });
   const diagnostics: Diagnostic[] = [...loaded.diagnostics];
   if (config.extends.length) {
     diagnostics.push({
@@ -104,8 +108,22 @@ async function usePlatform(
       message: "Ignored because `platform` is set: your organization's rulebook decides the packs.",
     });
   }
-  const platformIds = new Set(loaded.standards.map((s) => s.standard.metadata.id));
+  const platformIds = new Set([
+    ...loaded.standards.map((s) => s.standard.metadata.id),
+    ...loaded.actions.map((a) => a.policy.metadata.id),
+  ]);
   const local = workspace.standards.filter((s) => s.origin === "local");
+  const localActions = workspace.actions.filter((a) => a.origin === "local");
+  for (const a of localActions) {
+    if (platformIds.has(a.policy.metadata.id)) {
+      diagnostics.push({
+        severity: "warning",
+        file: a.file,
+        path: "metadata.id",
+        message: `${a.policy.metadata.id} is also an organization policy; the organization's version applies. Give this one a new ID.`,
+      });
+    }
+  }
   for (const s of local) {
     if (platformIds.has(s.standard.metadata.id)) {
       diagnostics.push({
@@ -134,6 +152,10 @@ async function usePlatform(
     ...loaded.standards,
     ...local.filter((s) => !platformIds.has(s.standard.metadata.id)),
   ].sort((a, b) => a.standard.metadata.id.localeCompare(b.standard.metadata.id));
+  workspace.actions = [
+    ...loaded.actions,
+    ...localActions.filter((a) => !platformIds.has(a.policy.metadata.id)),
+  ].sort((a, b) => a.policy.metadata.id.localeCompare(b.policy.metadata.id));
   workspace.diagnostics.push(...diagnostics);
   workspace.platform = { url: loaded.url, rulebook: loaded.rulebook, received: loaded.received };
 }
