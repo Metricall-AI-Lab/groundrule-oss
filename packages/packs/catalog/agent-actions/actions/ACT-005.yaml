@@ -1,0 +1,37 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-005
+  title: Ask before publishing a package or a release
+  category: release
+spec:
+  severity: blocker
+  intent: >
+    A publish is public and mostly irreversible; a person decides when a version ships.
+  requirement: >
+    Do not publish packages, push images or create releases on your own. Prepare the change and
+    ask the developer to publish.
+  effect: ask
+  when:
+    actions: [shell]
+    commands:
+      - "npm publish*"
+      - "pnpm publish*"
+      - "yarn publish*"
+      - "yarn npm publish*"
+      - "cargo publish*"
+      - "twine upload*"
+      - "poetry publish*"
+      - "gem push*"
+      - "mvn deploy*"
+      - "gradle publish*"
+      - "./gradlew publish*"
+      - "docker push*"
+      - "gh release create*"
+      - "goreleaser release*"
+  agent:
+    summary: Ask before npm/pnpm/cargo/twine publish, docker push or gh release create.
+  compliance:
+    - { framework: soc2, controls: [CC8.1] }
+  rollout:
+    recommendedStage: enforce

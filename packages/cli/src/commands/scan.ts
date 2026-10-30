@@ -32,7 +32,9 @@ async function catalogStandards(): Promise<LoadedStandard[]> {
   const out: LoadedStandard[] = [];
   for (const pack of await listPacks()) {
     const dir = join(CATALOG_DIR, pack.id, "standards");
-    for (const file of (await readdir(dir)).filter((f) => f.endsWith(".yaml")).sort()) {
+    // A pack of action policies only (RFC 0017) has nothing a scan can observe.
+    const files = await readdir(dir).catch(() => [] as string[]);
+    for (const file of files.filter((f) => f.endsWith(".yaml")).sort()) {
       const result = await loadFile(join(dir, file), "Standard");
       if (result.ok)
         out.push({

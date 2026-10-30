@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import {
+  AgentAction,
   AgentCheck,
   AgentSync,
   AiReviewRequests,
@@ -27,6 +28,7 @@ const targets: Record<string, z.ZodType> = {
   CheckRun,
   AgentSync,
   AgentCheck,
+  AgentAction,
   AiReviewRequests,
 };
 

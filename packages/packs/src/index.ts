@@ -25,6 +25,8 @@ export interface PackInfo {
   version?: string;
   tags?: string[];
   standards: number;
+  /** Action policies in the pack (RFC 0017). */
+  actions: number;
 }
 
 export async function listPacks(): Promise<PackInfo[]> {
@@ -33,6 +35,7 @@ export async function listPacks(): Promise<PackInfo[]> {
     const result = await loadFile(join(CATALOG_DIR, id, "pack.yaml"), "Pack");
     if (!result.ok) continue;
     const files = await readdir(join(CATALOG_DIR, id, "standards")).catch(() => [] as string[]);
+    const actions = await readdir(join(CATALOG_DIR, id, "actions")).catch(() => [] as string[]);
     packs.push({
       id,
       ref: `groundrule:packs/${id}`,
@@ -43,6 +46,7 @@ export async function listPacks(): Promise<PackInfo[]> {
       ...(result.document.metadata.version ? { version: result.document.metadata.version } : {}),
       ...(result.document.metadata.tags ? { tags: result.document.metadata.tags } : {}),
       standards: files.filter((f) => f.endsWith(".yaml")).length,
+      actions: actions.filter((f) => f.endsWith(".yaml")).length,
     });
   }
   return packs;
@@ -50,6 +54,7 @@ export async function listPacks(): Promise<PackInfo[]> {
 
 /** Bundled packs. Listed explicitly so a stray folder never becomes a pack. */
 const KNOWN = new Set([
+  "agent-actions",
   "security-baseline",
   "typescript-node",
   "java-spring",

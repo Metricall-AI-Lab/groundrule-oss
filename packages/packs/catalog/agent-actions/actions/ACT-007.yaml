@@ -1,0 +1,25 @@
+apiVersion: groundrule.dev/v1alpha1
+kind: ActionPolicy
+metadata:
+  id: ACT-007
+  title: Ask before using elevated privileges
+  category: security
+spec:
+  severity: warning
+  intent: >
+    sudo changes the machine, not the repository, and the developer should know when that happens.
+  requirement: >
+    Do not run commands with sudo or as root on your own. Say what needs installing or changing
+    and let the developer run it.
+  effect: ask
+  when:
+    actions: [shell]
+    commands:
+      - "sudo *"
+      - "doas *"
+      - "su -*"
+      - "su root*"
+  agent:
+    summary: Ask before sudo; say what needs installing and let the developer run it.
+  rollout:
+    recommendedStage: enforce

@@ -1,6 +1,6 @@
 # ADR 0010: Just-in-time rules for coding agents
 
-- **Status:** Accepted
+- **Status:** Accepted (the before-edit hook is now part of the before-tool hook, RFC 0017)
 - **Date:** 16 October 2026
 
 ## Context
