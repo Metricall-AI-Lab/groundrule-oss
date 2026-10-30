@@ -1,6 +1,6 @@
 # Groundrule plugin for Cursor
 
-Your engineering standards in Cursor: the rules for each file, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.
+Your engineering standards in Cursor: your action policies decided before shell commands, MCP calls and file reads, the rules for each file, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.
 
 Install from the Cursor marketplace (search for Groundrule), or point Cursor at this repository.
 
@@ -9,6 +9,7 @@ The plugin bundles three things, all backed by the open-source CLI (`npx @ground
 | Component | What it does |
 |---|---|
 | MCP server `groundrule` | `rules_for` (the rules for a file, blocking first), `check` (the same check CI runs, on the agent's uncommitted changes), `list_standards`, `propose_rule` ([docs](https://docs.groundrule.dev/developers/agents/mcp/)) |
+| Before-tool hooks | Before a shell command, an MCP call or a file read, the repository's [action policies](https://docs.groundrule.dev/developers/rules/action-policies/) decide it: allow, ask or deny, with the reason |
 | Stop hook | When the agent finishes, runs the check; if a blocker remains, what to fix is sent as a follow-up message, once per turn |
 | Skill `groundrule` | When to call which tool, and what never to do with a standard |
 

@@ -11,6 +11,10 @@ The repository's engineering standards live in `.groundrule/` and are served by 
 
 Call `rules_for` with the file's path. It returns the rules that apply to that file, blocking ones first, each with how to comply. Rules that apply everywhere are already in the agent file, so this is only the file-specific set. The plugin's PreToolUse hook does this automatically once per file per session; call it yourself when you plan a change across several files.
 
+## Before running a command or a tool
+
+The repository may have action policies: what you may run on your own, what the developer confirms first, and what is refused. They are listed in the agent file under "What you may not do alone", and the plugin's PreToolUse hook decides each shell command, edit, read, fetch and MCP call against them before it runs. When a call is refused or needs confirmation, the reason names the policy and what to do instead: do that, or ask the developer. Never retry a refused action in another form, and never edit the policies or `.groundrule/exceptions.yaml` to get past one.
+
 ## Before finishing
 
 Call `check` with no arguments. It runs the same check CI will run, on the uncommitted changes only, and lists what the change introduced: the rule, the file and line, and the fix. Fix every blocking finding before you stop. Warnings are worth fixing when the change is small; say so when you leave one. The plugin's Stop hook runs the same check and will send you back if a blocker remains.
