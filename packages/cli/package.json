@@ -1,6 +1,6 @@
 {
   "name": "@groundrule/cli",
-  "version": "0.23.1",
+  "version": "0.24.0",
   "mcpName": "io.github.Metricall-AI-Lab/groundrule",
   "description": "Groundrule: your engineering standards, taught to every coding agent and checked on every PR. CLI, checks, packs, MCP server and hooks.",
   "license": "Apache-2.0",

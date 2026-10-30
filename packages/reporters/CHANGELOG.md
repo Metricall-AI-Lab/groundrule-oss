@@ -1,5 +1,13 @@
 # @groundrule/reporters
 
+## 0.24.0
+
+### Patch Changes
+
+- Updated dependencies [d700de0]
+  - @groundrule/spec@0.24.0
+  - @groundrule/core@0.24.0
+
 ## 0.23.1
 
 ### Patch Changes
