@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { withHook } from "../src/commands/hooks.js";
 import { type IO, run } from "../src/index.js";
+import { VERSION } from "../src/io.js";
 
 const dirs: string[] = [];
 afterEach(async () => {
@@ -45,8 +46,8 @@ async function cli(cwd: string, argv: string[], stdin?: string, extra: Partial<I
   let stderr = "";
   const io: IO = {
     cwd,
-    env: { NO_COLOR: "1" },
-    ...extra,
+    env: { NO_COLOR: "1", GROUNDRULE_HOOKS_NO_WARM: "1", ...(extra.env ?? {}) },
+    ...(({ env: _e, ...rest }) => rest)(extra),
     stdout: {
       write: (t: string) => {
         stdout += t;
@@ -93,11 +94,12 @@ describe("withHook", () => {
         ],
         PreToolUse: [
           {
+            matcher: "Bash|PowerShell|Edit|Write|MultiEdit|NotebookEdit|Read|WebFetch|mcp__.*",
             hooks: [
               {
                 type: "command",
-                command: "npx --yes '@groundrule/cli@>=0.24.0' hook claude-code --before-tool",
-                timeout: 10,
+                command: `npx --yes '@groundrule/cli@${VERSION}' hook claude-code --before-tool`,
+                timeout: 30,
               },
             ],
           },
@@ -148,8 +150,8 @@ describe("withHook", () => {
 
   it("writes Cursor's version 1 shape: one follow-up per turn, and a decision before shell, MCP and reads", () => {
     const before = {
-      command: "npx --yes '@groundrule/cli@>=0.24.0' hook cursor --before-tool",
-      timeout: 10,
+      command: `npx --yes '@groundrule/cli@${VERSION}' hook cursor --before-tool`,
+      timeout: 30,
     };
     const once = withHook({}, "cursor", true);
     expect(once).toEqual({
@@ -191,9 +193,9 @@ describe("Copilot's hook", () => {
         preToolUse: [
           {
             type: "command",
-            bash: "npx --yes '@groundrule/cli@>=0.24.0' hook copilot --before-tool",
-            powershell: "npx --yes '@groundrule/cli@>=0.24.0' hook copilot --before-tool",
-            timeoutSec: 10,
+            bash: `npx --yes '@groundrule/cli@${VERSION}' hook copilot --before-tool`,
+            powershell: `npx --yes '@groundrule/cli@${VERSION}' hook copilot --before-tool`,
+            timeoutSec: 30,
           },
         ],
       },

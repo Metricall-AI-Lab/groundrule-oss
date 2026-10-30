@@ -1,13 +1,15 @@
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { promisify } from "node:util";
 import { inspectRepository, repositoryName } from "@groundrule/core";
 import { HOOK_AGENTS, type HookAgent } from "@groundrule/spec";
 import { checkForAgent, reportAgentCheck } from "../agent-report.js";
 import { actionFromHook, answerFor, reportAgentAction } from "../before-tool.js";
-import { EXIT, eprintln, type IO, println, style } from "../io.js";
+import { EXIT, eprintln, type IO, println, style, VERSION } from "../io.js";
 import { rulesFor, rulesForText } from "../rules-for.js";
 import { type OpenedWorkspace, openWorkspace } from "../workspace.js";
 
@@ -39,15 +41,31 @@ const NAME: Record<HookAgent, string> = {
 
 // A bare package name lets npx reuse an older cached CLI without the hook command.
 const command = (agent: HookAgent) => `npx --yes '@groundrule/cli@>=0.4.0' hook ${agent}`;
-/** The before-tool hook needs a CLI that knows action policies (RFC 0017). */
+/**
+ * The before-tool hook runs on every tool call, so it pins the exact CLI that installed it:
+ * npx then serves it from its cache instead of asking the registry to resolve a range each
+ * time, and `groundrule hooks` run again moves the pin. The cache is warmed at install, so
+ * the first tool call is not the one that downloads it (RFC 0017).
+ */
 const beforeToolCommand = (agent: HookAgent) =>
-  `npx --yes '@groundrule/cli@>=0.24.0' hook ${agent} --before-tool`;
+  `npx --yes '@groundrule/cli@${VERSION}' hook ${agent} --before-tool`;
+/**
+ * The tools a policy can decide: shell, edits, reads, fetches and MCP calls. Search and
+ * navigation tools are never held up. A policy naming another tool in `when.tools` needs
+ * this matcher widened by hand.
+ */
+export const DECIDED_TOOLS =
+  "Bash|PowerShell|Edit|Write|MultiEdit|NotebookEdit|Read|WebFetch|mcp__.*";
 /** Recognizes a hook this command installed, whatever version wrote it. */
 const OURS = /(^|[\s'"])(@groundrule\/cli|groundrule)(@[^\s'"]+)?['"]?\s+hook\s/;
 /** Seconds an agent waits for the check before giving up on it. */
 const TIMEOUT = 120;
-/** Seconds the before-tool hook may take; a tool call is never held longer (RFC 0017). */
-const BEFORE_TOOL_TIMEOUT = 10;
+/**
+ * Seconds the before-tool hook may take; a tool call is never held longer (RFC 0017). The
+ * decision takes milliseconds and a warm start about a second; the budget covers a cold npx
+ * cache on a slow connection, because a timed-out hook lets the call through.
+ */
+const BEFORE_TOOL_TIMEOUT = 30;
 /** Minutes a hook reuses the rulebook it fetched, so a tool call never waits on the network. */
 const RULEBOOK_CACHE_MS = 10 * 60_000;
 
@@ -136,6 +154,7 @@ export function withHook(config: Json, agent: HookAgent, install: boolean): Json
   const before = withoutOurs("PreToolUse");
   if (install)
     before.push({
+      matcher: DECIDED_TOOLS,
       hooks: [{ type: "command", command: beforeToolCommand(agent), timeout: BEFORE_TOOL_TIMEOUT }],
     });
   if (before.length) hooks.PreToolUse = before;
@@ -227,12 +246,39 @@ export async function hooks(io: IO, options: HooksOptions): Promise<number> {
         : `${s.green("✓")} ${NAME[agent]} checks its work when it finishes: ${file}`,
     );
   }
-  if (!options.remove && changed && code === EXIT.ok)
+  if (!options.remove && changed && code === EXIT.ok) {
     println(
       io,
       `\nCommit ${agents.length === 1 ? "this file" : "these files"} so everyone's agent runs the check. ${agents.includes("codex") ? "Codex asks each developer to trust the hook once (/hooks). " : ""}Remove with \`groundrule hooks --remove\`.`,
     );
+    await warmHook(io);
+  }
   return code;
+}
+
+const execFileAsync = promisify(execFile);
+
+/**
+ * Fetch the pinned CLI into npx's cache now, so the agent's first tool call isn't the one
+ * that downloads it and runs into the hook's timeout. Best effort: offline, or a version
+ * not on npm yet (a development build), just means the first call warms it instead.
+ */
+async function warmHook(io: IO): Promise<void> {
+  if (io.env.GROUNDRULE_HOOKS_NO_WARM) return;
+  const s = style(io);
+  println(
+    io,
+    s.dim(`Warming up the hook (@groundrule/cli@${VERSION}) so the first tool call is fast…`),
+  );
+  try {
+    await execFileAsync("npx", ["--yes", `@groundrule/cli@${VERSION}`, "--version"], {
+      cwd: io.cwd,
+      timeout: 120_000,
+      env: { ...process.env, ...io.env },
+    });
+  } catch {
+    println(io, s.dim("Couldn't warm it up now; the first tool call will."));
+  }
 }
 
 interface HookInput {
