@@ -1,5 +1,5 @@
 ---
-description: Run the Groundrule check on the uncommitted changes and fix what it finds.
+description: "Run the Groundrule check on the uncommitted changes and fix what it finds."
 argument-hint: "[--all | --base <ref>]"
 ---
 
