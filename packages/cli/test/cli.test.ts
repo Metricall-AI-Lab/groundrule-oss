@@ -39,7 +39,8 @@ async function cli(cwd: string, ...argv: string[]) {
   let stderr = "";
   const io: IO = {
     cwd,
-    env: { NO_COLOR: "1" },
+    // Installing hooks never reaches npm from a test.
+    env: { NO_COLOR: "1", GROUNDRULE_HOOKS_NO_WARM: "1" },
     stdout: {
       write: (t: string) => {
         stdout += t;
@@ -211,5 +212,108 @@ describe("groundrule CLI", () => {
     const check = await cli(r.root, "check");
     expect(check.code).toBe(2);
     expect(check.stderr).toContain("Run `groundrule init`");
+  });
+});
+
+describe("groundrule start", () => {
+  const APP = {
+    "package.json": '{\n  "name": "app",\n  "dependencies": { "request": "^2.88.0" }\n}\n',
+    "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+    "src/app.ts": 'console.log("hi");\nexport const x = 1;\n',
+  };
+
+  /** Run with someone at the terminal who types `answer`. */
+  async function interactive(cwd: string, answer: string, ...argv: string[]) {
+    let stdout = "";
+    const stdin = Object.assign(
+      (async function* () {
+        yield answer;
+      })(),
+      { isTTY: true },
+    );
+    const io: IO = {
+      cwd,
+      env: { NO_COLOR: "1", GROUNDRULE_HOOKS_NO_WARM: "1" },
+      stdout: {
+        isTTY: true,
+        write: (t: string) => {
+          stdout += t;
+        },
+      },
+      stderr: { write: () => {} },
+      stdin,
+    };
+    return { code: await run(argv, io), stdout };
+  }
+  const has = async (root: string, rel: string) =>
+    readFile(join(root, rel), "utf8").then(
+      () => true,
+      () => false,
+    );
+
+  it("shows what the checks find today and writes nothing when nobody is there to ask", async () => {
+    const { root } = await repo(APP);
+    // `groundrule` alone, in a repository with no configuration, is the guided start.
+    const r = await cli(root);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain("a first look at");
+    expect(r.stdout).toMatch(
+      /\d+ are checked on every change · \d+ are instructions for your coding agents, not checked/,
+    );
+    expect(r.stdout).toContain("What the checks find in this repository today");
+    expect(r.stdout).toContain("TS-002  No deprecated HTTP and UUID packages");
+    expect(r.stdout).toContain("src/app.ts:1");
+    expect(r.stdout).toContain("it is listed, and it never blocks");
+    // A first look has no verdict: "Passed" on a repository with findings would mislead.
+    expect(r.stdout).not.toMatch(/Passed|Failed/);
+    expect(r.stdout).toContain("Nothing was written. To set it up, run groundrule start --yes");
+    for (const f of [".groundrule/config.yaml", "AGENTS.md", ".claude/settings.json"])
+      expect(await has(root, f), f).toBe(false);
+  });
+
+  it("sets everything up with --yes, or without the hooks", async () => {
+    const { root } = await repo(APP);
+    const r = await cli(root, "start", "--yes", "--no-hooks");
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain("✓ Set up. Commit these files");
+    expect(await has(root, ".groundrule/config.yaml")).toBe(true);
+    expect(await readFile(join(root, "AGENTS.md"), "utf8")).toContain("TS-002");
+    expect(await has(root, ".claude/settings.json")).toBe(false);
+    expect(r.stdout).not.toContain(".claude/settings.json");
+
+    const again = await cli(root, "start");
+    expect(again.code).toBe(0);
+    expect(again.stdout).toContain("This repository is already set up");
+    expect(again.stderr).toBe("");
+    // With a configuration, `groundrule` alone is the usage text again.
+    expect((await cli(root)).stdout).not.toContain("a first look");
+
+    const other = await repo(APP);
+    const withHooks = await cli(other.root, "start", "-y");
+    expect(withHooks.stdout).toContain(".groundrule/  AGENTS.md  CLAUDE.md  .claude/settings.json");
+    expect(await readFile(join(other.root, ".claude/settings.json"), "utf8")).toContain(
+      "--before-tool",
+    );
+  });
+
+  it("asks one question at a terminal: Enter or y sets up, n writes nothing", async () => {
+    const yes = await repo(APP);
+    const y = await interactive(yes.root, "\n");
+    expect(y.stdout).toContain("Set it up now? [Y/n]");
+    expect(y.stdout).toContain("✓ Set up.");
+    expect(await has(yes.root, "AGENTS.md")).toBe(true);
+    expect(await has(yes.root, ".claude/settings.json")).toBe(true);
+
+    const no = await repo(APP);
+    const n = await interactive(no.root, "n\n", "start");
+    expect(n.code).toBe(0);
+    expect(n.stdout).toContain("Nothing was written. Run groundrule start again");
+    expect(await has(no.root, ".groundrule/config.yaml")).toBe(false);
+  });
+
+  it("says so when the checks find nothing", async () => {
+    const { root } = await repo({ "README.md": "# hi\n" });
+    const r = await cli(root, "start");
+    expect(r.stdout).toContain("✓ The checks find nothing in this repository today.");
   });
 });

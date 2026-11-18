@@ -1,3 +1,4 @@
+import { findConfig } from "@groundrule/core";
 import { FORMATS, type Format } from "@groundrule/reporters";
 import { AGENT_TARGETS, type AgentTarget } from "@groundrule/spec";
 import { Argument, Command, CommanderError, Option } from "commander";
@@ -13,6 +14,7 @@ import { packs } from "./commands/packs.js";
 import { propose } from "./commands/propose.js";
 import { scan } from "./commands/scan.js";
 import { standards } from "./commands/standards.js";
+import { start } from "./commands/start.js";
 import { sync } from "./commands/sync.js";
 import { verify } from "./commands/verify.js";
 import { EXIT, eprintln, type IO, VERSION } from "./io.js";
@@ -41,6 +43,20 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     const cwd = program.opts<{ cwd?: string }>().cwd;
     return cwd ? { ...io, cwd: new URL(cwd, `file://${io.cwd}/`).pathname } : io;
   };
+
+  program
+    .command("start")
+    .description(
+      "a first look at what the rules find here, then set this repository up (what `groundrule` alone does in a new repository)",
+    )
+    .option("-y, --yes", "set it up without asking")
+    .option("--no-hooks", "leave the coding-agent hooks out")
+    .action(async (o: { yes?: boolean; hooks?: boolean }) => {
+      code = await start(ctx(), {
+        ...(o.yes ? { yes: true } : {}),
+        ...(o.hooks === false ? { hooks: false } : {}),
+      });
+    });
 
   program
     .command("init")
@@ -401,6 +417,9 @@ export async function run(argv: readonly string[], io: IO): Promise<number> {
     .action(async () => {
       code = await packs(ctx());
     });
+
+  // `groundrule` alone, in a repository with no configuration: the guided start.
+  if (argv.length === 0 && !(await findConfig(io.cwd))) return start(io);
 
   try {
     await program.parseAsync([...argv], { from: "user" });
