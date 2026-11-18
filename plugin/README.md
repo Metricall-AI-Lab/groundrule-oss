@@ -1,6 +1,6 @@
 # Groundrule plugin for Claude Code
 
-Your engineering standards in Claude Code: the rules for each file before it is edited, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.
+Your engineering standards in Claude Code: your action policies decided before each tool call, the rules for each file before it is edited, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.
 
 ```bash
 claude plugin install groundrule        # from Anthropic's directory, once listed
@@ -13,7 +13,7 @@ The plugin bundles three things, all backed by the open-source CLI (`npx @ground
 | Component | What it does |
 |---|---|
 | MCP server `groundrule` | `rules_for`, `check`, `list_standards`, `propose_rule` ([docs](https://docs.groundrule.dev/developers/agents/mcp/)) |
-| Hooks | Before an edit: the rules for that file, once per file per session. On stop: the check, and the agent is sent back if a blocker remains |
+| Hooks | Before a tool call: the repository's [action policies](https://docs.groundrule.dev/developers/rules/action-policies/) decide it (allow, ask or deny, with the reason), and before an edit the rules for that file ride along, once per file per session. On stop: the check, and the agent is sent back if a blocker remains |
 | Skill `groundrule` | When to call which tool, and what never to do with a standard |
 
 In a repository without `.groundrule/`, nothing runs. `npx @groundrule/cli init` sets one up; it works offline and without an account. Nothing leaves your machine unless the repository is connected to a workspace, in which case the hook reports counts per rule, never code ([what is sent](https://docs.groundrule.dev/developers/agents/hooks/#what-the-workspace-learns)).

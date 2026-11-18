@@ -1,9 +1,27 @@
 {
   "version": 1,
   "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "npx --yes '@groundrule/cli@0.24.1' hook cursor --before-tool",
+        "timeout": 30
+      }
+    ],
+    "beforeMCPExecution": [
+      {
+        "command": "npx --yes '@groundrule/cli@0.24.1' hook cursor --before-tool",
+        "timeout": 30
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "npx --yes '@groundrule/cli@0.24.1' hook cursor --before-tool",
+        "timeout": 30
+      }
+    ],
     "stop": [
       {
-        "command": "npx --yes '@groundrule/cli@0.23.0' hook cursor",
+        "command": "npx --yes '@groundrule/cli@0.24.1' hook cursor",
         "timeout": 120,
         "loop_limit": 1
       }
