@@ -1,0 +1,14 @@
+{
+  "name": "groundrule",
+  "version": "0.1.0",
+  "description": "Your engineering standards in Claude Code: a skill that follows the repository's rulebook and checks every change with the open-source Groundrule CLI, and commands to set a repository up and run the check.",
+  "author": {
+    "name": "Groundrule",
+    "email": "hello@groundrule.dev",
+    "url": "https://groundrule.dev"
+  },
+  "homepage": "https://docs.groundrule.dev/developers/agents/mcp/",
+  "repository": "https://github.com/Metricall-AI-Lab/groundrule-oss",
+  "license": "Apache-2.0",
+  "keywords": ["engineering-standards", "coding-standards", "code-quality", "agents-md", "ci"]
+}
