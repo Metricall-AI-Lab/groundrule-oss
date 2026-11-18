@@ -1,0 +1,10 @@
+{
+  "name": "groundrule-claude-plugin",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Lockfile for the CLI this plugin runs: the exact versions, registry sources and hashes behind `npx @groundrule/cli@0.24.1` in .mcp.json and hooks/hooks.json.",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@groundrule/cli": "0.24.1"
+  }
+}
