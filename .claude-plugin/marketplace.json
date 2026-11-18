@@ -8,7 +8,7 @@
     {
       "name": "groundrule",
       "source": "./plugin",
-      "description": "Your engineering standards in Claude Code: the rules for each file before it is edited, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.",
+      "description": "Your engineering standards in Claude Code: action policies decided before each tool call, the rules for each file before it is edited, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.",
       "category": "productivity",
       "keywords": ["engineering-standards", "code-quality", "agents-md", "mcp", "hooks"]
     }

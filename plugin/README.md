@@ -2,11 +2,14 @@
 
 Your engineering standards in Claude Code: your action policies decided before each tool call, the rules for each file before it is edited, a check of every change before the agent finishes, and a way to propose a rule when you correct the agent.
 
-```bash
-claude plugin install groundrule        # from Anthropic's directory, once listed
-# or, from this repository:
-claude plugin install --plugin-dir ./plugin
+Install it from this repository's marketplace, inside Claude Code:
+
 ```
+/plugin marketplace add Metricall-AI-Lab/groundrule-oss
+/plugin install groundrule@groundrule
+```
+
+Anthropic's directory lists a smaller bundle, [`plugin-skill/`](../plugin-skill), with the skill and two commands only: the directory accepts hooks and local MCP servers only from organizations it has verified, and there is no way to request that yet. Install one or the other, not both.
 
 The plugin bundles three things, all backed by the open-source CLI (`npx @groundrule/cli`):
 
@@ -20,4 +23,4 @@ In a repository without `.groundrule/`, nothing runs. `npx @groundrule/cli init`
 
 What the plugin runs and sends: every component runs `npx @groundrule/cli` at the exact version pinned in `.mcp.json` and `hooks/hooks.json` (npm downloads it on first use). The CLI reads the repository's `.groundrule/` folder and the files being changed; it makes no network request unless the repository's config names a Groundrule workspace (`platform:`) and the developer has run `groundrule login`, in which case it sends counts per rule, never code. No credentials are read from the environment.
 
-Releasing: raise `version` in `.claude-plugin/plugin.json` and the pinned CLI version in `.mcp.json`, `hooks/hooks.json` and `package.json` together, then refresh the lockfile with `npm install --package-lock-only --ignore-scripts` in this folder. `package-lock.json` records the exact versions, registry sources and hashes of everything `npx @groundrule/cli@<version>` installs; the plugin itself has nothing to install. Validate after a change: `claude plugin validate ./plugin --strict`.
+Releasing: raise `version` in `.claude-plugin/plugin.json` and the pinned CLI version in `.mcp.json` and `hooks/hooks.json` together. Validate after a change: `claude plugin validate ./plugin --strict`.

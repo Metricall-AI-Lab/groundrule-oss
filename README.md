@@ -129,6 +129,17 @@ claude mcp add groundrule -- npx -y @groundrule/cli mcp          # Claude Code
 
 The JSON form goes in `.cursor/mcp.json` for Cursor, `.vscode/mcp.json` for VS Code (as `servers`), or your agent's MCP settings. Proposals carry the rule, your reason, and a file and line if given; nothing else from the repository is sent.
 
+### Claude Code plugin
+
+One install gives a developer the MCP server, both hooks and a skill, without changing the repository. Inside Claude Code:
+
+```
+/plugin marketplace add Metricall-AI-Lab/groundrule-oss
+/plugin install groundrule@groundrule
+```
+
+It runs the CLI at an exact pinned version ([`plugin/`](plugin)). `groundrule hooks` below does the same for a whole team by committing the hooks to the repository; use one or the other. Anthropic's plugin directory lists a smaller bundle with the skill and two commands only ([`plugin-skill/`](plugin-skill)), because the directory accepts hooks and local MCP servers only from organizations it has verified.
+
 ### Hooks: before each action, and when the agent finishes
 
 `groundrule hooks` adds two hooks to the agent's project settings. A **before-tool hook** decides what the agent is about to do against your [action policies](#what-agents-may-do-action-policies), and a **stop hook** runs the check every time the agent finishes a task, whether or not it remembered to:
