@@ -1,5 +1,5 @@
 ---
-description: Set this repository up with Groundrule: pick packs for the stack, write the agent files, run the first check.
+description: "Set this repository up with Groundrule: pick packs for the stack, write the agent files, run the first check."
 ---
 
 Set this repository up with Groundrule, using the open-source CLI. Say what each step did in one line, and stop if a step fails.
