@@ -20,7 +20,7 @@ spec:
     forbidden:
       - { code: 'db.query(`SELECT * FROM users WHERE id = ${id}`)', language: typescript }
       - { code: 'cur.execute(f"SELECT * FROM users WHERE email = ''{email}''")', language: python }
-      - { code: 'jdbc.query("SELECT * FROM users ORDER BY " + sort)', language: java, note: "Map sort to an allow-listed column instead." }
+      - { code: 'jdbc.query("SELECT * FROM users ORDER BY " + sort)', language: kotlin, note: "Map sort to an allow-listed column instead." }
   agent:
     summary: >
       Always pass values to SQL and other queries as bound parameters; never concatenate,

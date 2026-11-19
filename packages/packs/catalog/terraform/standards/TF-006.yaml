@@ -34,7 +34,13 @@ spec:
         language: terraform
     forbidden:
       - 'acl = "public-read"'
-      - 'member = "allUsers" on a google_storage_bucket_iam_member'
+      - code: |
+          resource "google_storage_bucket_iam_member" "public" {
+            bucket = google_storage_bucket.assets.name
+            role   = "roles/storage.objectViewer"
+            member = "allUsers"
+          }
+        language: terraform
   checks:
     - evaluator: regex
       pattern: '^[ \t]*(?:acl[ \t]*=[ \t]*"(?:public-read|public-read-write|authenticated-read)"|(?:block_public_acls|block_public_policy|ignore_public_acls|restrict_public_buckets)[ \t]*=[ \t]*false\b)|\bresource[ \t]+"google_storage_(?:bucket_iam_member|bucket_iam_binding|bucket_access_control|default_object_access_control|object_access_control)"[ \t]+"[^"\n]*"[ \t]*\{(?=[^}]*"(?:allUsers|allAuthenticatedUsers)")'
