@@ -65,7 +65,9 @@ export function parseDocument(text: string, file: string, expectedKind?: Documen
     };
   }
 
-  const kind = (data as { kind?: unknown }).kind;
+  const given = (data as { kind?: unknown }).kind;
+  // A config file is known by where it is, so it may leave `kind` out (RFC 0018).
+  const kind = given === undefined && expectedKind === "Config" ? "Config" : given;
   if (expectedKind && kind !== expectedKind) {
     return {
       ok: false,
