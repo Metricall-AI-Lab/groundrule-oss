@@ -3,7 +3,7 @@ kind: Standard
 metadata:
   id: SEC-015
   title: Use parameterized queries, never string-built SQL
-  type: agent-instruction
+  type: prohibition
   category: security
 spec:
   severity: blocker
@@ -25,6 +25,36 @@ spec:
     summary: >
       Always pass values to SQL and other queries as bound parameters; never concatenate,
       interpolate, or format input into query text. Pick table/column names from a fixed allow list.
+  remediation: >
+    Move every value out of the query text and pass it as a bound parameter:
+    db.query("... WHERE id = $1", [id]), cur.execute("... WHERE email = %s", (email,)),
+    db.QueryContext(ctx, "... WHERE id = ?", id), or the ORM's parameter API. For a table, column
+    or sort direction, map the input to a value from a fixed allow list.
+  checks:
+    - evaluator: regex
+      # An untagged template literal holding a SQL statement with a ${...} that is not an
+      # UPPER_CASE constant. Tagged templates (sql`...`, Prisma.sql`...`) bind their values and are not flagged.
+      pattern: |-
+        (?<![\w$.\])])`[^`]*?\b(?:SELECT\b[^`]*\bFROM\b|INSERT\s+INTO\b|UPDATE\s+\w+\s+SET\b|DELETE\s+FROM\b)[^`]*?\$\{(?!\s*[A-Z][A-Z0-9_]*\s*\})
+      include: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.py", "**/*_test.go", "**/*Test.java", "**/*Tests.java", "**/tests/**", "**/test/**", "**/__tests__/**", "**/fixtures/**"]
+      message: SQL built by interpolating into a template literal; pass values as bound parameters
+    - evaluator: regex
+      # A quoted SQL statement followed by + and something that is not a literal or an
+      # UPPER_CASE constant. Java has its own rule (JAVA-007), and Go's fmt.Sprintf form has GO-008.
+      pattern: |-
+        ^(?![ \t]*(?://|/?\*|#))[^\n]*?(["'])(?:(?!\1)[^\n])*?\b(?:SELECT\b(?:(?!\1)[^\n])*?\bFROM\b|INSERT\s+INTO\b|UPDATE\s+\w+\s+SET\b|DELETE\s+FROM\b)(?:(?!\1)[^\n])*\1\s*\+(?!\s*(?:["'`]|[A-Z][A-Z0-9_]*\b(?!\s*\()))
+      include: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.py", "**/*.go", "**/*.kt", "**/*.cs", "**/*.php", "**/*.rb", "**/*.scala"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.py", "**/*_test.go", "**/*Test.java", "**/*Tests.java", "**/tests/**", "**/test/**", "**/__tests__/**", "**/fixtures/**"]
+      message: SQL built by string concatenation; pass values as bound parameters
+    - evaluator: regex
+      # Python: an f-string holding a SQL statement with a {...} that is not an UPPER_CASE constant,
+      # or a SQL string formatted with % or .format(). cur.execute("... %s", (value,)) is a bound parameter and is not flagged.
+      pattern: |-
+        ^(?![ \t]*#)[^\n]*?(?:(?<![\w"'])[fF][rR]?(["'])(?:(?!\1)[^\n])*?\b(?:SELECT\b(?:(?!\1)[^\n])*?\bFROM\b|INSERT\s+INTO\b|UPDATE\s+\w+\s+SET\b|DELETE\s+FROM\b)(?:(?!\1)[^\n])*?\{(?!\s*[A-Z][A-Z0-9_]*\s*\})|(["'])(?:(?!\2)[^\n])*?\b(?:SELECT\b(?:(?!\2)[^\n])*?\bFROM\b|INSERT\s+INTO\b|UPDATE\s+\w+\s+SET\b|DELETE\s+FROM\b)(?:(?!\2)[^\n])*\2\s*(?:%\s*[\w(]|\.format\s*\())
+      include: ["**/*.py"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.py", "**/*_test.go", "**/*Test.java", "**/*Tests.java", "**/tests/**", "**/test/**", "**/__tests__/**", "**/fixtures/**"]
+      message: SQL built with an f-string, % or .format(); pass values as bound parameters
   references:
     - { id: CWE-89, title: "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')" }
     - { id: OWASP-A03:2021, title: Injection, url: "https://owasp.org/Top10/A03_2021-Injection/" }
@@ -34,6 +64,9 @@ spec:
     - { framework: iso-27001, controls: ["8.28"] }
     - { framework: soc2, controls: [CC6.8] }
   quality:
-    noise: low
+    noise: medium
+    knownFalsePositives:
+      - "Table or column names interpolated from code the service controls (a tenant schema, a partition suffix). Use an UPPER_CASE constant, an allow-list lookup, or add an exception for the file."
+      - "Query builders that take SQL fragments by design, such as migrations and reporting scripts. Exclude those folders in the scope."
   rollout:
-    recommendedStage: teach
+    recommendedStage: advise

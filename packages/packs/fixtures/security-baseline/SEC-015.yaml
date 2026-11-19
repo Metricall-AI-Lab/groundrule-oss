@@ -1,0 +1,77 @@
+standard: SEC-015
+cases:
+  - name: SQL built by interpolation, concatenation and formatting
+    expect: violation
+    count: 7
+    files:
+      src/orders.ts: |
+        export async function byId(id: string) {
+          return db.query(`SELECT * FROM orders WHERE id = ${id}`);
+        }
+        export async function byCustomer(name: string) {
+          const sql = "SELECT * FROM orders WHERE customer = '" + name + "'";
+          return db.query(sql);
+        }
+        export async function remove(id: string) {
+          return db.query('DELETE FROM orders WHERE id = ' + id);
+        }
+      app/orders.py: |
+        def by_email(cur, email):
+            cur.execute(f"SELECT * FROM users WHERE email = '{email}'")
+
+        def by_status(cur, status):
+            cur.execute("SELECT * FROM orders WHERE status = '%s'" % status)
+
+        def rename(cur, name, user_id):
+            cur.execute("UPDATE users SET name = '{}' WHERE id = {}".format(name, user_id))
+      internal/store/orders.go: |
+        package store
+
+        func (s *Store) ByName(name string) (*sql.Rows, error) {
+        	return s.db.Query("SELECT id, total FROM orders WHERE customer = '" + name + "'")
+        }
+  - name: bound parameters, tagged templates, constants, and prose
+    expect: clean
+    files:
+      src/orders.ts: |
+        const TABLE = "orders";
+        export async function byId(id: string) {
+          return db.query("SELECT * FROM orders WHERE id = $1", [id]);
+        }
+        export async function tagged(id: string) {
+          return sql`SELECT * FROM orders WHERE id = ${id}`;
+        }
+        export async function prisma(id: string) {
+          return prisma.$queryRaw`SELECT * FROM orders WHERE id = ${id}`;
+        }
+        export async function constant() {
+          return db.query(`SELECT * FROM ${TABLE} WHERE deleted = false`);
+        }
+        export const QUERY = "SELECT id, total " + "FROM orders " + "WHERE id = $1";
+        export const help = `Select a plan from the list, then press ${key}.`;
+        log.info("Update from " + source + " finished");
+      app/orders.py: |
+        TABLE = "orders"
+
+        def by_email(cur, email):
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+
+        def by_id(cur, order_id):
+            cur.execute(f"SELECT * FROM {TABLE} WHERE id = %s", (order_id,))
+
+        def describe(n):
+            return f"Selected {n} rows from the report"
+      internal/store/orders.go: |
+        package store
+
+        func (s *Store) ByID(id string) (*sql.Rows, error) {
+        	return s.db.Query("SELECT id, total FROM orders WHERE id = $1", id)
+        }
+
+        func describe(n int) string {
+        	return fmt.Sprintf("selected %d rows from orders", n)
+        }
+      src/orders.test.ts: |
+        it("rejects injection", () => {
+          expect(() => db.query(`SELECT * FROM orders WHERE id = ${evil}`)).toThrow();
+        });

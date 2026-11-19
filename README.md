@@ -29,22 +29,22 @@ One command, no account, nothing leaves your machine:
 npx @groundrule/cli
 ```
 
-In a repository with no Groundrule configuration it takes a first look: it detects your stack, runs the checks over the whole repository and shows what they find today, worst first, without writing anything. Then it asks one question and sets the repository up: `.groundrule/config.yaml`, the agent files (`AGENTS.md`, `CLAUDE.md`, Cursor, Copilot), and the hooks. It also says how many rules are checked on every change and how many are instructions for coding agents only.
+In a repository with no Groundrule configuration it takes a first look: it detects your stack, runs the checks over the whole repository and shows what they find today, worst first, without writing anything. Then it asks one question and sets the repository up: `.groundrule/config.yaml`, the agent files (`AGENTS.md`, `CLAUDE.md`, Cursor, Copilot), and the hooks. A new repository starts from the **essentials**: a short set of rules that are all checked (secrets, SQL built from strings, unsafe deserialization, unverified tokens, and a few per language). `groundrule scan` then shows the rest of the catalog and which rules already pass, and `groundrule packs` lists the full packs to add.
 
 ```text
  groundrule · a first look at orders-api
 
    Stack   typescript
-   Rules   35 from security-baseline, typescript-node
-           21 are checked on every change · 14 are instructions for your coding agents, not checked
+   Rules   14 rules from essentials apply here
+           every one is checked on every change
 
  What the checks find in this repository today
 
- ⚠ TS-002  No deprecated HTTP and UUID packages
-   warning · deterministic (dependencies)
-   package.json:1
-     Forbidden dependency "request"
-   → Use fetch or crypto.randomUUID() instead.
+ ✕ SEC-015  Use parameterized queries, never string-built SQL
+   BLOCKER · deterministic (regex)
+   src/orders.ts:7
+     SQL built by interpolating into a template literal; pass values as bound parameters
+   → Move every value out of the query text and pass it as a bound parameter.
 
  5 findings in 4 rules. This is code that already exists: it is listed, and it never blocks.
  Once set up, only what a change introduces is checked.
@@ -223,7 +223,7 @@ The before-tool hook decides it in the agent's own permission flow, on your comp
 
 ## Packs
 
-`groundrule packs` lists the bundled packs (security, TypeScript/Node, React, Python, Java/Spring, Go, Docker, Kubernetes, Terraform, GitHub Actions, HTTP APIs, testing, AI agent hygiene, and what agents may do). Your organization's own packs work the same way: `github:your-org/engineering-standards//packs/backend@v1`.
+`groundrule:packs/essentials` is where a new repository starts: about a dozen rules per repository, drawn from the packs below, every one with a check. Extending a full pack later adds to it without clashing. `groundrule packs` lists the bundled packs (security, TypeScript/Node, React, Python, Java/Spring, Go, Docker, Kubernetes, Terraform, GitHub Actions, HTTP APIs, testing, AI agent hygiene, and what agents may do). Your organization's own packs work the same way: `github:your-org/engineering-standards//packs/backend@v1`.
 
 ## GitHub
 

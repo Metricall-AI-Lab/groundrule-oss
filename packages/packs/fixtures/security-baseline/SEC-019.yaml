@@ -1,0 +1,67 @@
+standard: SEC-019
+cases:
+  - name: verification turned off or skipped
+    expect: violation
+    count: 7
+    files:
+      src/auth.ts: |
+        import jwt from "jsonwebtoken";
+
+        export function claims(token: string) {
+          return jwt.decode(token);
+        }
+        export function lax(token: string, key: string) {
+          return jwt.verify(token, key, { ignoreExpiration: true });
+        }
+        export function none(token: string, key: string) {
+          return jwt.verify(token, key, { algorithms: ["HS256", "none"] });
+        }
+      app/auth.py: |
+        import jwt
+
+        def claims(token):
+            return jwt.decode(token, options={"verify_signature": False})
+
+        def none(token, key):
+            return jwt.decode(token, key, algorithms=["none"])
+      src/main/java/acme/Tokens.java: |
+        class Tokens {
+          Claims read(String token) {
+            return Jwts.parser().build().parseUnsecuredClaims(token).getPayload();
+          }
+        }
+      internal/auth/tokens.go: |
+        package auth
+
+        func claims(raw string) (*jwt.Token, error) {
+        	token, _, err := new(jwt.Parser).ParseUnverified(raw, jwt.MapClaims{})
+        	return token, err
+        }
+  - name: full verification, and reading the header first
+    expect: clean
+    files:
+      src/auth.ts: |
+        import jwt from "jsonwebtoken";
+
+        export function claims(token: string, key: string) {
+          return jwt.verify(token, key, { algorithms: ["RS256"], issuer: ISS, audience: AUD });
+        }
+        export function keyId(token: string) {
+          return jwt.decode(token, { complete: true })?.header.kid;
+        }
+      app/auth.py: |
+        import jwt
+
+        def claims(token, key):
+            return jwt.decode(token, key, algorithms=["RS256"], audience=AUD, issuer=ISS)
+      app/http.py: |
+        import requests
+
+        def fetch(url):
+            return requests.get(url, verify=False)
+      internal/auth/tokens.go: |
+        package auth
+
+        func claims(raw string, key any) (*jwt.Token, error) {
+        	return jwt.Parse(raw, func(t *jwt.Token) (any, error) { return key, nil }, jwt.WithValidMethods([]string{"RS256"}))
+        }

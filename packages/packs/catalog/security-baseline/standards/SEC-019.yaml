@@ -3,7 +3,7 @@ kind: Standard
 metadata:
   id: SEC-019
   title: Verify JWT signature, algorithm, and expiry
-  type: agent-instruction
+  type: prohibition
   category: security
 spec:
   severity: blocker
@@ -25,6 +25,44 @@ spec:
     summary: >
       Always verify JWTs with a pinned algorithm list (never "none") and validate exp, iss, and aud;
       never trust claims from a decode-only call or disable signature or expiry checks.
+  remediation: >
+    Verify every token with the library's verifying call and a pinned algorithm list:
+    jwt.verify(token, key, { algorithms: ["RS256"], issuer, audience }) or
+    jwt.decode(token, key, algorithms=["RS256"], audience=AUD, issuer=ISS). Keep expiry checks on.
+    Read claims only from the verified result.
+  checks:
+    - evaluator: regex
+      # JavaScript and TypeScript (jsonwebtoken, jose): expiry checks turned off, the none algorithm
+      # allowed, or jwt.decode() used for claims. jwt.decode(token, { complete: true }), used to read
+      # the header's key id before verifying, is not flagged.
+      pattern: |-
+        ^(?![ \t]*(?://|/?\*))[^\n]*?(?:\bignoreExpiration\s*:\s*true\b|\balgorithms\s*:\s*\[[^\]\n]*["']none["']|(?<![\w.])jwt\.decode\s*\((?![^\n]*complete\s*:\s*true))
+      flags: i
+      include: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.py", "**/*_test.go", "**/*Test.java", "**/*Tests.java", "**/tests/**", "**/test/**", "**/__tests__/**", "**/fixtures/**"]
+      message: The token is accepted without a full verification; use jwt.verify with a pinned algorithm list
+    - evaluator: regex
+      # Python (PyJWT, python-jose): signature or expiry verification turned off, or the none algorithm allowed.
+      pattern: |-
+        ^(?![ \t]*#)[^\n]*?(?:["']verify_(?:signature|exp|aud|iss)["']\s*:\s*False\b|\bverify\s*=\s*False\b[^\n]*|\balgorithms\s*=\s*\[[^\]\n]*["']none["'])(?<=jwt[\s\S]*)
+      flags: i
+      include: ["**/*.py"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.py", "**/*_test.go", "**/*Test.java", "**/*Tests.java", "**/tests/**", "**/test/**", "**/__tests__/**", "**/fixtures/**"]
+      message: JWT verification is turned off or allows the none algorithm; verify signature, algorithm, exp, iss and aud
+    - evaluator: regex
+      # Java and Kotlin (jjwt, auth0 java-jwt): parsing unsigned tokens, or the none algorithm.
+      pattern: |-
+        ^(?![ \t]*(?://|/?\*))[^\n]*?(?:\.parseClaimsJwt\s*\(|\.parsePlaintextJwt\s*\(|\.parseUnsecuredClaims\s*\(|\bAlgorithm\.none\s*\(|\.unsecured\s*\(\s*\))
+      include: ["**/*.java", "**/*.kt"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.py", "**/*_test.go", "**/*Test.java", "**/*Tests.java", "**/tests/**", "**/test/**", "**/__tests__/**", "**/fixtures/**"]
+      message: The token is parsed without verifying a signature; use a parser with a verification key
+    - evaluator: regex
+      # Go (golang-jwt): ParseUnverified, or the none signing method.
+      pattern: |-
+        ^(?![ \t]*//)[^\n]*?(?:\.ParseUnverified\s*\(|\bUnsafeAllowNoneSignatureType\b|\bSigningMethodNone\b)
+      include: ["**/*.go"]
+      exclude: ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.py", "**/*_test.go", "**/*Test.java", "**/*Tests.java", "**/tests/**", "**/test/**", "**/__tests__/**", "**/fixtures/**"]
+      message: The token is parsed without verifying a signature; use Parse with a key function and WithValidMethods
   references:
     - { id: CWE-347, title: Improper Verification of Cryptographic Signature }
   compliance:
@@ -35,5 +73,7 @@ spec:
     dependencies: [jsonwebtoken, jose, pyjwt, python-jose, jjwt-api]
   quality:
     noise: low
+    knownFalsePositives:
+      - "jwt.decode() used only to read the header before verifying. Pass { complete: true }, which the check accepts, and verify the same token afterwards."
   rollout:
-    recommendedStage: teach
+    recommendedStage: advise

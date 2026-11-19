@@ -124,6 +124,8 @@ export async function loadWorkspace(
     }
     const id = document.metadata.id;
     const previous = seen.get(id);
+    // The same file reached twice (a preset and the pack it draws from) is one standard.
+    if (previous === file) return;
     if (previous) {
       diagnostics.push({
         severity: "error",

@@ -133,15 +133,9 @@ export async function planInit(io: IO, options: InitOptions): Promise<InitPlan |
     ]),
   ];
 
-  const packs = org
-    ? []
-    : (options.packs ?? [
-        "security-baseline",
-        ...(languages.some((l) => l === "typescript" || l === "javascript")
-          ? ["typescript-node"]
-          : []),
-        ...(languages.includes("java") ? ["java-spring"] : []),
-      ]);
+  // A new repository starts from the essentials: a short set that is all checked. It covers
+  // every language; rules for languages the repository doesn't use simply don't apply.
+  const packs = org ? [] : (options.packs ?? ["essentials"]);
 
   const config = [
     "# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/config.schema.json",
@@ -158,8 +152,9 @@ export async function planInit(io: IO, options: InitOptions): Promise<InitPlan |
           "",
         ]
       : [
-          "# Shared standards this repository inherits. Add your organization's pack, e.g.",
-          "#   - github:your-org/engineering-standards//packs/backend@v1",
+          "# The rules this repository follows. Essentials is a short starting set, all checked.",
+          "# Add more: `groundrule packs` lists them (e.g. groundrule:packs/security-baseline), or",
+          "# your organization's own: github:your-org/engineering-standards//packs/backend@v1",
           "extends:",
           ...packs.map((p) => `  - groundrule:packs/${p}`),
           "",

@@ -14,7 +14,40 @@ const NAME = /^packs\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
  */
 export function resolvePack(name: string): string | undefined {
   const id = NAME.exec(name)?.[1];
+  if (id && PRESETS.has(id)) return join(CATALOG_DIR, `${id}.yaml`);
   return id && KNOWN.has(id) ? join(CATALOG_DIR, id) : undefined;
+}
+
+/**
+ * Presets: packs that list standards from the packs next to them rather than holding their own.
+ * They resolve like any pack but are not part of the catalog listing, so nothing is counted twice.
+ */
+const PRESETS = new Set(["essentials"]);
+
+export interface PresetInfo {
+  id: string;
+  ref: string;
+  title: string;
+  description?: string;
+  standards: number;
+}
+
+export async function listPresets(): Promise<PresetInfo[]> {
+  const presets: PresetInfo[] = [];
+  for (const id of [...PRESETS].sort()) {
+    const result = await loadFile(join(CATALOG_DIR, `${id}.yaml`), "Pack");
+    if (!result.ok) continue;
+    presets.push({
+      id,
+      ref: `groundrule:packs/${id}`,
+      title: result.document.metadata.title,
+      ...(result.document.metadata.description
+        ? { description: result.document.metadata.description }
+        : {}),
+      standards: result.document.spec.include.length,
+    });
+  }
+  return presets;
 }
 
 export interface PackInfo {

@@ -1,0 +1,48 @@
+# The essentials: a short starting set. Every rule here has a deterministic check, and each is
+# one a team is unlikely to argue with: secrets, injection, unsafe deserialization, unverified
+# tokens, and a handful per language. It lists standards that live in the packs next to it, so
+# extending a full pack later (groundrule:packs/security-baseline) adds to it without clashing.
+# `groundrule` in a new repository starts from this.
+apiVersion: groundrule.dev/v1alpha1
+kind: Pack
+metadata:
+  id: essentials
+  title: Essentials
+  description: A short starting set of rules that are all checked on every change - secrets, injection, unsafe deserialization, unverified tokens, and a few per language. Grow into the full packs from here.
+  owner: groundrule
+  version: 1.0.0
+  tags: [security, starter]
+spec:
+  include:
+    # security-baseline
+    - security-baseline/standards/SEC-001.yaml
+    - security-baseline/standards/SEC-002.yaml
+    - security-baseline/standards/SEC-003.yaml
+    - security-baseline/standards/SEC-004.yaml
+    - security-baseline/standards/SEC-005.yaml
+    - security-baseline/standards/SEC-011.yaml
+    - security-baseline/standards/SEC-015.yaml
+    - security-baseline/standards/SEC-016.yaml
+    - security-baseline/standards/SEC-019.yaml
+    # agent-hygiene
+    - agent-hygiene/standards/AGENT-010.yaml
+    # typescript-node
+    - typescript-node/standards/TS-002.yaml
+    - typescript-node/standards/TS-003.yaml
+    - typescript-node/standards/TS-007.yaml
+    - typescript-node/standards/TS-014.yaml
+    # java-spring
+    - java-spring/standards/JAVA-002.yaml
+    - java-spring/standards/JAVA-006.yaml
+    - java-spring/standards/JAVA-007.yaml
+    - java-spring/standards/JAVA-008.yaml
+    # python
+    - python/standards/PY-001.yaml
+    - python/standards/PY-002.yaml
+    - python/standards/PY-005.yaml
+    - python/standards/PY-007.yaml
+    # go
+    - go/standards/GO-007.yaml
+    - go/standards/GO-008.yaml
+    - go/standards/GO-009.yaml
+    - go/standards/GO-011.yaml
