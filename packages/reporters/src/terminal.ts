@@ -15,6 +15,8 @@ export interface TerminalOptions {
   color?: boolean;
   /** Also list legacy and suppressed findings. */
   verbose?: boolean;
+  /** Only the findings: no header, no verdict. For a first look, where a verdict would mislead. */
+  findingsOnly?: boolean;
 }
 
 /**
@@ -25,16 +27,18 @@ export function renderTerminal(input: ReportInput, options: TerminalOptions = {}
   const s = createStyle(options.color ?? false);
   const { result } = input;
   const byId = standardsById(input);
-  const out: string[] = [""];
+  const out: string[] = options.findingsOnly ? [] : [""];
 
   const changed =
     result.context.mode === "changes"
       ? `${pluralize(result.context.changedFiles, "file")} changed${result.context.base ? ` vs ${result.context.base}` : ""}`
       : `${pluralize(result.context.files, "file")} (full audit)`;
-  out.push(
-    ` ${s.bold("groundrule check")} ${s.dim(`· ${pluralize(result.summary.standards, "standard")} · ${changed}`)}`,
-  );
-  out.push("");
+  if (!options.findingsOnly) {
+    out.push(
+      ` ${s.bold("groundrule check")} ${s.dim(`· ${pluralize(result.summary.standards, "standard")} · ${changed}`)}`,
+    );
+    out.push("");
+  }
 
   const errors = result.diagnostics.filter((d) => d.severity === "error");
   const warnings = result.diagnostics.filter((d) => d.severity === "warning");
@@ -98,14 +102,15 @@ export function renderTerminal(input: ReportInput, options: TerminalOptions = {}
     : result.findings.filter((f) => f.suppressedBy).length;
   if (hiddenLegacy || hiddenSuppressed) {
     const parts = [
-      hiddenLegacy
-        ? `${pluralize(hiddenLegacy, "legacy finding")} not introduced by this change`
-        : "",
+      hiddenLegacy ? `${pluralize(hiddenLegacy, "existing finding")}, not from this change` : "",
       hiddenSuppressed ? `${pluralize(hiddenSuppressed, "finding")} covered by exceptions` : "",
     ].filter(Boolean);
-    out.push(` ${s.dim(`○ ${parts.join(" · ")} (show with --verbose)`)}`);
+    out.push(
+      ` ${s.dim(`○ ${parts.join(" · ")} (show with --verbose${hiddenLegacy ? " or --all" : ""})`)}`,
+    );
     out.push("");
   }
+  if (options.findingsOnly) return out.join("\n");
 
   const notEvaluated = result.outcomes.filter(
     (o) =>
@@ -137,7 +142,7 @@ function summaryLine(input: ReportInput, s: Style): string {
       ? s.yellow(`⚠ ${summary.warned} ${summary.warned === 1 ? "warning" : "warnings"}`)
       : "",
     summary.notEvaluable ? s.dim(`– ${summary.notEvaluable} not evaluated`) : "",
-    summary.guidance ? s.dim(`◇ ${summary.guidance} guidance`) : "",
+    summary.guidance ? s.dim(`◇ ${summary.guidance} guidance, not checked`) : "",
     summary.skipped ? s.dim(`${summary.skipped} not applicable`) : "",
   ].filter(Boolean);
   const verdict = input.result.failed ? s.red(s.bold("Failed")) : s.green(s.bold("Passed"));

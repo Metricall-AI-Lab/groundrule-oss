@@ -24,7 +24,7 @@ describe("terminal", () => {
   it("hides legacy and excepted findings behind a count", () => {
     expect(text).not.toContain("old/package.json");
     expect(text).toContain(
-      "○ 1 legacy finding not introduced by this change · 1 finding covered by exceptions (show with --verbose)",
+      "○ 1 existing finding, not from this change · 1 finding covered by exceptions (show with --verbose or --all)",
     );
     const verbose = renderTerminal(fixture(), { verbose: true });
     expect(verbose).toContain("old/package.json:3  legacy");
@@ -35,7 +35,9 @@ describe("terminal", () => {
     expect(text).toContain(
       "– AUTH-017 partly evaluated: AI checks run on Groundrule's hosted checks; not here.",
     );
-    expect(text).toContain("Failed  ✓ 1 passed  ✕ 1 failed  ⚠ 1 warning  ◇ 1 guidance  · 0.4s");
+    expect(text).toContain(
+      "Failed  ✓ 1 passed  ✕ 1 failed  ⚠ 1 warning  ◇ 1 guidance, not checked  · 0.4s",
+    );
     expect(text).toContain("groundrule check · 4 standards · 3 files changed vs origin/main");
   });
 

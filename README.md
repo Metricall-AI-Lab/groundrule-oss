@@ -23,13 +23,42 @@ Everything in this repository works offline and without an account. The [Groundr
 
 ## Quick start
 
-Thirty seconds, no account, nothing leaves your machine:
+One command, no account, nothing leaves your machine:
 
 ```bash
-npx @groundrule/cli init      # detects your stack, picks packs, writes .groundrule/config.yaml
-npx @groundrule/cli sync      # writes AGENTS.md / CLAUDE.md / Cursor / Copilot instructions
-npx @groundrule/cli check     # checks your uncommitted changes
+npx @groundrule/cli
 ```
+
+In a repository with no Groundrule configuration it takes a first look: it detects your stack, runs the checks over the whole repository and shows what they find today, worst first, without writing anything. Then it asks one question and sets the repository up: `.groundrule/config.yaml`, the agent files (`AGENTS.md`, `CLAUDE.md`, Cursor, Copilot), and the hooks. It also says how many rules are checked on every change and how many are instructions for coding agents only.
+
+```text
+ groundrule · a first look at orders-api
+
+   Stack   typescript
+   Rules   35 from security-baseline, typescript-node
+           21 are checked on every change · 14 are instructions for your coding agents, not checked
+
+ What the checks find in this repository today
+
+ ⚠ TS-002  No deprecated HTTP and UUID packages
+   warning · deterministic (dependencies)
+   package.json:1
+     Forbidden dependency "request"
+   → Use fetch or crypto.randomUUID() instead.
+
+ 5 findings in 4 rules. This is code that already exists: it is listed, and it never blocks.
+ Once set up, only what a change introduces is checked.
+
+ Set it up now? [Y/n]
+```
+
+After that, `groundrule check` checks what you changed:
+
+```bash
+npx @groundrule/cli check     # your uncommitted changes; --all audits everything
+```
+
+The steps are also separate commands (`init`, `sync`, `hooks`) when you want one at a time, and `groundrule start --yes` sets up without asking, for scripts.
 
 ```text
  groundrule check · 11 standards · 2 files changed
@@ -42,7 +71,7 @@ npx @groundrule/cli check     # checks your uncommitted changes
    → Parse the input instead: JSON.parse, a schema, or a lookup table of allowed operations.
    → groundrule explain TS-003
 
- Failed  ✓ 7 passed  ✕ 1 failed  ◇ 2 guidance  · 0.1s
+ Failed  ✓ 7 passed  ✕ 1 failed  ◇ 2 guidance, not checked  · 0.1s
 ```
 
 ## A standard
@@ -72,6 +101,7 @@ More in [`examples/foundation`](examples/foundation/.groundrule/standards).
 
 | Command | What it does |
 |---------|--------------|
+| `groundrule` / `groundrule start [--yes] [--no-hooks]` | In a new repository: a first look at what the checks find today, then set everything up with one question |
 | `groundrule init` | Create `.groundrule/config.yaml` with packs for your stack |
 | `groundrule sync [--check] [--upload]` | Write (or verify) coding-agent instructions; `--upload` reports what the repository delivers to agents |
 | `groundrule check [--base <ref>] [--all]` | Check changes, a branch, or everything. `-f json\|sarif\|markdown`, `--summary <file>` |

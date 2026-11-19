@@ -65,8 +65,26 @@ const TARGET_OUTPUT: Record<AgentTarget, string> = {
   coderabbit: ".coderabbit.yaml",
 };
 
-export async function init(io: IO, options: InitOptions): Promise<number> {
-  const s = style(io);
+/** What `init` would write, worked out without writing anything. */
+export interface InitPlan {
+  root: string;
+  configFile: string;
+  config: string;
+  packs: string[];
+  targets: AgentTarget[];
+  languages: string[];
+  org?: string;
+  url?: string;
+  /** The agents the organization uses, or null when not signed in or not connected. */
+  fromPlatform: AgentTarget[] | null;
+}
+
+/** The files each agent target writes, for messages. */
+export const targetOutputs = (targets: readonly AgentTarget[]) =>
+  targets.map((t) => TARGET_OUTPUT[t]);
+
+/** Detect the stack and the agents in use, and decide the config. Returns an exit code on a usage error. */
+export async function planInit(io: IO, options: InitOptions): Promise<InitPlan | number> {
   const root = (await gitRoot(io.cwd)) ?? io.cwd;
   const configFile = join(root, CONFIG_DIR, CONFIG_FILE);
   if ((await exists(configFile)) && !options.force) {
@@ -160,10 +178,33 @@ export async function init(io: IO, options: InitOptions): Promise<number> {
     "",
   ].join("\n");
 
-  await mkdir(join(root, CONFIG_DIR, "standards"), { recursive: true });
-  await writeFile(configFile, config);
-  const example = join(root, CONFIG_DIR, "standards", "EXAMPLE-001.yaml.sample");
+  return {
+    root,
+    configFile,
+    config,
+    packs,
+    targets,
+    languages,
+    ...(org ? { org } : {}),
+    ...(url ? { url } : {}),
+    fromPlatform,
+  };
+}
+
+/** Write the planned config and the sample standard. */
+export async function writeInit(plan: InitPlan): Promise<void> {
+  await mkdir(join(plan.root, CONFIG_DIR, "standards"), { recursive: true });
+  await writeFile(plan.configFile, plan.config);
+  const example = join(plan.root, CONFIG_DIR, "standards", "EXAMPLE-001.yaml.sample");
   if (!(await exists(example))) await writeFile(example, EXAMPLE_STANDARD);
+}
+
+export async function init(io: IO, options: InitOptions): Promise<number> {
+  const s = style(io);
+  const plan = await planInit(io, options);
+  if (typeof plan === "number") return plan;
+  await writeInit(plan);
+  const { org, url, packs, targets, languages, fromPlatform } = plan;
 
   println(io);
   println(io, ` ${s.green("✓")} Created ${s.bold(`${CONFIG_DIR}/${CONFIG_FILE}`)}`);
@@ -178,8 +219,11 @@ export async function init(io: IO, options: InitOptions): Promise<number> {
       io,
       `   0. ${s.bold("groundrule login")}    sign in to ${org} (CI: set GROUNDRULE_TOKEN)`,
     );
-  println(io, `   1. ${s.bold("groundrule sync")}     write instructions for your coding agents`);
-  println(io, `   2. ${s.bold("groundrule check")}    check your current changes`);
+  println(
+    io,
+    `   1. ${s.bold("groundrule sync")}         write instructions for your coding agents`,
+  );
+  println(io, `   2. ${s.bold("groundrule check --all")}  see what the rules find here today`);
   println(
     io,
     `   3. Add your own rules in ${CONFIG_DIR}/standards/ ${s.dim("(see EXAMPLE-001.yaml.sample)")}`,
