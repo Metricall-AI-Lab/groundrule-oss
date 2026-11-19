@@ -62,8 +62,20 @@ export function renderTerminal(input: ReportInput, options: TerminalOptions = {}
     const first = findings[0];
     if (!first) continue;
     const blocking = findings.some((f) => result.blocking.has(f.fingerprint));
-    const icon = blocking ? s.red("✕") : first.status === "concern" ? s.blue("?") : s.yellow("⚠");
-    const severity = blocking ? s.red(first.severity.toUpperCase()) : s.yellow(first.severity);
+    // Advisory and info findings are lighter than warnings, and look it.
+    const light = first.severity === "advisory" || first.severity === "info";
+    const icon = blocking
+      ? s.red("✕")
+      : first.status === "concern"
+        ? s.blue("?")
+        : light
+          ? s.dim("•")
+          : s.yellow("⚠");
+    const severity = blocking
+      ? s.red(first.severity.toUpperCase())
+      : light
+        ? s.dim(first.severity)
+        : s.yellow(first.severity);
     out.push(` ${icon} ${s.bold(id)}  ${loaded?.standard.metadata.title ?? ""}`);
     out.push(`   ${severity} ${s.dim(`· ${sourceLabel(first)}`)}`);
 

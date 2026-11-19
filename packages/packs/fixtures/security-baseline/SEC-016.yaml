@@ -1,0 +1,69 @@
+standard: SEC-016
+cases:
+  - name: native deserialization in five languages
+    expect: violation
+    count: 6
+    files:
+      app/cache.py: |
+        import pickle
+
+        def load(request):
+            return pickle.loads(request.data)
+
+        def restore(blob):
+            return marshal.loads(blob)
+      src/main/java/acme/Reader.java: |
+        class Reader {
+          Object read(Socket socket) throws Exception {
+            return new ObjectInputStream(socket.getInputStream()).readObject();
+          }
+        }
+      Services/Loader.cs: |
+        class Loader {
+          object Load(Stream s) {
+            var formatter = new BinaryFormatter();
+            return formatter.Deserialize(s);
+          }
+        }
+      web/session.php: |
+        <?php
+        $session = unserialize($_COOKIE['session']);
+      lib/cache.rb: |
+        def restore(blob)
+          Marshal.load(blob)
+        end
+  - name: data-only formats, safe loaders, and comments
+    expect: clean
+    files:
+      app/cache.py: |
+        import json
+        import yaml
+
+        def load(request):
+            return json.loads(request.data)
+
+        def config(body):
+            return yaml.safe_load(body)
+
+        # pickle.loads(data) is never used here
+        def unpickle_me_not():
+            pass
+      src/main/java/acme/Reader.java: |
+        class Reader {
+          Order read(String body) throws Exception {
+            return mapper.readValue(body, Order.class);
+          }
+        }
+      web/session.php: |
+        <?php
+        $session = json_decode($_COOKIE['session'], true);
+        $prefs = unserialize($blob, ['allowed_classes' => false]);
+      lib/cache.rb: |
+        def restore(text)
+          YAML.safe_load(text)
+        end
+      tests/test_cache.py: |
+        import pickle
+
+        def test_roundtrip():
+            assert pickle.loads(pickle.dumps(1)) == 1

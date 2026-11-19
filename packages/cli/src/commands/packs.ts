@@ -1,4 +1,4 @@
-import { listPacks } from "@groundrule/packs";
+import { listPacks, listPresets } from "@groundrule/packs";
 import { EXIT, type IO, println, style } from "../io.js";
 
 export async function packs(io: IO): Promise<number> {
@@ -9,6 +9,14 @@ export async function packs(io: IO): Promise<number> {
     ` ${s.bold("Bundled packs")} ${s.dim("· add to extends in .groundrule/config.yaml")}`,
   );
   println(io);
+  for (const p of await listPresets()) {
+    println(
+      io,
+      `   ${s.bold(p.ref)} ${s.dim(`· ${p.standards} standards from the packs below, all checked · where a new repository starts`)}`,
+    );
+    if (p.description) println(io, `   ${p.description}`);
+    println(io);
+  }
   for (const p of await listPacks()) {
     const counts = [
       ...(p.standards ? [`${p.standards} standards`] : []),

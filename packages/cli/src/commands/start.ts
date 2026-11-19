@@ -118,13 +118,16 @@ export async function start(io: IO, options: StartOptions = {}): Promise<number>
   println(io);
   if (plan.languages.length)
     println(io, `   ${s.dim("Stack")}   ${plan.languages.slice(0, 4).join(", ")}`);
+  const applies = c.checked + c.guidance;
   println(
     io,
-    `   ${s.dim("Rules")}   ${result.outcomes.length} from ${plan.packs.join(", ") || "no packs"}`,
+    `   ${s.dim("Rules")}   ${plural(applies, "rule")} from ${plan.packs.join(", ") || "no packs"} ${applies === 1 ? "applies" : "apply"} here`,
   );
   println(
     io,
-    `           ${plural(c.checked, "is", "are")} checked on every change · ${plural(c.guidance, "is an instruction", "are instructions")} for your coding agents, not checked`,
+    c.guidance
+      ? `           ${plural(c.checked, "is", "are")} checked on every change · ${plural(c.guidance, "is an instruction", "are instructions")} for your coding agents, not checked`
+      : "           every one is checked on every change",
   );
   println(io);
   if (c.findings) {
@@ -204,6 +207,10 @@ export async function start(io: IO, options: StartOptions = {}): Promise<number>
   println(io, `   ${s.bold("groundrule check")}          before you push: checks what you changed`);
   println(io, `   ${s.bold("groundrule check --all")}    the full list above, any time`);
   println(io, `   ${s.bold("groundrule explain <ID>")}   why a rule exists and how to comply`);
+  println(
+    io,
+    `   ${s.bold("groundrule scan")}           the rest of the catalog, and which rules already pass here`,
+  );
   println(
     io,
     `   ${s.dim("Every pull request, for the whole team: https://docs.groundrule.dev/developers/cli/ci/")}`,

@@ -77,9 +77,10 @@ describe("groundrule CLI", () => {
     const r = await repo(TS_APP);
     const init = await cli(r.root, "init");
     expect(init.code).toBe(0);
-    expect(init.stdout).toContain("Packs    security-baseline, typescript-node");
+    // A new repository starts from the essentials; --packs still chooses others.
+    expect(init.stdout).toContain("Packs    essentials");
     const config = await readFile(join(r.root, ".groundrule/config.yaml"), "utf8");
-    expect(config).toContain("- groundrule:packs/typescript-node");
+    expect(config).toContain("- groundrule:packs/essentials");
 
     expect((await cli(r.root, "init")).code).toBe(2); // already initialized
 
@@ -115,7 +116,7 @@ describe("groundrule CLI", () => {
 
   it("writes JSON, SARIF, and Markdown reports", async () => {
     const r = await repo({ ...TS_APP, "src/app.ts": 'console.log("x");\n' });
-    await cli(r.root, "init");
+    await cli(r.root, "init", "--packs", "security-baseline,typescript-node");
 
     const json = await cli(r.root, "check", "--all", "--format", "json");
     const report = JSON.parse(json.stdout);
@@ -257,12 +258,12 @@ describe("groundrule start", () => {
     const r = await cli(root);
     expect(r.code).toBe(0);
     expect(r.stdout).toContain("a first look at");
-    expect(r.stdout).toMatch(
-      /\d+ are checked on every change · \d+ are instructions for your coding agents, not checked/,
-    );
+    // The essentials are all checked, and the count is the rules that apply here.
+    expect(r.stdout).toMatch(/\d+ rules from essentials apply here/);
+    expect(r.stdout).toContain("every one is checked on every change");
     expect(r.stdout).toContain("What the checks find in this repository today");
     expect(r.stdout).toContain("TS-002  No deprecated HTTP and UUID packages");
-    expect(r.stdout).toContain("src/app.ts:1");
+    expect(r.stdout).toContain("package.json:");
     expect(r.stdout).toContain("it is listed, and it never blocks");
     // A first look has no verdict: "Passed" on a repository with findings would mislead.
     expect(r.stdout).not.toMatch(/Passed|Failed/);
@@ -315,5 +316,47 @@ describe("groundrule start", () => {
     const { root } = await repo({ "README.md": "# hi\n" });
     const r = await cli(root, "start");
     expect(r.stdout).toContain("✓ The checks find nothing in this repository today.");
+  });
+});
+
+describe("the essentials", () => {
+  it("is a short set that is all checked, and grows into the full packs without clashing", async () => {
+    const r = await repo({
+      "package.json": '{\n  "name": "app",\n  "dependencies": {}\n}\n',
+      "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+      "tsconfig.json": '{ "compilerOptions": { "strict": true } }\n',
+      // Built from parts, so this file holds no template placeholder inside a plain string.
+      "src/orders.ts": [
+        "export const byId = (db: Db, id: string) =>",
+        ["  db.query(`SELECT * FROM orders WHERE id = $", "{id}`);"].join(""),
+        "",
+      ].join("\n"),
+    });
+    await cli(r.root, "init");
+    const list = await cli(r.root, "standards");
+    expect(list.stdout).not.toContain("agent guidance");
+    // The SQL built from a string is flagged: a blocker with a check, not an instruction.
+    const check = await cli(r.root, "check", "--all");
+    expect(check.stdout).toContain("✕ SEC-015  Use parameterized queries, never string-built SQL");
+    expect(check.stdout).toContain("src/orders.ts:2");
+    expect(check.code).toBe(1);
+
+    // Adding a full pack that holds some of the same standards is not a duplicate.
+    const config = join(r.root, ".groundrule/config.yaml");
+    await writeFile(
+      config,
+      (await readFile(config, "utf8")).replace(
+        "  - groundrule:packs/essentials",
+        "  - groundrule:packs/essentials\n  - groundrule:packs/security-baseline",
+      ),
+    );
+    const doctor = await cli(r.root, "sync");
+    expect(doctor.code).toBe(0);
+    expect(doctor.stderr).not.toContain("Duplicate");
+
+    const packs = await cli(r.root, "packs");
+    expect(packs.stdout).toMatch(
+      /groundrule:packs\/essentials · \d+ standards from the packs below, all checked/,
+    );
   });
 });
