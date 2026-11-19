@@ -325,8 +325,12 @@ describe("the essentials", () => {
       "package.json": '{\n  "name": "app",\n  "dependencies": {}\n}\n',
       "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
       "tsconfig.json": '{ "compilerOptions": { "strict": true } }\n',
-      "src/orders.ts":
-        "export const byId = (db: Db, id: string) =>\n  db.query(`SELECT * FROM orders WHERE id = ${id}`);\n",
+      // Built from parts, so this file holds no template placeholder inside a plain string.
+      "src/orders.ts": [
+        "export const byId = (db: Db, id: string) =>",
+        ["  db.query(`SELECT * FROM orders WHERE id = $", "{id}`);"].join(""),
+        "",
+      ].join("\n"),
     });
     await cli(r.root, "init");
     const list = await cli(r.root, "standards");
