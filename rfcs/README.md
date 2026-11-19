@@ -25,3 +25,4 @@ Changes to the Groundrule document format go through an RFC.
 | [0015](0015-import-graph.md) | The import graph in scan reports | Accepted |
 | [0016](0016-layout-discovery.md) | Layout discovery in scans | Accepted |
 | [0017](0017-action-policy.md) | Action policies: what a coding agent may do | Accepted |
+| [0018](0018-short-config.md) | A config file without the header | Proposed |

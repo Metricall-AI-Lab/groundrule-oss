@@ -71,6 +71,27 @@ spec:
     expect(result.ok).toBe(false);
   });
 
+  it("reads a config that leaves out apiVersion and kind (RFC 0018)", () => {
+    const short = parseDocument(
+      "extends:\n  - groundrule:packs/essentials\ntargets:\n  - agents-md\n",
+      ".groundrule/config.yaml",
+      "Config",
+    );
+    expect(short.ok).toBe(true);
+    if (short.ok) {
+      expect(short.document.kind).toBe("Config");
+      expect(short.document.apiVersion).toBe("groundrule.dev/v1alpha1");
+      expect(short.document.enforcement.failOn).toBe("blocker");
+    }
+    // A wrong kind is still refused, and so is an unknown key.
+    expect(parseDocument("kind: Standard\n", "config.yaml", "Config").ok).toBe(false);
+    expect(parseDocument("extend: []\n", "config.yaml", "Config").ok).toBe(false);
+    // Any other kind still has to say what it is.
+    expect(parseDocument("metadata:\n  id: X-1\n", "x.yaml", "Standard").ok).toBe(false);
+    // And the long form reads exactly as before.
+    expect(parseDocument(`${header}kind: Config\n`, "config.yaml", "Config").ok).toBe(true);
+  });
+
   it("enforces the expected kind", () => {
     const result = parseDocument(`${header}kind: Config\n`, "config.yaml", "Standard");
     expect(result.ok).toBe(false);

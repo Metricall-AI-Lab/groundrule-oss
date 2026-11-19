@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ApiVersion, Glob, Severity, StandardId } from "./common.js";
+import { API_VERSION, ApiVersion, Glob, Severity, StandardId } from "./common.js";
 import { isValidSourceRef } from "./source-ref.js";
 
 /** Agent instruction formats the adapters can generate. */
@@ -64,8 +64,12 @@ export type Platform = z.infer<typeof Platform>;
 
 export const Config = z
   .strictObject({
-    apiVersion: ApiVersion,
-    kind: z.literal("Config"),
+    // A repository's config.yaml is found by its path, so it may leave these two out (RFC 0018).
+    apiVersion: ApiVersion.default(API_VERSION),
+    kind: z
+      .literal("Config")
+      .default("Config")
+      .describe('The document kind. Optional in .groundrule/config.yaml; "Config" when given.'),
     extends: z
       .array(
         z.string().refine(isValidSourceRef, {

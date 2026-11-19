@@ -81,6 +81,12 @@ describe("groundrule CLI", () => {
     expect(init.stdout).toContain("Packs    essentials");
     const config = await readFile(join(r.root, ".groundrule/config.yaml"), "utf8");
     expect(config).toContain("- groundrule:packs/essentials");
+    // The file is the common case in a few lines (RFC 0018): no header, and no settings that
+    // only repeat the defaults.
+    expect(config).not.toContain("apiVersion");
+    expect(config).not.toContain("kind:");
+    expect(config).not.toContain("enforcement:");
+    expect(config.split("\n").filter((l) => l && !l.startsWith("#")).length).toBeLessThanOrEqual(6);
 
     expect((await cli(r.root, "init")).code).toBe(2); // already initialized
 

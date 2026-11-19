@@ -137,39 +137,29 @@ export async function planInit(io: IO, options: InitOptions): Promise<InitPlan |
   // every language; rules for languages the repository doesn't use simply don't apply.
   const packs = org ? [] : (options.packs ?? ["essentials"]);
 
+  // The common case in a few readable lines (RFC 0018). Everything left out has a default:
+  // tags (none) and enforcement (changed lines, existing findings reported, fail on blockers).
   const config = [
-    "# yaml-language-server: $schema=https://groundrule.dev/schemas/v1alpha1/config.schema.json",
-    "apiVersion: groundrule.dev/v1alpha1",
-    "kind: Config",
-    "",
     ...(org
       ? [
-          "# Standards come from your organization on Groundrule: the packs it adopted,",
-          "# its own rules, and every customization, at each rule's rollout stage.",
+          "# The rules come from your organization on Groundrule.",
           "platform:",
           `  org: ${org}`,
           ...(url && url !== "https://app.groundrule.dev" ? [`  url: ${url}`] : []),
           "",
         ]
       : [
-          "# The rules this repository follows. Essentials is a short starting set, all checked.",
-          "# Add more: `groundrule packs` lists them (e.g. groundrule:packs/security-baseline), or",
-          "# your organization's own: github:your-org/engineering-standards//packs/backend@v1",
+          "# The rules this repository follows. `groundrule packs` lists more.",
           "extends:",
           ...packs.map((p) => `  - groundrule:packs/${p}`),
           "",
         ]),
-    "# Tags that standards can target with scope.tags, e.g. backend, multi-tenant.",
-    "tags: []",
-    "",
-    "# Coding-agent instruction files that `groundrule sync` keeps up to date.",
+    "# The files `groundrule sync` writes for your coding agents.",
     "targets:",
     ...targets.map((t) => `  - ${t}`),
     "",
-    "enforcement:",
-    "  scope: changed-lines   # check what a change touches: changed-lines | changed-files | all",
-    "  legacy: report         # existing violations: report | ignore | enforce",
-    "  failOn: blocker        # lowest severity that fails a check: blocker | warning | none",
+    "# More settings (tags, what fails a check, per-rule overrides):",
+    "# https://docs.groundrule.dev/developers/cli/init-and-config/",
     "",
   ].join("\n");
 

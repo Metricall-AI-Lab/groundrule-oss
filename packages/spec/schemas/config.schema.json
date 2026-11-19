@@ -4,11 +4,14 @@
   "type": "object",
   "properties": {
     "apiVersion": {
+      "default": "groundrule.dev/v1alpha1",
       "type": "string",
       "const": "groundrule.dev/v1alpha1",
       "description": "Groundrule document format version. Must be \"groundrule.dev/v1alpha1\"."
     },
     "kind": {
+      "default": "Config",
+      "description": "The document kind. Optional in .groundrule/config.yaml; \"Config\" when given.",
       "type": "string",
       "const": "Config"
     },
@@ -167,10 +170,6 @@
       "additionalProperties": false
     }
   },
-  "required": [
-    "apiVersion",
-    "kind"
-  ],
   "additionalProperties": false,
   "description": "Repository configuration, stored at .groundrule/config.yaml."
 }
