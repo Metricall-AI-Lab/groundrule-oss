@@ -18,8 +18,16 @@ spec:
     or an Ingress to expose the workload; reserve host namespaces for platform-owned node agents.
   examples:
     forbidden:
-      - "hostNetwork: true"
-      - "hostPID: true"
+      - code: |
+          kind: Pod
+          spec:
+            hostNetwork: true
+        language: yaml
+      - code: |
+          kind: Pod
+          spec:
+            hostPID: true
+        language: yaml
   agent:
     summary: >
       Do not set hostNetwork, hostPID, or hostIPC to true in Kubernetes pod specs; expose

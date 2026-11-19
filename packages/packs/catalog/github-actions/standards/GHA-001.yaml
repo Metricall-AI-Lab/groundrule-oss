@@ -22,7 +22,7 @@ spec:
     the pins current.
   examples:
     approved:
-      - "uses: docker/setup-buildx-action@<full 40-character commit SHA> # v3.7.1"
+      - "uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1"
       - "uses: actions/checkout@v4"
     forbidden:
       - "uses: docker/setup-buildx-action@v3"

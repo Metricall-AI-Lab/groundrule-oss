@@ -26,8 +26,15 @@ spec:
               verbs: ["get", "list", "watch"]
         language: yaml
     forbidden:
-      - 'verbs: ["*"]'
       - code: |
+          kind: ClusterRole
+          rules:
+            - apiGroups: [""]
+              resources: ["secrets"]
+              verbs: ["*"]
+        language: yaml
+      - code: |
+          kind: ClusterRoleBinding
           roleRef:
             apiGroup: rbac.authorization.k8s.io
             kind: ClusterRole

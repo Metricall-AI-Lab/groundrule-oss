@@ -28,8 +28,12 @@ spec:
         language: yaml
     forbidden:
       - code: |
-          securityContext:
-            privileged: true
+          kind: Pod
+          spec:
+            containers:
+              - name: api
+                securityContext:
+                  privileged: true
         language: yaml
   agent:
     summary: >

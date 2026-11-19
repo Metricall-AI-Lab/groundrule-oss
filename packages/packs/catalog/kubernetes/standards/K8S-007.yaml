@@ -21,8 +21,22 @@ spec:
       - "image: ghcr.io/acme/api:1.8.2"
       - "image: ghcr.io/acme/api@sha256:<digest>"
     forbidden:
-      - "image: nginx"
-      - "image: ghcr.io/acme/api:latest"
+      - code: |
+          kind: Pod
+          spec:
+            containers:
+              - name: web
+                image: nginx
+        language: yaml
+      - code: |
+          kind: Deployment
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: api
+                    image: ghcr.io/acme/api:latest
+        language: yaml
   agent:
     summary: >
       Pin every image in Kubernetes manifests to an explicit version tag or digest; never use

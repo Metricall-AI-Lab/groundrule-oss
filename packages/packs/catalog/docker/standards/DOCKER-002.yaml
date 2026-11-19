@@ -21,7 +21,10 @@ spec:
     approved:
       - "FROM python:3.12-slim"
       - "FROM gcr.io/distroless/static-debian12@sha256:<digest>"
-      - "FROM builder AS test"
+      - code: |
+          FROM golang:1.23 AS builder
+          FROM builder AS test
+        language: dockerfile
     forbidden:
       - "FROM ubuntu"
       - "FROM node:latest"

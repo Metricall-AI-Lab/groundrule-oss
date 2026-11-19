@@ -27,7 +27,10 @@ spec:
           return base64.RawURLEncoding.EncodeToString(b), nil
         language: go
     forbidden:
-      - code: 'token := fmt.Sprintf("%x", rand.Int63()) // math/rand'
+      - code: |
+          import "math/rand"
+
+          token := fmt.Sprintf("%x", rand.Int63())
         language: go
   agent:
     summary: >
