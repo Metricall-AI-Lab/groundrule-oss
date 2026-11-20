@@ -34,7 +34,6 @@ spec:
     # java-spring
     - java-spring/standards/JAVA-002.yaml
     - java-spring/standards/JAVA-006.yaml
-    - java-spring/standards/JAVA-007.yaml
     - java-spring/standards/JAVA-008.yaml
     # python
     - python/standards/PY-001.yaml

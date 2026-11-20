@@ -21,3 +21,12 @@ cases:
       src/data/orders.ts: |
         import { PrismaClient } from "@prisma/client";
         export const client = PrismaClient;
+  - name: server code that isn't UI uses the client (ARCH-008's concern, not this rule's)
+    expect: clean
+    files:
+      src/reports.ts: |
+        import pg from "pg";
+        export const pool = new pg.Pool();
+      src/jobs/cleanup.ts: |
+        import { PrismaClient } from "@prisma/client";
+        export const client = new PrismaClient();
