@@ -1,5 +1,20 @@
 # @groundrule/packs
 
+## 0.28.0
+
+### Minor Changes
+
+- d118161: Two catalog rules corrected.
+  
+  - **SEC-015** (string-built SQL) now reads Java files. Until now Java was left to JAVA-007 in the Java and Spring pack, so a project using only the security baseline was not checked. A Java project may see new SEC-015 findings. JAVA-007 leaves the essentials set, so a new project gets one finding per line, not two; it stays in the Java and Spring pack, where it also catches SQL fragments.
+  - **ARCH-004** (UI components never import data access) no longer reports a database client imported by code that isn't UI. That check ran on every file; it is now limited to `components`, `ui` and `views`, as the rule says. ARCH-008 remains the rule for database clients outside the data layer.
+
+### Patch Changes
+
+- e6ad0c7: Catalog examples that the rule's own check catches. Nine rules (DOCKER-002, GHA-001, GO-009, K8S-001, K8S-002, K8S-007, K8S-012, SEC-015, TF-006) had examples too short for their check to act on: a Kubernetes line with no `kind:`, a usage line without its import, a sentence instead of code, an example in a language the check doesn't read. Each now shows enough of the file to be caught, so the dashboard can show the rule working on it. No check changed.
+- @groundrule/core@0.28.0
+  - @groundrule/spec@0.28.0
+
 ## 0.27.0
 
 ### Patch Changes
