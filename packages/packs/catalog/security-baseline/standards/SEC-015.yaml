@@ -20,7 +20,7 @@ spec:
     forbidden:
       - { code: 'db.query(`SELECT * FROM users WHERE id = ${id}`)', language: typescript }
       - { code: 'cur.execute(f"SELECT * FROM users WHERE email = ''{email}''")', language: python }
-      - { code: 'jdbc.query("SELECT * FROM users ORDER BY " + sort)', language: kotlin, note: "Map sort to an allow-listed column instead." }
+      - { code: 'jdbc.query("SELECT * FROM users ORDER BY " + sort)', language: java, note: "Map sort to an allow-listed column instead." }
   agent:
     summary: >
       Always pass values to SQL and other queries as bound parameters; never concatenate,
@@ -41,10 +41,11 @@ spec:
       message: SQL built by interpolating into a template literal; pass values as bound parameters
     - evaluator: regex
       # A quoted SQL statement followed by + and something that is not a literal or an
-      # UPPER_CASE constant. Java has its own rule (JAVA-007), and Go's fmt.Sprintf form has GO-008.
+      # UPPER_CASE constant. Java is read here too, so a workspace with only this pack is covered;
+      # JAVA-007 (Java and Spring pack) also catches SQL fragments. Go's fmt.Sprintf form has GO-008.
       pattern: |-
         ^(?![ \t]*(?://|/?\*|#))[^\n]*?(["'])(?:(?!\1)[^\n])*?\b(?:SELECT\b(?:(?!\1)[^\n])*?\bFROM\b|INSERT\s+INTO\b|UPDATE\s+\w+\s+SET\b|DELETE\s+FROM\b)(?:(?!\1)[^\n])*\1\s*\+(?!\s*(?:["'`]|[A-Z][A-Z0-9_]*\b(?!\s*\()))
-      include: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.py", "**/*.go", "**/*.kt", "**/*.cs", "**/*.php", "**/*.rb", "**/*.scala"]
+      include: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.py", "**/*.go", "**/*.java", "**/*.kt", "**/*.cs", "**/*.php", "**/*.rb", "**/*.scala"]
       exclude: ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.py", "**/*_test.go", "**/*Test.java", "**/*Tests.java", "**/tests/**", "**/test/**", "**/__tests__/**", "**/fixtures/**"]
       message: SQL built by string concatenation; pass values as bound parameters
     - evaluator: regex

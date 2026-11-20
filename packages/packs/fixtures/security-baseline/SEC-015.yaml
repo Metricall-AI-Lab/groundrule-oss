@@ -2,8 +2,17 @@ standard: SEC-015
 cases:
   - name: SQL built by interpolation, concatenation and formatting
     expect: violation
-    count: 7
+    count: 9
     files:
+      src/main/java/com/acme/orders/OrderRepository.java: |
+        public class OrderRepository {
+          List<Order> byCustomer(String name) {
+            return jdbc.query("SELECT * FROM orders WHERE customer = '" + name + "'", mapper);
+          }
+          List<Order> sorted(String sort) {
+            return jdbc.query("SELECT * FROM orders ORDER BY " + sort, mapper);
+          }
+        }
       src/orders.ts: |
         export async function byId(id: string) {
           return db.query(`SELECT * FROM orders WHERE id = ${id}`);
@@ -70,6 +79,26 @@ cases:
 
         func describe(n int) string {
         	return fmt.Sprintf("selected %d rows from orders", n)
+        }
+      src/main/java/com/acme/orders/OrderRepository.java: |
+        public class OrderRepository {
+          private static final String TABLE = "orders";
+          List<Order> byId(long id) {
+            return jdbc.query("SELECT * FROM orders WHERE id = ?", mapper, id);
+          }
+          List<Order> all() {
+            return jdbc.query("SELECT id, total " +
+                "FROM orders", mapper);
+          }
+          List<Order> fromTable() {
+            return jdbc.query("SELECT * FROM " + TABLE, mapper);
+          }
+        }
+      src/test/java/com/acme/orders/OrderRepositoryTest.java: |
+        class OrderRepositoryTest {
+          void injection() {
+            jdbc.query("SELECT * FROM orders WHERE id = " + evil, mapper);
+          }
         }
       src/orders.test.ts: |
         it("rejects injection", () => {

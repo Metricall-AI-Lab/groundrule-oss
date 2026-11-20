@@ -32,6 +32,8 @@ spec:
       message: A UI component imports data access directly
       remediation: Go through the data layer, a hook or a server function.
     - evaluator: imports
+      # Only UI code: a database client anywhere else is ARCH-008's question, not this rule's.
+      from: ["**/components/**", "**/ui/**", "**/views/**"]
       package: ["@prisma/client", "prisma", "pg", "mysql2", "knex", "typeorm", "sequelize", "mongoose", "drizzle-orm"]
       only: ["**/data/**", "**/db/**", "**/repositories/**", "**/infra/**", "**/infrastructure/**", "**/server/**"]
       message: A UI component uses a database client directly
